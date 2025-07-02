@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Starmap - Interactive 3D Star Viewer
 
 A Python-based web application for creating interactive 3D starmaps for science fiction novels. This application provides a local web interface to explore star data, view star systems with planetary information, and export maps for your creative projects.
@@ -146,13 +145,3 @@ For full MongoDB integration:
 ## License
 
 This project is designed for personal and educational use in science fiction writing and world-building.
-=======
-- 👋 Hi, I’m @Ossenbrugge
-- 👀 I’m interested in Python, Java, FabricMC Modding
-- 📫 How to reach me - Here or on Discord@ossenbrugge_79788
-
-<!---
-Ossenbrugge/Ossenbrugge is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
-You can click the Preview link to take a look at your changes.
---->
->>>>>>> 4a7454939e43d929ecc4c796edd448011ded1e67

@@ -1,0 +1,310 @@
+/* Starmap Application Styles */
+
+body {
+    background-color: #0a0a0a !important;
+    color: #ffffff !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.bg-primary {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+}
+
+.card {
+    border: 1px solid #444;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.bg-secondary {
+    background-color: #2d3436 !important;
+}
+
+.card-header {
+    background-color: #636e72 !important;
+    border-bottom: 1px solid #555;
+}
+
+.form-range {
+    accent-color: #007bff;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #0056b3, #003d82);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(45deg, #28a745, #1e7e34);
+    border: none;
+}
+
+.btn-info {
+    background: linear-gradient(45deg, #17a2b8, #117a8b);
+    border: none;
+}
+
+.alert-info {
+    background-color: #1b4f72;
+    border-color: #2874a6;
+    color: #aed6f1;
+}
+
+#starmap {
+    border-radius: 8px;
+    background-color: #000;
+}
+
+.star-property {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 4px 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.star-property strong {
+    color: #74b9ff;
+}
+
+.planet-item {
+    background-color: rgba(116, 185, 255, 0.1);
+    border-left: 3px solid #74b9ff;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.planet-name {
+    font-weight: bold;
+    color: #00b894;
+    margin-bottom: 4px;
+}
+
+.planet-details {
+    font-size: 0.9em;
+    color: #ddd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 10px;
+    }
+    
+    #starmap {
+        height: 60vh !important;
+    }
+    
+    .card-body {
+        padding: 15px;
+    }
+}
+
+/* Loading animation */
+.loading {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007bff;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Search result highlighting */
+.search-result-item {
+    transition: all 0.3s ease;
+}
+
+.search-result-item:hover {
+    background-color: rgba(116, 185, 255, 0.2) !important;
+    border-color: #74b9ff !important;
+}
+
+.selected-star {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(116, 185, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(116, 185, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(116, 185, 255, 0);
+    }
+}
+
+/* Button styling */
+.btn-warning {
+    background: linear-gradient(45deg, #f39c12, #d68910);
+    border: none;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(45deg, #d68910, #b7741c);
+}
+
+/* Planetary system styling */
+.planet-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+    transition: all 0.3s ease;
+}
+
+.planet-item:hover {
+    background-color: rgba(116, 185, 255, 0.1);
+    border-color: #74b9ff;
+}
+
+.system-planet-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.planet-card {
+    transition: all 0.3s ease;
+}
+
+.planet-card:hover {
+    background-color: rgba(116, 185, 255, 0.1) !important;
+    border-color: #74b9ff !important;
+}
+
+.planet-color-indicator {
+    box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+.system-star-info {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+/* Modal styling */
+.modal-content {
+    border: 1px solid #444;
+}
+
+.modal-header {
+    border-bottom-color: #444;
+}
+
+.modal-footer {
+    border-top-color: #444;
+}
+
+#systemMap {
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+/* Planet badges */
+.badge {
+    font-size: 0.7em;
+}
+
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+/* Planet type styling */
+.planet-type-terrestrial { color: #8B4513; }
+.planet-type-gas-giant { color: #FF4500; }
+.planet-type-ice-giant { color: #4169E1; }
+.planet-type-super-earth { color: #228B22; }
+.planet-type-sub-earth { color: #CD853F; }
+.planet-type-hot-jupiter { color: #FF6347; }
+.planet-type-unknown { color: #696969; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2d3436;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #636e72;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #74b9ff;
+}
+
+/* Distance measurement styling */
+.distance-results {
+    padding: 10px;
+    border-radius: 6px;
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.distance-results-box {
+    margin: 10px 0;
+}
+
+.distance-results .fw-bold {
+    font-size: 1.2em;
+}
+
+.btn-outline-warning {
+    background: linear-gradient(45deg, #f39c12, #d68910);
+    border: 1px solid #f39c12;
+    color: white;
+}
+
+.btn-outline-warning:hover {
+    background: linear-gradient(45deg, #d68910, #b7741c);
+    border-color: #d68910;
+    color: white;
+}
+
+/* Spectral type filter styling */
+.form-select {
+    background-color: #2d3436;
+    border-color: #444;
+    color: #fff;
+}
+
+.form-select:focus {
+    background-color: #2d3436;
+    border-color: #74b9ff;
+    color: #fff;
+    box-shadow: 0 0 0 0.2rem rgba(116, 185, 255, 0.25);
+}
+
+.form-select option {
+    background-color: #2d3436;
+    color: #fff;
+}

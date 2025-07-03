@@ -235,5 +235,96 @@ fictional_planet_systems = {
                 "count": "Multiple icy moons", "description": "Used for resource extraction and remote trade stations"
             }
         }
+    ],
+    200002: [  # Fomalhaut - Dorsai Republic system
+        {
+            "name": "α PsA b", "alternate_name": "Fomalhaut b", "type": "Gas Giant", "distance_au": 177, "mass_earth": 636,
+            "radius_earth": 6.5, "orbital_period_years": 1700, "temperature_k": 50,
+            "atmosphere": "H2, He, CH4, NH3", "discovery_year": "2008", "confirmed": True,
+            "description": "Distant gas giant with potential icy moons used for resource extraction (volatiles, metals). Hosts orbital defense platforms for the Dorsai Republic's rimward security."
+        },
+        {
+            "name": "α PsA c", "alternate_name": "Valorgraemo", "type": "Earth-like", "distance_au": 2.1, "mass_earth": 1.2,
+            "radius_earth": 1.0, "orbital_period_days": 780, "temperature_k": 289,
+            "surface_gravity_g": 1.0, "surface_gravity_m_s2": 9.81,
+            "atmosphere": {
+                "pressure_kpa": 101, "pressure_atm": 1.0,
+                "composition": "N₂ (~78%), O₂ (~20%), CO₂ (~400 ppm), H₂O (~1.5%)",
+                "albedo": 0.35
+            },
+            "climate": {
+                "mean_temperature_c": 16, "summer_temperature_c": 22, "winter_temperature_c": 8,
+                "description": "Temperate with fortified highlands and coastal fortresses, resembling Starship Troopers' training terrains"
+            },
+            "geography": {
+                "surface_area_km2": 510064000, "land_area_km2": 148940000, "water_area_km2": 361132000,
+                "features": ["continental plateaus", "fortified cities", "shallow seas"]
+            },
+            "discovery_year": "Future", "confirmed": False,
+            "description": "Capital world of the Dorsai Republic, hosting the Citadel of Valoro and military academies. Trains elite soldiers inspired by Dorsai!'s Cletus Grahame and Starship Troopers' Mobile Infantry.",
+            "population": "~800 million Dorsai",
+            "cities": [
+                {
+                    "name": "Citadel of Valoro", "type": "Military Capital", "population": "~25 million",
+                    "description": "Fortified capital complex housing military academies, command centers, and elite training facilities"
+                }
+            ],
+            "culture": {
+                "military_tradition": "Elite soldier training inspired by Dorsai! and Starship Troopers",
+                "specialties": ["Tactical warfare", "Mobile Infantry", "Rimward defense"],
+                "training_centers": ["Citadel of Valoro", "Highland Fortress Complexes"]
+            }
+        },
+        {
+            "name": "α PsA d", "alternate_name": "Batalklendo", "type": "Earth-like", "distance_au": 2.4, "mass_earth": 1.5,
+            "radius_earth": 1.1, "orbital_period_days": 950, "temperature_k": 285,
+            "surface_gravity_g": 1.1, "surface_gravity_m_s2": 10.79,
+            "atmosphere": {
+                "pressure_kpa": 111, "pressure_atm": 1.1,
+                "composition": "N₂ (~78%), O₂ (~20%), CO₂ (~450 ppm), H₂O (~1.5%)",
+                "albedo": 0.35
+            },
+            "climate": {
+                "mean_temperature_c": 12, "summer_temperature_c": 18, "winter_temperature_c": 4,
+                "description": "Cool temperate with grassy plains and coniferous forests, ideal for shock troop training"
+            },
+            "geography": {
+                "surface_area_km2": 615752000, "land_area_km2": 179904000, "water_area_km2": 435848000,
+                "features": ["rolling plains", "mountain ranges", "small lakes"]
+            },
+            "discovery_year": "Future", "confirmed": False,
+            "description": "Rugged training ground for Dorsai shock troops, inspired by Starship Troopers' Boot Camp and Dorsai!'s tactical fields. Supports agricultural trade.",
+            "population": "~350 million training personnel and support",
+            "culture": {
+                "primary_function": "Military training and shock troop development",
+                "terrain_specialties": ["Mountain warfare", "Plains tactics", "Survival training"]
+            }
+        },
+        {
+            "name": "α PsA e", "alternate_name": "Marrikoviro", "type": "Earth-like", "distance_au": 2.8, "mass_earth": 1.3,
+            "radius_earth": 1.0, "orbital_period_days": 1200, "temperature_k": 291,
+            "surface_gravity_g": 1.0, "surface_gravity_m_s2": 9.81,
+            "atmosphere": {
+                "pressure_kpa": 101, "pressure_atm": 1.0,
+                "composition": "N₂ (~78%), O₂ (~20%), CO₂ (~400 ppm), H₂O (~2%)",
+                "albedo": 0.35
+            },
+            "climate": {
+                "mean_temperature_c": 18, "summer_temperature_c": 25, "winter_temperature_c": 8,
+                "description": "Maritime with frequent storms, hosting naval bases and trade ports"
+            },
+            "geography": {
+                "surface_area_km2": 510064000, "land_area_km2": 153019200, "water_area_km2": 357044800,
+                "water_percentage": 70, "land_percentage": 30,
+                "features": ["island chains", "coastal forests", "deep ocean basins"]
+            },
+            "discovery_year": "Future", "confirmed": False,
+            "description": "Ocean world with naval bases, reflecting Starship Troopers' Johnny Rico and Dorsai!'s maritime defense capabilities. Vital for rimward commerce.",
+            "population": "~250 million naval and trade personnel",
+            "culture": {
+                "primary_function": "Naval operations and maritime trade",
+                "specialties": ["Fleet operations", "Coastal defense", "Trade logistics"]
+            }
+        }
     ]
 }

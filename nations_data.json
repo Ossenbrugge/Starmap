@@ -107,6 +107,28 @@
       "diplomatic_stance": "Allied with Felgenland Union, neutral toward Terran Directorate"
     },
     
+    "dorsai_republic": {
+      "name": "Dorsai Republic",
+      "full_name": "The Dorsai Republic",
+      "capital_system": "Fomalhaut",
+      "capital_star_id": 200002,
+      "capital_planet": "Valorgraemo (α PsA c)",
+      "government_type": "Military Republic",
+      "color": "#F44336",
+      "border_color": "#C62828",
+      "established_year": 2226,
+      "description": "Elite military republic based on Fomalhaut system, training the galaxy's finest soldiers at the Citadel of Valoro. Inspired by Dorsai!'s Cletus Grahame and Starship Troopers' Mobile Infantry, they serve as rimward defense specialists.",
+      "territories": [
+        200002
+      ],
+      "specialties": ["Elite Military Training", "Tactical Defense", "Rimward Security", "Naval Operations"],
+      "population": "~1.4 billion (Valorgraemo: 800M, Batalklendo: 350M, Marrikoviro: 250M)",
+      "military_strength": "Elite Dorsai Corps, Mobile Infantry, Naval Defense Fleet, Orbital Platforms",
+      "economic_focus": "Military services export, tactical training, defense contracts",
+      "political_alignment": "Militarist, Pro-Alliance Defense",
+      "diplomatic_stance": "Allied with Felgenland Union and Protelani Republic, neutral toward Terran Directorate"
+    },
+    
     "neutral_zone": {
       "name": "Neutral Zone",
       "full_name": "Neutral Systems Territory",
@@ -315,6 +337,39 @@
         "controlling_nation": "protelani_republic",
         "security_level": "Medium",
         "description": "Direct route to Brandenburg's manufacturing centers, key to Protelani resource extraction operations"
+      }
+    ],
+    
+    "dorsai_routes": [
+      {
+        "name": "Dorsai-Felgenland Military Alliance Route",
+        "from_star_id": 200002,
+        "to_star_id": 48941,
+        "from_system": "Fomalhaut",
+        "to_system": "Holsten Tor",
+        "route_type": "Military Alliance",
+        "established": 2267,
+        "cargo_types": ["Military Personnel", "Tactical Equipment", "Defense Systems", "Strategic Materials"],
+        "travel_time_days": 64,
+        "frequency": "Weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "Maximum",
+        "description": "Primary military alliance route connecting Dorsai training centers to Felgenland Union, established during the Union-Directorate War (2353-2356)"
+      },
+      {
+        "name": "Dorsai-Protelan Defense Corridor",
+        "from_star_id": 200002,
+        "to_star_id": 200001,
+        "from_system": "Fomalhaut",
+        "to_system": "61 Ursae Majoris",
+        "route_type": "Defense Contract",
+        "established": 2275,
+        "cargo_types": ["Elite Soldiers", "Security Services", "Training Personnel", "Defensive Equipment"],
+        "travel_time_days": 52,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "High",
+        "description": "Defense contract route providing Dorsai military expertise to Protelani Republic corporate interests"
       }
     ],
     

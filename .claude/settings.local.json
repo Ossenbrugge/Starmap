@@ -12,7 +12,8 @@
       "Bash(open:*)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:en.wikipedia.org)"
     ],
     "deny": []
   }

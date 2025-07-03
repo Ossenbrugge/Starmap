@@ -15,6 +15,7 @@ from fictional_planets import fictional_planet_systems
 from fictional_names import fictional_star_names
 from fictional_nations import (fictional_nations, trade_routes_data, 
                               get_star_nation, get_nation_info, get_nation_color)
+from galactic_directions import get_galactic_cardinal_markers, get_galactic_coordinate_grid
 
 app = Flask(__name__)
 
@@ -674,6 +675,31 @@ def get_nation_details(nation_id):
             **nation,
             'territory_stars': territory_stars,
             'territory_count': len(territory_stars)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/galactic-directions')
+def get_galactic_directions():
+    """API endpoint to get galactic cardinal direction markers"""
+    try:
+        # Get distance parameter from query string (default 50 parsecs)
+        distance = float(request.args.get('distance', 50))
+        
+        # Get the cardinal direction markers
+        markers = get_galactic_cardinal_markers(distance)
+        
+        # Optionally include coordinate grid
+        include_grid = request.args.get('grid', 'false').lower() == 'true'
+        grid_data = []
+        if include_grid:
+            grid_data = get_galactic_coordinate_grid(distance)
+        
+        return jsonify({
+            'markers': markers,
+            'grid': grid_data,
+            'distance': distance,
+            'total_markers': len(markers)
         })
     except Exception as e:
         return jsonify({'error': str(e)})

@@ -16,6 +16,13 @@ let nationsData = {};
 let selectedNation = null;
 let politicalTraces = [];
 
+// Galactic directions variables
+let galacticDirectionsActive = false;
+let galacticGridActive = false;
+let galacticDirectionsData = {};
+let galacticDistance = 50;
+let galacticTraces = [];
+
 // Helper function to convert hex color to RGB values
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -1501,4 +1508,144 @@ function focusOnNation() {
     bootstrap.Modal.getInstance(document.getElementById('nationModal')).hide();
     
     updateStatus(`Focused on ${nation.name} territory`);
+}
+
+// Galactic Directions Functions
+async function loadGalacticDirections() {
+    try {
+        const response = await fetch(`/api/galactic-directions?distance=${galacticDistance}&grid=${galacticGridActive}`);
+        if (!response.ok) throw new Error('Failed to fetch galactic directions');
+        
+        galacticDirectionsData = await response.json();
+        updateStatus(`Loaded ${galacticDirectionsData.total_markers} galactic direction markers`);
+    } catch (error) {
+        console.error('Error loading galactic directions:', error);
+        updateStatus(`Error loading galactic directions: ${error.message}`);
+    }
+}
+
+async function toggleGalacticDirections() {
+    galacticDirectionsActive = !galacticDirectionsActive;
+    
+    if (galacticDirectionsActive) {
+        await loadGalacticDirections();
+    }
+    
+    updateGalacticDirectionsDisplay();
+}
+
+async function toggleGalacticGrid() {
+    galacticGridActive = !galacticGridActive;
+    
+    if (galacticDirectionsActive || galacticGridActive) {
+        await loadGalacticDirections();
+    }
+    
+    updateGalacticDirectionsDisplay();
+}
+
+function updateGalacticDistance() {
+    const distanceSlider = document.getElementById('galacticDistance');
+    const distanceValue = document.getElementById('galacticDistanceValue');
+    
+    galacticDistance = parseInt(distanceSlider.value);
+    distanceValue.textContent = galacticDistance;
+    
+    if (galacticDirectionsActive || galacticGridActive) {
+        loadGalacticDirections().then(() => {
+            updateGalacticDirectionsDisplay();
+        });
+    }
+}
+
+function updateGalacticDirectionsDisplay() {
+    if (!starmapPlot) return;
+    
+    // Remove existing galactic traces
+    galacticTraces.forEach(traceIndex => {
+        Plotly.deleteTraces('starmap', traceIndex);
+    });
+    galacticTraces = [];
+    
+    if (!galacticDirectionsData.markers) return;
+    
+    const tracesToAdd = [];
+    
+    // Add cardinal direction markers
+    if (galacticDirectionsActive) {
+        const markers = galacticDirectionsData.markers;
+        
+        const cardinalTrace = {
+            x: markers.map(m => m.x),
+            y: markers.map(m => m.y),
+            z: markers.map(m => m.z),
+            mode: 'markers+text',
+            type: 'scatter3d',
+            marker: {
+                size: 12,
+                color: markers.map(m => m.color),
+                symbol: 'diamond',
+                opacity: 0.9,
+                line: {
+                    width: 2,
+                    color: '#ffffff'
+                }
+            },
+            text: markers.map(m => m.symbol),
+            textposition: 'middle center',
+            textfont: {
+                size: 16,
+                color: '#ffffff'
+            },
+            hovertemplate: markers.map(m => 
+                `<b>${m.name}</b><br>` +
+                `${m.description}<br>` +
+                `Galactic L: ${m.galactic_l}°<br>` +
+                `Galactic B: ${m.galactic_b}°<br>` +
+                `Position: (${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)}) pc<br>` +
+                `<extra></extra>`
+            ),
+            name: 'Galactic Directions',
+            showlegend: true,
+            legendgroup: 'galactic'
+        };
+        
+        tracesToAdd.push(cardinalTrace);
+    }
+    
+    // Add galactic grid lines
+    if (galacticGridActive && galacticDirectionsData.grid) {
+        galacticDirectionsData.grid.forEach(gridLine => {
+            const points = gridLine.points;
+            if (points && points.length > 0) {
+                const gridTrace = {
+                    x: points.map(p => p[0]),
+                    y: points.map(p => p[1]),
+                    z: points.map(p => p[2]),
+                    mode: 'lines',
+                    type: 'scatter3d',
+                    line: {
+                        color: gridLine.color,
+                        width: 2,
+                        dash: gridLine.type === 'galactic_equator' ? 'solid' : 'dash'
+                    },
+                    hoverinfo: 'skip',
+                    showlegend: false,
+                    name: `Grid ${gridLine.type}`,
+                    legendgroup: 'galactic'
+                };
+                
+                tracesToAdd.push(gridTrace);
+            }
+        });
+    }
+    
+    // Add all traces at once
+    if (tracesToAdd.length > 0) {
+        Plotly.addTraces('starmap', tracesToAdd).then(() => {
+            // Store trace indices for removal later
+            const plotData = starmapPlot.data;
+            galacticTraces = tracesToAdd.map((_, index) => plotData.length - tracesToAdd.length + index);
+        });
+    }
 }

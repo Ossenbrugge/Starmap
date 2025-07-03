@@ -34,5 +34,12 @@ fictional_star_names = {
         "fictional_name": "Protelan Central",
         "source": "Protelani Republic Archives",
         "description": "Capital system of the ultra-capitalist Protelani Republic, home to Havskrun on moon Protelan"
+    },
+    
+    # Dorsai Republic systems
+    200002: {  # Fomalhaut (HD 216956)
+        "fictional_name": "Dorsai Prime",
+        "source": "Dorsai Republic Archives",
+        "description": "Capital system of the elite military Dorsai Republic, home to the Citadel of Valoro and finest soldiers in human space"
     }
 }

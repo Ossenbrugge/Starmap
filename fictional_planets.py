@@ -152,5 +152,88 @@ fictional_planet_systems = {
             "radius_earth": 3.2, "orbital_period_days": 7580, "temperature_k": 55,
             "atmosphere": "H2, He, CH4, NH3", "discovery_year": "Future", "confirmed": False
         }
+    ],
+    200001: [  # 61 Ursae Majoris - Protelani Republic system
+        {
+            "name": "61 UMa a", "alternate_name": "Chaud", "type": "Hothouse", "distance_au": 0.3, "mass_earth": 1.5,
+            "radius_earth": 1.1, "orbital_period_days": 78, "temperature_k": 850,
+            "atmosphere": "Thick CO2, traces of SO2", "discovery_year": "Future", "confirmed": False,
+            "description": "Hot, non-habitable world used as a corporate mining outpost for metals and resources."
+        },
+        {
+            "name": "61 UMa b", "alternate_name": "Frais", "type": "Rocky", "distance_au": 1.0, "mass_earth": 0.5,
+            "radius_earth": 0.85, "orbital_period_days": 365, "temperature_k": 280,
+            "atmosphere": "Thin CO2, N2", "discovery_year": "Future", "confirmed": False,
+            "description": "Rocky planet used for resource extraction, supporting trade operations."
+        },
+        {
+            "name": "61 UMa c", "alternate_name": "Joi", "type": "Gas Giant", "distance_au": 2.5, "mass_earth": 795,
+            "radius_earth": 10.0, "orbital_period_days": 1095, "temperature_k": 150,
+            "atmosphere": "H2, He (Jupiter-like)", "discovery_year": "Future", "confirmed": False,
+            "description": "Gas giant with multiple moons, including Protelan, supporting trade stations for fuel and logistics.",
+            "moons": [
+                {
+                    "name": "61 UMa c I", "alternate_name": "Protelan", "local_name": "Joi I", "type": "Earth-like Moon",
+                    "mass_earth": 0.85, "radius_earth": 0.98, "radius_km": 6250,
+                    "orbital_distance_km": 180000, "orbital_period_days": 8.5, "temperature_k": 290,
+                    "surface_gravity_m_s2": 8.83, "surface_gravity_g": 0.9,
+                    "atmosphere": {
+                        "pressure_kpa": 110, "pressure_atm": 1.1,
+                        "composition": "N₂ (~78%), O₂ (~20%), CO₂ (~500 ppm), H₂O (~1.5%)",
+                        "albedo": 0.38
+                    },
+                    "climate": {
+                        "mean_temperature_c": 20, "summer_temperature_c": 25, "winter_temperature_c": 10,
+                        "polar_temperature_c": 5, "description": "Temperate, resembling coastal Norway, with frequent storms and fjord-like coasts"
+                    },
+                    "geography": {
+                        "surface_area_km2": 490087000, "land_area_km2": 196035000, "water_area_km2": 294052000,
+                        "water_percentage": 60, "land_percentage": 40,
+                        "features": ["archipelagos", "small continents", "temperate forests", "grassy plains", "fjord-like coasts"]
+                    },
+                    "tidal_heating_w_m2": 0.1, "magnetic_field": "Earth-like, deflects Joi's radiation",
+                    "discovery_year": "2226", "confirmed": False,
+                    "description": "Earth-like moon hosting Havskrun, capital of the Protelani Republic. Features bioluminescent corals and tall hardwoods adapted to low gravity.",
+                    "population": "~800 million Protelani (avg. 2m tall)",
+                    "cities": [
+                        {
+                            "name": "Havskrun", "type": "Capital", "population": "~15 million",
+                            "description": "Capital city built around fjords, center of corporate and government operations"
+                        }
+                    ],
+                    "culture": {
+                        "heritage": "Scandinavian-descended", "festivals": ["Joi Veil Festival (eclipse celebrations)"],
+                        "traditions": ["patronymic naming", "corporate clan structures"],
+                        "average_height_m": 2.0, "gravity_adaptation": "Low gravity (0.9g) enhanced growth"
+                    }
+                },
+                {
+                    "name": "Trade Station Moons", "type": "Icy Moons", "mass_earth": 0.03,
+                    "description": "Multiple icy moons used for trade stations and resource extraction",
+                    "count": "4-6 smaller moons", "discovery_year": "2226", "confirmed": False
+                }
+            ]
+        },
+        {
+            "name": "61 UMa d", "alternate_name": "Froid", "type": "Rocky", "distance_au": 4.0, "mass_earth": 0.5,
+            "radius_earth": 0.85, "orbital_period_days": 1890, "temperature_k": 180,
+            "atmosphere": "Virtually none", "discovery_year": "Future", "confirmed": False,
+            "description": "Rocky planet with minimal activity, used for resource extraction."
+        },
+        {
+            "name": "61 UMa e", "alternate_name": "Hiver", "type": "Mars-like Desert", "distance_au": 73, "mass_earth": 0.3,
+            "radius_earth": 0.75, "orbital_period_years": 350, "temperature_k": 120,
+            "atmosphere": "Thin CO2", "discovery_year": "Future", "confirmed": False,
+            "description": "Desert world used for resource extraction, with minimal habitability."
+        },
+        {
+            "name": "61 UMa f", "alternate_name": "Grandpere", "type": "Gas Giant", "distance_au": 154, "mass_earth": 573,
+            "radius_earth": 8.0, "orbital_period_years": 4250, "temperature_k": 50,
+            "atmosphere": "H2, He, CH4, NH3", "discovery_year": "Future", "confirmed": False,
+            "description": "Distant gas giant with icy moons, supporting minimal trade activity.",
+            "moons": {
+                "count": "Multiple icy moons", "description": "Used for resource extraction and remote trade stations"
+            }
+        }
     ]
 }

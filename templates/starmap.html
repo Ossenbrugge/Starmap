@@ -27,8 +27,8 @@
                     <div class="card-body">
                         <div class="mb-3">
                             <label for="magLimit" class="form-label">Magnitude Limit:</label>
-                            <input type="range" class="form-range" min="1" max="15" value="6" step="0.5" id="magLimit">
-                            <span id="magValue">6.0</span>
+                            <input type="range" class="form-range" min="1" max="15" value="10" step="0.5" id="magLimit">
+                            <span id="magValue">10.0</span>
                         </div>
                         
                         <div class="mb-3">
@@ -81,6 +81,39 @@
                             </div>
                             <div class="alert alert-warning mt-2" id="distanceModeIndicator" style="display: none;">
                                 <small>📍 Distance mode active - click stars on map</small>
+                            </div>
+                        </div>
+                        
+                        <div class="border-top pt-3">
+                            <h6 class="text-success">Political Overlay</h6>
+                            <div class="mb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="politicalOverlay" onchange="togglePoliticalOverlay()">
+                                    <label class="form-check-label" for="politicalOverlay">
+                                        Show Nations
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="tradeRoutes" onchange="toggleTradeRoutes()">
+                                    <label class="form-check-label" for="tradeRoutes">
+                                        Show Trade Routes
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="territoryBorders" onchange="toggleTerritoryBorders()">
+                                    <label class="form-check-label" for="territoryBorders">
+                                        Show Borders
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <button class="btn btn-outline-success w-100" onclick="showNationLegend()">
+                                    🏛️ Nation Legend
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -170,6 +203,27 @@
                     <button type="button" class="btn btn-info" onclick="toggleSystemAnimation()">
                         <span id="animationToggleText">▶️ Start Animation</span>
                     </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nation Legend Modal -->
+    <div class="modal fade" id="nationModal" tabindex="-1" aria-labelledby="nationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="nationModalLabel">🏛️ Fictional Nations</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="nationLegendContent">
+                        <!-- Nation legend content will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-success" onclick="focusOnNation()">Focus Selected</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>

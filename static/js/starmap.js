@@ -8,6 +8,22 @@ let distanceMeasurementMode = false;
 let selectedStarsForDistance = [];
 let distanceTrace = null;
 
+// Political overlay variables
+let politicalOverlayActive = false;
+let tradeRoutesActive = false;
+let territoryBordersActive = false;
+let nationsData = {};
+let selectedNation = null;
+let politicalTraces = [];
+
+// Helper function to convert hex color to RGB values
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? 
+        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+        '128, 128, 128'; // fallback gray
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
@@ -143,10 +159,8 @@ async function updateStarmap() {
         
         // Add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
-            console.log('Starmap clicked:', data); // Debug
             if (data.points && data.points.length > 0) {
                 const starId = data.points[0].customdata;
-                console.log('Star ID:', starId, 'Distance mode:', distanceMeasurementMode); // Debug
                 
                 if (distanceMeasurementMode) {
                     handleDistanceModeClick(starId);
@@ -318,13 +332,40 @@ function showStarDetails(starData) {
             `;
         }
 
+        // Build nation data section if available
+        let nationDataHtml = '';
+        if (starData.nation && starData.nation.id !== 'neutral_zone') {
+            nationDataHtml = `
+                <div class="nation-data-section mb-3 p-2" style="background-color: rgba(${hexToRgb(starData.nation.color)}, 0.1); border: 1px solid ${starData.nation.color}; border-radius: 4px;">
+                    <div class="star-property">
+                        <span><strong>🏛️ Political Control:</strong></span>
+                        <span class="fw-bold" style="color: ${starData.nation.color};">${starData.nation.name}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Government:</strong></span>
+                        <span class="text-muted small">${starData.nation.government_type}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Population:</strong></span>
+                        <span class="text-muted small">${starData.nation.population}</span>
+                    </div>
+                    ${starData.nation.capital_system ? `
+                        <div class="star-property">
+                            <span><strong>Capital System:</strong></span>
+                            <span class="text-muted small">${starData.nation.capital_system}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         // Build fictional data section if available
         let fictionalDataHtml = '';
         if (starData.fictional_data && starData.fictional_data.name) {
             fictionalDataHtml = `
                 <div class="fictional-data-section mb-3 p-2" style="background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 4px;">
                     <div class="star-property">
-                        <span><strong>🌟 Felgenland Union Name:</strong></span>
+                        <span><strong>🌟 Local Name:</strong></span>
                         <span class="text-warning fw-bold">${starData.fictional_data.name}</span>
                     </div>
                     <div class="star-property">
@@ -343,6 +384,7 @@ function showStarDetails(starData) {
 
         starDetails.innerHTML = `
             <h6 class="text-primary">${starData.name}</h6>
+            ${nationDataHtml}
             ${fictionalDataHtml}
             <div class="star-property">
                 <span><strong>Type:</strong></span>
@@ -727,10 +769,8 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
         
         // Re-add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
-            console.log('Starmap clicked:', data); // Debug
             if (data.points && data.points.length > 0) {
                 const starId = data.points[0].customdata;
-                console.log('Star ID:', starId, 'Distance mode:', distanceMeasurementMode); // Debug
                 
                 if (distanceMeasurementMode) {
                     handleDistanceModeClick(starId);
@@ -786,7 +826,6 @@ function toggleDistanceMeasurement() {
         toggleButton.classList.add('btn-outline-warning');
         if (indicator) indicator.style.display = 'block';
         updateStatus('🎯 Distance measurement mode ON - Click two stars to measure distance');
-        console.log('Distance measurement mode activated'); // Debug
     } else {
         // Cancel distance measurement mode
         distanceMeasurementMode = false;
@@ -800,7 +839,6 @@ function toggleDistanceMeasurement() {
         clearDistanceVisualization();
         clearHighlight(); // Clear any selected stars
         updateStatus('Distance measurement mode OFF');
-        console.log('Distance measurement mode deactivated'); // Debug
     }
 }
 
@@ -890,7 +928,7 @@ function addDistanceVisualization(distanceData) {
     const star2 = currentStars.find(s => s.id === distanceData.star2.id);
     
     if (!star1 || !star2) {
-        console.log('Could not find star coordinates for visualization');
+        updateStatus('Could not find star coordinates for visualization');
         return;
     }
     
@@ -937,7 +975,6 @@ function clearDistanceMeasurement() {
 }
 
 function handleDistanceModeClick(starId) {
-    console.log('Distance mode click:', starId); // Debug
     
     if (selectedStarsForDistance.includes(starId)) {
         updateStatus('Star already selected for distance measurement');
@@ -945,7 +982,6 @@ function handleDistanceModeClick(starId) {
     }
     
     selectedStarsForDistance.push(starId);
-    console.log('Selected stars for distance:', selectedStarsForDistance); // Debug
     
     // Find star name for better feedback
     const star = currentStars.find(s => s.id === starId);
@@ -973,4 +1009,496 @@ function handleDistanceModeClick(starId) {
         // Reset distance mode but don't exit automatically
         selectedStarsForDistance = [];
     }
+}
+
+// Political Overlay Functions
+async function loadNationsData() {
+    try {
+        const response = await fetch('/api/nations');
+        if (!response.ok) throw new Error('Failed to fetch nations data');
+        
+        const data = await response.json();
+        nationsData = data.nations;
+        updateStatus('Nations data loaded successfully');
+    } catch (error) {
+        console.error('Error loading nations data:', error);
+        updateStatus('Error loading nations data');
+    }
+}
+
+function togglePoliticalOverlay() {
+    const checkbox = document.getElementById('politicalOverlay');
+    politicalOverlayActive = checkbox.checked;
+    
+    if (politicalOverlayActive) {
+        if (Object.keys(nationsData).length === 0) {
+            loadNationsData().then(() => {
+                applyPoliticalOverlay();
+            });
+        } else {
+            applyPoliticalOverlay();
+        }
+    } else {
+        clearPoliticalOverlay();
+    }
+}
+
+function applyPoliticalOverlay() {
+    if (!starmapPlot || !currentStars) return;
+    
+    // Update star colors based on nation control
+    const updatedColors = currentStars.map(star => {
+        if (star.nation && star.nation.id !== 'neutral_zone') {
+            return star.nation.color;
+        }
+        return getOriginalStarColor(star.mag); // Default color based on magnitude
+    });
+    
+    // Update the main star trace colors
+    Plotly.restyle('starmap', {
+        'marker.color': [updatedColors]
+    }, [0]);
+    
+    updateStatus('Political overlay applied');
+}
+
+function clearPoliticalOverlay() {
+    if (!starmapPlot || !currentStars) return;
+    
+    // Reset to original magnitude-based colors
+    const originalColors = currentStars.map(star => star.mag);
+    
+    Plotly.restyle('starmap', {
+        'marker.color': [originalColors]
+    }, [0]);
+    
+    // Clear any political traces
+    clearPoliticalTraces();
+    
+    updateStatus('Political overlay cleared');
+}
+
+function getOriginalStarColor(magnitude) {
+    // Return the original magnitude value for colorscale
+    return magnitude;
+}
+
+function toggleTradeRoutes() {
+    const checkbox = document.getElementById('tradeRoutes');
+    tradeRoutesActive = checkbox.checked;
+    
+    if (tradeRoutesActive) {
+        showTradeRoutes();
+    } else {
+        hideTradeRoutes();
+    }
+}
+
+async function showTradeRoutes() {
+    if (!starmapPlot) return;
+    
+    // Clear existing trade route traces
+    hideTradeRoutes();
+    
+    try {
+        // Load trade routes data
+        const response = await fetch('/api/trade-routes');
+        if (!response.ok) throw new Error('Failed to fetch trade routes');
+        
+        const tradeData = await response.json();
+        const allRoutes = tradeData.trade_routes;
+        
+        // Process all route groups
+        Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
+            routes.forEach((route, index) => {
+                const fromStar = currentStars.find(s => s.id === route.from_star_id);
+                const toStar = currentStars.find(s => s.id === route.to_star_id);
+                
+                if (fromStar && toStar) {
+                    // Get nation color for the route
+                    let routeColor = '#FFFFFF'; // Default white
+                    if (route.controlling_nation && nationsData[route.controlling_nation]) {
+                        routeColor = nationsData[route.controlling_nation].color;
+                    }
+                    
+                    // Determine line style based on route type
+                    let lineStyle = 'dash';
+                    let lineWidth = 3;
+                    if (route.route_type === 'Primary Trade') {
+                        lineStyle = 'solid';
+                        lineWidth = 5;
+                    } else if (route.route_type === 'Administrative') {
+                        lineStyle = 'dot';
+                        lineWidth = 4;
+                    } else if (route.route_type === 'Research/Military') {
+                        lineStyle = 'dashdot';
+                        lineWidth = 3;
+                    }
+                    
+                    const tradeRouteTrace = {
+                        x: [fromStar.x, toStar.x],
+                        y: [fromStar.y, toStar.y],
+                        z: [fromStar.z, toStar.z],
+                        mode: 'lines',
+                        type: 'scatter3d',
+                        line: {
+                            color: routeColor,
+                            width: lineWidth,
+                            dash: lineStyle
+                        },
+                        name: route.name,
+                        hovertemplate: `<b>${route.name}</b><br>` +
+                                     `${fromStar.name} → ${toStar.name}<br>` +
+                                     `Type: ${route.route_type}<br>` +
+                                     `Est. ${route.established}<br>` +
+                                     `Frequency: ${route.frequency}<br>` +
+                                     `Travel Time: ${route.travel_time_days} days<br>` +
+                                     `Security: ${route.security_level}<br>` +
+                                     `${route.description}<extra></extra>`,
+                        showlegend: false
+                    };
+                    
+                    Plotly.addTraces('starmap', tradeRouteTrace);
+                    politicalTraces.push(tradeRouteTrace);
+                }
+            });
+        });
+        
+        updateStatus(`Trade routes displayed (${Object.values(allRoutes).flat().length} routes)`);
+    } catch (error) {
+        console.error('Error loading trade routes:', error);
+        updateStatus('Error loading trade routes');
+    }
+}
+
+function hideTradeRoutes() {
+    clearPoliticalTraces();
+}
+
+function toggleTerritoryBorders() {
+    const checkbox = document.getElementById('territoryBorders');
+    territoryBordersActive = checkbox.checked;
+    
+    if (territoryBordersActive) {
+        showTerritoryBorders();
+    } else {
+        hideTerritoryBorders();
+    }
+}
+
+function showTerritoryBorders() {
+    if (!starmapPlot || !currentStars || Object.keys(nationsData).length === 0) return;
+    
+    // Clear existing border traces
+    hideTerritoryBorders();
+    
+    try {
+        // Create territory borders for each nation with multiple systems
+        Object.entries(nationsData).forEach(([nationId, nation]) => {
+            if (nationId === 'neutral_zone' || nation.territories.length < 2) return;
+            
+            // Get stars belonging to this nation
+            const nationStars = currentStars.filter(star => 
+                star.nation && star.nation.id === nationId
+            );
+            
+            if (nationStars.length >= 2) {
+                createTerritoryBoundary(nationStars, nation);
+            }
+        });
+        
+        updateStatus('Territory borders displayed');
+    } catch (error) {
+        console.error('Error showing territory borders:', error);
+        updateStatus('Error displaying territory borders');
+    }
+}
+
+function createTerritoryBoundary(stars, nation) {
+    if (stars.length < 2) return;
+    
+    // Calculate bounding sphere center and radius
+    const center = calculateCentroid(stars);
+    const radius = calculateBoundingRadius(stars, center);
+    
+    // Create a larger radius for visual buffer
+    const borderRadius = radius * 1.3;
+    
+    // Create sphere wireframe
+    const sphereTrace = createSphereWireframe(center, borderRadius, nation);
+    
+    // Add connecting lines between all stars in the nation
+    const connectionTrace = createStarConnections(stars, nation);
+    
+    // Add traces to the plot
+    Plotly.addTraces('starmap', [sphereTrace, connectionTrace]);
+    politicalTraces.push(sphereTrace, connectionTrace);
+}
+
+function calculateCentroid(stars) {
+    const sum = stars.reduce((acc, star) => ({
+        x: acc.x + star.x,
+        y: acc.y + star.y,
+        z: acc.z + star.z
+    }), { x: 0, y: 0, z: 0 });
+    
+    return {
+        x: sum.x / stars.length,
+        y: sum.y / stars.length,
+        z: sum.z / stars.length
+    };
+}
+
+function calculateBoundingRadius(stars, center) {
+    return Math.max(...stars.map(star => 
+        Math.sqrt(
+            Math.pow(star.x - center.x, 2) + 
+            Math.pow(star.y - center.y, 2) + 
+            Math.pow(star.z - center.z, 2)
+        )
+    ));
+}
+
+function createSphereWireframe(center, radius, nation) {
+    const points = [];
+    const lines = [];
+    
+    // Create latitude/longitude grid on sphere
+    const latSteps = 8; // Number of latitude lines
+    const lonSteps = 12; // Number of longitude lines
+    
+    // Generate sphere points
+    for (let lat = 0; lat <= latSteps; lat++) {
+        const theta = (lat * Math.PI) / latSteps; // 0 to π
+        for (let lon = 0; lon <= lonSteps; lon++) {
+            const phi = (lon * 2 * Math.PI) / lonSteps; // 0 to 2π
+            
+            const x = center.x + radius * Math.sin(theta) * Math.cos(phi);
+            const y = center.y + radius * Math.sin(theta) * Math.sin(phi);
+            const z = center.z + radius * Math.cos(theta);
+            
+            points.push({ x, y, z });
+        }
+    }
+    
+    // Create wireframe lines
+    const x_coords = [];
+    const y_coords = [];
+    const z_coords = [];
+    
+    // Latitude lines
+    for (let lat = 0; lat <= latSteps; lat++) {
+        for (let lon = 0; lon < lonSteps; lon++) {
+            const idx1 = lat * (lonSteps + 1) + lon;
+            const idx2 = lat * (lonSteps + 1) + (lon + 1);
+            
+            if (lat > 0 && lat < latSteps) { // Skip poles for cleaner look
+                x_coords.push(points[idx1].x, points[idx2].x, null);
+                y_coords.push(points[idx1].y, points[idx2].y, null);
+                z_coords.push(points[idx1].z, points[idx2].z, null);
+            }
+        }
+    }
+    
+    // Longitude lines
+    for (let lon = 0; lon <= lonSteps; lon += 2) { // Skip some for cleaner look
+        for (let lat = 0; lat < latSteps; lat++) {
+            const idx1 = lat * (lonSteps + 1) + lon;
+            const idx2 = (lat + 1) * (lonSteps + 1) + lon;
+            
+            x_coords.push(points[idx1].x, points[idx2].x, null);
+            y_coords.push(points[idx1].y, points[idx2].y, null);
+            z_coords.push(points[idx1].z, points[idx2].z, null);
+        }
+    }
+    
+    return {
+        x: x_coords,
+        y: y_coords,
+        z: z_coords,
+        mode: 'lines',
+        type: 'scatter3d',
+        line: {
+            color: nation.border_color || nation.color,
+            width: 2,
+            dash: 'dot'
+        },
+        name: `${nation.name} Territory`,
+        hovertemplate: `<b>${nation.name}</b><br>Territory Boundary<extra></extra>`,
+        showlegend: false,
+        opacity: 0.6
+    };
+}
+
+function createStarConnections(stars, nation) {
+    const x_coords = [];
+    const y_coords = [];
+    const z_coords = [];
+    
+    // Create lines connecting all stars to the centroid for a "web" effect
+    const center = calculateCentroid(stars);
+    
+    stars.forEach(star => {
+        x_coords.push(center.x, star.x, null);
+        y_coords.push(center.y, star.y, null);
+        z_coords.push(center.z, star.z, null);
+    });
+    
+    return {
+        x: x_coords,
+        y: y_coords,
+        z: z_coords,
+        mode: 'lines',
+        type: 'scatter3d',
+        line: {
+            color: nation.color,
+            width: 1,
+            dash: 'dash'
+        },
+        name: `${nation.name} Connections`,
+        hovertemplate: `<b>${nation.name}</b><br>Internal Connections<extra></extra>`,
+        showlegend: false,
+        opacity: 0.4
+    };
+}
+
+function hideTerritoryBorders() {
+    // Clear territory border traces
+    clearPoliticalTraces();
+    updateStatus('Territory borders hidden');
+}
+
+function clearPoliticalTraces() {
+    if (!starmapPlot) return;
+    
+    // Remove all political traces from the plot
+    const currentData = starmapPlot.data;
+    const nonPoliticalTraces = currentData.filter((trace, index) => {
+        return index === 0 || trace.name === 'Highlighted Star' || trace.name === 'Distance Line';
+    });
+    
+    if (nonPoliticalTraces.length !== currentData.length) {
+        Plotly.deleteTraces('starmap', Array.from({length: currentData.length - nonPoliticalTraces.length}, (_, i) => nonPoliticalTraces.length + i));
+    }
+    
+    politicalTraces = [];
+}
+
+async function showNationLegend() {
+    if (Object.keys(nationsData).length === 0) {
+        await loadNationsData();
+    }
+    
+    const legendContent = document.getElementById('nationLegendContent');
+    let html = '<div class="row">';
+    
+    Object.entries(nationsData).forEach(([nationId, nation]) => {
+        // Get stars belonging to this nation
+        const nationStars = currentStars.filter(star => 
+            star.nation && star.nation.id === nationId
+        );
+        
+        // Build star list HTML
+        let starListHtml = '';
+        if (nationStars.length > 0) {
+            starListHtml = `
+                <div class="mt-2">
+                    <strong class="text-info">Star Systems:</strong>
+                    <ul class="list-unstyled mt-1 ms-2">
+                        ${nationStars.map(star => {
+                            const fictionalName = star.fictional_name ? ` (${star.fictional_name})` : '';
+                            const distance = star.dist ? ` - ${star.dist.toFixed(1)} pc` : '';
+                            return `<li class="small">
+                                <span style="color: ${nation.color};">•</span> 
+                                <strong>${star.name}</strong>${fictionalName}${distance}
+                            </li>`;
+                        }).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card bg-secondary h-100" onclick="selectNation('${nationId}')">
+                    <div class="card-header d-flex align-items-center">
+                        <div class="nation-color-indicator me-2" 
+                             style="width: 20px; height: 20px; background-color: ${nation.color}; border-radius: 3px;"></div>
+                        <strong>${nation.name}</strong>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text small">${nation.description}</p>
+                        <div class="text-muted small">
+                            <div><strong>Government:</strong> ${nation.government_type}</div>
+                            <div><strong>Capital:</strong> ${nation.capital_system || 'None'}</div>
+                            <div><strong>Systems:</strong> ${nation.territories.length}</div>
+                            <div><strong>Population:</strong> ${nation.population}</div>
+                        </div>
+                        ${starListHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    legendContent.innerHTML = html;
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('nationModal'));
+    modal.show();
+}
+
+function selectNation(nationId) {
+    selectedNation = nationId;
+    
+    // Update visual indication of selection
+    document.querySelectorAll('#nationLegendContent .card').forEach(card => {
+        card.classList.remove('border-success');
+    });
+    
+    event.currentTarget.classList.add('border-success');
+}
+
+function focusOnNation() {
+    if (!selectedNation || !nationsData[selectedNation]) {
+        updateStatus('Please select a nation first');
+        return;
+    }
+    
+    const nation = nationsData[selectedNation];
+    const nationStars = currentStars.filter(star => 
+        nation.territories.includes(star.id)
+    );
+    
+    if (nationStars.length === 0) {
+        updateStatus('No stars found for selected nation');
+        return;
+    }
+    
+    // Calculate bounding box for nation's territory
+    const xCoords = nationStars.map(s => s.x);
+    const yCoords = nationStars.map(s => s.y);
+    const zCoords = nationStars.map(s => s.z);
+    
+    const xRange = [Math.min(...xCoords) - 5, Math.max(...xCoords) + 5];
+    const yRange = [Math.min(...yCoords) - 5, Math.max(...yCoords) + 5];
+    const zRange = [Math.min(...zCoords) - 5, Math.max(...zCoords) + 5];
+    
+    // Update the camera view to focus on the nation
+    Plotly.relayout('starmap', {
+        'scene.camera': {
+            center: {
+                x: (xRange[0] + xRange[1]) / 2 / 100,
+                y: (yRange[0] + yRange[1]) / 2 / 100,
+                z: (zRange[0] + zRange[1]) / 2 / 100
+            },
+            eye: { x: 1.5, y: 1.5, z: 1.5 }
+        }
+    });
+    
+    // Close the modal
+    bootstrap.Modal.getInstance(document.getElementById('nationModal')).hide();
+    
+    updateStatus(`Focused on ${nation.name} territory`);
 }

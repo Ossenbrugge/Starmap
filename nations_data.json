@@ -1,0 +1,383 @@
+{
+  "metadata": {
+    "title": "Fictional Nations and Trade Routes Database",
+    "description": "Political entities and economic networks for science fiction starmap",
+    "version": "1.0",
+    "last_updated": "2025-07-03",
+    "coordinate_system": "Galactic coordinates (parsecs from Sol)"
+  },
+  
+  "nations": {
+    "terran_directorate": {
+      "name": "Terran Directorate",
+      "full_name": "The Terran Directorate",
+      "capital_system": "Sol",
+      "capital_star_id": 0,
+      "capital_planet": "Earth",
+      "government_type": "Authoritarian Republic",
+      "color": "#1565C0",
+      "border_color": "#0D47A1",
+      "established_year": 2157,
+      "description": "The central human government based on Earth, maintaining strict control over core systems through economic and military dominance. Known for their efficient bureaucracy and advanced technology.",
+      "territories": [
+        0,
+        53879,
+        71456,
+        71453,
+        70666,
+        118720
+      ],
+      "specialties": ["Technology", "Military", "Central Administration", "Space Infrastructure"],
+      "population": "~15.2 billion (Earth: 12.1 billion, colonies: 3.1 billion)",
+      "military_strength": "Primary Fleet Command, System Defense Forces, Orbital Stations",
+      "economic_focus": "Technology export, raw material import, administrative services",
+      "political_alignment": "Centralist, Pro-Human Supremacy",
+      "diplomatic_stance": "Hegemonistic, seeks to maintain control over human space"
+    },
+    
+    "felgenland_union": {
+      "name": "Felgenland Union",
+      "full_name": "The Felgenland Union",
+      "capital_system": "Holsten Tor",
+      "capital_star_id": 48941,
+      "capital_planet": "Stahlburgh",
+      "government_type": "Personal Federal Republic",
+      "color": "#4CAF50",
+      "border_color": "#2E7D32",
+      "established_year": 2210,
+      "description": "A prosperous trade federation controlling key rimward systems, known for their Eclipse Festivals and efficient trade networks. Maintains independence from Terran control through economic leverage.",
+      "territories": [
+        48941,
+        115218,
+        46945,
+        43464,
+        999999
+      ],
+      "specialties": ["Trade", "Resource Extraction", "Diplomatic Relations", "Cultural Exchange"],
+      "population": "~2.8 billion across all systems",
+      "military_strength": "Defensive Fleet, Trade Protection Squadrons, Merchant Marine",
+      "economic_focus": "Interstellar trade, luxury goods, resource processing",
+      "political_alignment": "Federalist, Pro-Trade Autonomy",
+      "diplomatic_stance": "Hostile to Terran Directorate, seeks independence through economic alliances"
+    },
+    
+    "outer_colonies": {
+      "name": "Outer Colonies",
+      "full_name": "Independent Outer Colony Alliance",
+      "capital_system": "Sirius",
+      "capital_star_id": 32263,
+      "capital_planet": "New Libertad",
+      "government_type": "Loose Confederacy",
+      "color": "#FF9800",
+      "border_color": "#F57C00",
+      "established_year": 2245,
+      "description": "Independent colonies on the galactic rim, formed in opposition to Terran centralization. Known for their fierce independence, frontier technology, and resistance to external authority.",
+      "territories": [
+        32263,
+        16496,
+        8087
+      ],
+      "specialties": ["Mining", "Frontier Technology", "Independent Innovation", "Resource Extraction"],
+      "population": "~1.2 billion across scattered colonies",
+      "military_strength": "Irregular Defense Forces, Colonial Militia, Guerrilla Fleet",
+      "economic_focus": "Raw material extraction, frontier technology, black market trade",
+      "political_alignment": "Libertarian, Anti-Centralist",
+      "diplomatic_stance": "Isolationist with selective trade partnerships"
+    },
+    
+    "protelani_republic": {
+      "name": "Protelani Republic",
+      "full_name": "The Protelani Republic",
+      "capital_system": "61 Ursae Majoris",
+      "capital_star_id": 200001,
+      "capital_planet": "Protelan (Joi I)",
+      "government_type": "Ultra-Capitalist Republic",
+      "color": "#9C27B0",
+      "border_color": "#6A1B9A",
+      "established_year": 2226,
+      "description": "Ultra-capitalist republic centered on Protelan moon, with Scandinavian-descended inhabitants averaging 2m tall due to 0.9g gravity. Known for the Joi Veil Festival celebrating eclipses and strong alliance with Felgenland Union.",
+      "territories": [
+        200001
+      ],
+      "specialties": ["Rimward Trade", "Corporate Operations", "Resource Extraction", "Cultural Exchange"],
+      "population": "~850 million (Protelan: 800M, trade stations: 50M)",
+      "military_strength": "Corporate Defense Fleet, Trade Protection Squadrons",
+      "economic_focus": "Rimward trade hub, resource extraction, corporate services",
+      "political_alignment": "Ultra-Capitalist, Pro-Trade",
+      "diplomatic_stance": "Allied with Felgenland Union, neutral toward Terran Directorate"
+    },
+    
+    "neutral_zone": {
+      "name": "Neutral Zone",
+      "full_name": "Neutral Systems Territory",
+      "capital_system": null,
+      "capital_star_id": null,
+      "capital_planet": null,
+      "government_type": "Neutral Territory",
+      "color": "#9E9E9E",
+      "border_color": "#616161",
+      "established_year": 2267,
+      "description": "Neutral buffer zones between major powers, often hosting diplomatic meetings and free trade. Governed by interstellar treaties and peacekeeping forces.",
+      "territories": [],
+      "specialties": ["Diplomacy", "Free Trade", "Mediation", "Peacekeeping"],
+      "population": "Variable, transit populations",
+      "military_strength": "Peacekeeping Forces Only, Treaty Enforcement",
+      "economic_focus": "Transit trade, diplomatic services, neutral banking",
+      "political_alignment": "Neutral",
+      "diplomatic_stance": "Mediator between major powers"
+    }
+  },
+  
+  "trade_routes": {
+    "terran_primary_routes": [
+      {
+        "name": "Earth-Lalande Trade Corridor",
+        "from_star_id": 0,
+        "to_star_id": 53879,
+        "from_system": "Sol",
+        "to_system": "Lalande 21185",
+        "route_type": "Primary Trade",
+        "established": 2181,
+        "cargo_types": ["Technology", "Manufactured Goods", "Rare Earth Elements"],
+        "travel_time_days": 28,
+        "frequency": "Daily",
+        "controlling_nation": "terran_directorate",
+        "security_level": "High",
+        "description": "Major industrial supply route connecting Earth's manufacturing to Lalande's mining operations"
+      },
+      {
+        "name": "Earth-Centauri Express",
+        "from_star_id": 0,
+        "to_star_id": 71456,
+        "from_system": "Sol",
+        "to_system": "Alpha Centauri A",
+        "route_type": "Administrative",
+        "established": 2159,
+        "cargo_types": ["Personnel", "Administrative Supplies", "High-Tech Components"],
+        "travel_time_days": 21,
+        "frequency": "Every 3 days",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Maximum",
+        "description": "Primary administrative route to Alpha Centauri, first human interstellar colony"
+      },
+      {
+        "name": "Earth-Wolf Research Link",
+        "from_star_id": 0,
+        "to_star_id": 118720,
+        "from_system": "Sol",
+        "to_system": "Wolf 359",
+        "route_type": "Research/Military",
+        "established": 2203,
+        "cargo_types": ["Research Materials", "Military Supplies", "Scientific Personnel"],
+        "travel_time_days": 35,
+        "frequency": "Weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Classified",
+        "description": "Secure route to Wolf 359 research stations and military installations"
+      },
+      {
+        "name": "Earth-Proxima Supply Chain",
+        "from_star_id": 0,
+        "to_star_id": 70666,
+        "from_system": "Sol",
+        "to_system": "Proxima Centauri",
+        "route_type": "Colonial Supply",
+        "established": 2195,
+        "cargo_types": ["Colonial Supplies", "Food", "Medical Equipment"],
+        "travel_time_days": 19,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Medium",
+        "description": "Essential supply route to Proxima Centauri's frontier colonies"
+      }
+    ],
+    
+    "felgenland_routes": [
+      {
+        "name": "Holsten-Brandenburg Route",
+        "from_star_id": 48941,
+        "to_star_id": 46945,
+        "from_system": "Holsten Tor",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Internal Trade",
+        "established": 2215,
+        "cargo_types": ["Luxury Goods", "Cultural Artifacts", "Processed Materials"],
+        "travel_time_days": 45,
+        "frequency": "Weekly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Medium",
+        "description": "Main internal trade route within Felgenland Union territory"
+      },
+      {
+        "name": "Holsten-Griefen Route",
+        "from_star_id": 48941,
+        "to_star_id": 43464,
+        "from_system": "Holsten Tor",
+        "to_system": "Griefen Tor",
+        "route_type": "Resource Supply",
+        "established": 2218,
+        "cargo_types": ["Raw Materials", "Processed Goods", "Trade Delegations"],
+        "travel_time_days": 52,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Medium",
+        "description": "Resource extraction and trade route connecting to 55 Cancri system"
+      },
+      {
+        "name": "Brandenburg-Tiefe Route",
+        "from_star_id": 46945,
+        "to_star_id": 999999,
+        "from_system": "Brandenburgh Tor",
+        "to_system": "Tiefe-Grenze Tor",
+        "route_type": "Frontier Trade",
+        "established": 2234,
+        "cargo_types": ["Frontier Supplies", "Mining Equipment", "Explorer Personnel"],
+        "travel_time_days": 38,
+        "frequency": "Monthly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Low",
+        "description": "Frontier route to rimward territories and exploration zones"
+      },
+      {
+        "name": "Griefen-Brandenburg Route",
+        "from_star_id": 43464,
+        "to_star_id": 46945,
+        "from_system": "Griefen Tor",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Inter-System Trade",
+        "established": 2221,
+        "cargo_types": ["Processed Resources", "Manufactured Goods", "Diplomatic Missions"],
+        "travel_time_days": 41,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Medium",
+        "description": "Secondary trade route connecting Griefen Tor's resources to Brandenburg's manufacturing"
+      },
+      {
+        "name": "Griefen-Tiefe Route",
+        "from_star_id": 43464,
+        "to_star_id": 999999,
+        "from_system": "Griefen Tor",
+        "to_system": "Tiefe-Grenze Tor",
+        "route_type": "Resource Supply",
+        "established": 2239,
+        "cargo_types": ["Rare Earth Elements", "Technical Equipment", "Exploration Supplies"],
+        "travel_time_days": 67,
+        "frequency": "Monthly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Low",
+        "description": "Long-range supply route supporting frontier operations at Tiefe-Grenze Tor"
+      },
+      {
+        "name": "Holsten-Tiefe Express",
+        "from_star_id": 48941,
+        "to_star_id": 999999,
+        "from_system": "Holsten Tor",
+        "to_system": "Tiefe-Grenze Tor",
+        "route_type": "Administrative",
+        "established": 2225,
+        "cargo_types": ["Administrative Personnel", "Union Directives", "Cultural Exchange"],
+        "travel_time_days": 58,
+        "frequency": "Bi-monthly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "High",
+        "description": "Primary administrative route from Union capital to frontier territories"
+      }
+    ],
+    
+    "protelani_routes": [
+      {
+        "name": "Protelan-Holsten Commercial Corridor",
+        "from_star_id": 200001,
+        "to_star_id": 48941,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Holsten Tor",
+        "route_type": "Primary Trade",
+        "established": 2260,
+        "cargo_types": ["Corporate Services", "Luxury Goods", "Cultural Exchange", "Administrative Personnel"],
+        "travel_time_days": 58,
+        "frequency": "Weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "High",
+        "description": "Primary trade route established after Julia Svensdottir's marriage alliance, connecting Protelani corporate hub to Felgenland Union capital"
+      },
+      {
+        "name": "Protelan-Brandenburg Express",
+        "from_star_id": 200001,
+        "to_star_id": 46945,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Resource Supply",
+        "established": 2267,
+        "cargo_types": ["Raw Materials", "Mining Equipment", "Corporate Personnel", "Trade Goods"],
+        "travel_time_days": 35,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "Medium",
+        "description": "Direct route to Brandenburg's manufacturing centers, key to Protelani resource extraction operations"
+      }
+    ],
+    
+    "inter_nation_routes": [
+      {
+        "name": "Protelan-Sol Rim Trade Corridor",
+        "from_star_id": 200001,
+        "to_star_id": 0,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Sol",
+        "route_type": "Inter-Nation Trade",
+        "established": 2245,
+        "cargo_types": ["Rimward Resources", "Corporate Services", "Cultural Goods", "Luxury Items", "Administrative Personnel"],
+        "travel_time_days": 72,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "High",
+        "description": "Primary rimward trade corridor connecting Protelani corporate hub to Terran core systems, essential for Protelan Republic's economy and neutral diplomatic relations with Earth"
+      },
+      {
+        "name": "Outer Colony Connection",
+        "from_star_id": 32263,
+        "to_star_id": 16496,
+        "from_system": "Sirius",
+        "to_system": "Epsilon Eridani",
+        "route_type": "Independence Supply",
+        "established": 2248,
+        "cargo_types": ["Independent Trade Goods", "Contraband", "Refugees"],
+        "travel_time_days": 89,
+        "frequency": "Irregular",
+        "controlling_nation": "outer_colonies",
+        "security_level": "Variable",
+        "description": "Irregular route connecting independent colonies, often used for smuggling"
+      }
+    ]
+  },
+  
+  "economic_zones": {
+    "terran_core": {
+      "name": "Terran Core Economic Zone",
+      "member_systems": [0, 71456, 71453, 70666],
+      "primary_currency": "Terran Credit (TC)",
+      "trade_regulations": "Strict Terran Administration oversight",
+      "tax_rate": "15% interstellar trade tax",
+      "description": "Heavily regulated core economic zone under direct Terran control"
+    },
+    
+    "felgenland_trade_zone": {
+      "name": "Felgenland Free Trade Zone",
+      "member_systems": [48941, 46945, 43464, 999999],
+      "primary_currency": "Union Trade Unit (UTU)",
+      "trade_regulations": "Free trade with minimal oversight",
+      "tax_rate": "5% union maintenance fee",
+      "description": "Low-regulation trade zone promoting commercial activity"
+    },
+    
+    "outer_frontier": {
+      "name": "Outer Frontier Economic Zone",
+      "member_systems": [32263, 16496, 8087],
+      "primary_currency": "Frontier Dollar (FD)",
+      "trade_regulations": "Minimal regulation, barter common",
+      "tax_rate": "Variable by colony",
+      "description": "Loosely regulated frontier economy with high independence"
+    }
+  }
+}

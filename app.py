@@ -13,6 +13,8 @@ from datetime import datetime
 from star_naming import StarNamingSystem
 from fictional_planets import fictional_planet_systems
 from fictional_names import fictional_star_names
+from fictional_nations import (fictional_nations, trade_routes_data, 
+                              get_star_nation, get_nation_info, get_nation_color)
 
 app = Flask(__name__)
 
@@ -21,7 +23,6 @@ class StarmapApp:
         self.stars_data = None
         self.naming_system = StarNamingSystem()
         self.load_star_data()
-        
     def load_star_data(self):
         """Load star data from CSV files (real and fictional)"""
         try:
@@ -32,7 +33,6 @@ class StarmapApp:
             else:
                 print("stars_output.csv not found!")
                 self.stars_data = pd.DataFrame()
-            
             # Load fictional star data
             if os.path.exists("fictional_stars.csv"):
                 fictional_stars = pd.read_csv("fictional_stars.csv")
@@ -40,7 +40,8 @@ class StarmapApp:
                 
                 # Merge fictional stars with real stars
                 if not self.stars_data.empty:
-                    self.stars_data = pd.concat([self.stars_data, fictional_stars], ignore_index=True)
+                    self.stars_data = pd.concat([self.stars_data, fictional_stars], 
+                                              ignore_index=True)
                 else:
                     self.stars_data = fictional_stars
                     
@@ -220,14 +221,27 @@ def index():
 def get_stars():
     """API endpoint to get star data"""
     try:
+        # Prioritize stars that belong to nations and bright stars
+        all_stars = starmap.stars_data.copy()
+        
+        # Add nation priority - stars with nations get priority
+        all_stars['nation_priority'] = all_stars['id'].apply(lambda x: 0 if get_star_nation(x) != 'neutral_zone' else 1)
+        
+        # Sort by nation priority (0 first), then by magnitude (bright first)
+        all_stars = all_stars.sort_values(['nation_priority', 'mag'])
+        
         # Limit to reasonable number of stars for performance
-        stars_subset = starmap.stars_data.head(1000)
+        stars_subset = all_stars.head(1000)
         
         # Convert to JSON-serializable format
         stars_json = []
         for _, star in stars_subset.iterrows():
+            star_id = int(star['id'])
+            nation_id = get_star_nation(star_id)
+            nation_info = get_nation_info(nation_id)
+            
             star_data = {
-                'id': int(star['id']),
+                'id': star_id,
                 'name': str(star.get('primary_name', f'Star {star["id"]}')),
                 'all_names': star.get('all_names', []),
                 'catalog_ids': star.get('catalog_ids', []),
@@ -243,7 +257,13 @@ def get_stars():
                 'planets': star.get('planets', []),
                 'fictional_name': star.get('fictional_name'),
                 'fictional_source': star.get('fictional_source'),
-                'fictional_description': star.get('fictional_description')
+                'fictional_description': star.get('fictional_description'),
+                'nation': {
+                    'id': nation_id,
+                    'name': nation_info['name'],
+                    'color': nation_info['color'],
+                    'government_type': nation_info['government_type']
+                }
             }
             stars_json.append(star_data)
             
@@ -260,6 +280,9 @@ def get_star_details(star_id):
             return jsonify({'error': 'Star not found'})
             
         star_data = star.iloc[0]
+        nation_id = get_star_nation(star_id)
+        nation_info = get_nation_info(nation_id)
+        
         details = {
             'id': int(star_data['id']),
             'name': str(star_data.get('primary_name', f'Star {star_id}')),
@@ -289,6 +312,15 @@ def get_star_details(star_id):
                 'name': star_data.get('fictional_name'),
                 'source': star_data.get('fictional_source'),
                 'description': star_data.get('fictional_description')
+            },
+            'nation': {
+                'id': nation_id,
+                'name': nation_info['name'],
+                'color': nation_info['color'],
+                'government_type': nation_info['government_type'],
+                'capital_system': nation_info.get('capital_system'),
+                'population': nation_info.get('population'),
+                'description': nation_info.get('description')
             }
         }
         
@@ -585,6 +617,64 @@ def export_csv():
             headers={'Content-Disposition': 'attachment; filename=starmap_export.csv'}
         )
             
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/nations')
+def get_nations():
+    """Get all fictional nations"""
+    try:
+        return jsonify({
+            'nations': fictional_nations,
+            'total_nations': len(fictional_nations)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/trade-routes')
+def get_trade_routes():
+    """Get all trade routes"""
+    try:
+        return jsonify({
+            'trade_routes': trade_routes_data,
+            'total_route_groups': len(trade_routes_data)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/nation/<nation_id>')
+def get_nation_details(nation_id):
+    """Get detailed information for a specific nation"""
+    try:
+        if nation_id not in fictional_nations:
+            return jsonify({'error': 'Nation not found'})
+        
+        nation = fictional_nations[nation_id]
+        
+        # Get territory star details
+        territory_stars = []
+        for star_id in nation['territories']:
+            star = starmap.stars_data[starmap.stars_data['id'] == star_id]
+            if not star.empty:
+                star_data = star.iloc[0]
+                territory_stars.append({
+                    'id': int(star_id),
+                    'name': str(star_data.get('primary_name', f'Star {star_id}')),
+                    'fictional_name': star_data.get('fictional_name'),
+                    'coordinates': {
+                        'x': float(star_data.get('x', 0)),
+                        'y': float(star_data.get('y', 0)),
+                        'z': float(star_data.get('z', 0))
+                    },
+                    'distance': float(star_data.get('dist', 0)),
+                    'spectral_class': str(star_data.get('spect', ''))
+                })
+        
+        return jsonify({
+            **nation,
+            'territory_stars': territory_stars,
+            'territory_count': len(territory_stars)
+        })
     except Exception as e:
         return jsonify({'error': str(e)})
 

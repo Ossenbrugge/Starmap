@@ -318,8 +318,32 @@ function showStarDetails(starData) {
             `;
         }
 
+        // Build fictional data section if available
+        let fictionalDataHtml = '';
+        if (starData.fictional_data && starData.fictional_data.name) {
+            fictionalDataHtml = `
+                <div class="fictional-data-section mb-3 p-2" style="background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 4px;">
+                    <div class="star-property">
+                        <span><strong>🌟 Felgenland Union Name:</strong></span>
+                        <span class="text-warning fw-bold">${starData.fictional_data.name}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Source:</strong></span>
+                        <span class="text-muted small">${starData.fictional_data.source}</span>
+                    </div>
+                    ${starData.fictional_data.description ? `
+                        <div class="star-property">
+                            <span><strong>Description:</strong></span>
+                            <span class="text-muted small">${starData.fictional_data.description}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
         starDetails.innerHTML = `
             <h6 class="text-primary">${starData.name}</h6>
+            ${fictionalDataHtml}
             <div class="star-property">
                 <span><strong>Type:</strong></span>
                 <span class="badge bg-info">${starData.designation_type}</span>
@@ -370,6 +394,37 @@ function showStarDetails(starData) {
                     '<span class="badge bg-success">Confirmed</span>' : 
                     '<span class="badge bg-warning">Candidate</span>';
                 
+                // Build moons section if planet has moons
+                let moonsHtml = '';
+                if (planet.moons && planet.moons.length > 0) {
+                    moonsHtml = `
+                        <div class="moons-section mt-2">
+                            <div class="text-info small fw-bold">🌙 Moons (${planet.moons.length}):</div>
+                            <div class="ms-2">
+                    `;
+                    
+                    planet.moons.forEach(moon => {
+                        moonsHtml += `
+                            <div class="moon-item mt-1 p-1" style="border-left: 2px solid #17a2b8; padding-left: 8px;">
+                                <div class="text-info small fw-bold">${moon.name}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">
+                                    <div><strong>Type:</strong> ${moon.type}</div>
+                                    <div><strong>Mass:</strong> ${moon.mass_earth}× Earth</div>
+                                    <div><strong>Radius:</strong> ${moon.radius_earth}× Earth</div>
+                                    <div><strong>Distance:</strong> ${moon.orbital_distance_km.toLocaleString()} km</div>
+                                    <div><strong>Period:</strong> ${moon.orbital_period_days} days</div>
+                                    ${moon.description ? `<div class="text-muted fst-italic">${moon.description}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    moonsHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+
                 planetsHtml += `
                     <div class="planet-item mb-2">
                         <div class="planet-name d-flex justify-content-between align-items-center">
@@ -385,6 +440,7 @@ function showStarDetails(starData) {
                                 <div><strong>Orbital Period:</strong> ${planet.orbital_period_days} days</div>
                                 <div><strong>Discovery:</strong> ${planet.discovery_year}</div>
                             </small>
+                            ${moonsHtml}
                         </div>
                     </div>
                 `;

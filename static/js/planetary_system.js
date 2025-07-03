@@ -18,11 +18,20 @@ const PLANET_TYPES = {
     'Unknown': { color: '#696969', baseSize: 6 }           // Gray - Unclassified planets
 };
 
-// Habitable zone boundaries (rough estimates)
-const HABITABLE_ZONE = {
+// Base habitable zone boundaries for Sun-like stars (G2V, 1.0 solar luminosity)
+const BASE_HABITABLE_ZONE = {
     inner: 0.95,  // AU
     outer: 1.37   // AU
 };
+
+// Calculate habitable zone for a star based on its luminosity
+function calculateHabitableZone(starLuminosity) {
+    const luminosity = starLuminosity || 1.0; // Default to solar luminosity if not available
+    return {
+        inner: BASE_HABITABLE_ZONE.inner * Math.sqrt(luminosity),
+        outer: BASE_HABITABLE_ZONE.outer * Math.sqrt(luminosity)
+    };
+}
 
 // Planet size calculation for better proportional display
 function calculatePlanetSize(planet, typeInfo) {
@@ -107,12 +116,16 @@ function updateSystemInfo() {
         </div>
     `;
     
+    // Calculate habitable zone for this star
+    const starLuminosity = currentSystemData.properties.luminosity || 1.0;
+    const habitableZone = calculateHabitableZone(starLuminosity);
+    
     // Planet list
     let planetsHtml = '';
     currentSystemData.planets.forEach((planet, index) => {
         const typeInfo = PLANET_TYPES[planet.type] || PLANET_TYPES['Unknown'];
-        const inHabitableZone = planet.distance_au >= HABITABLE_ZONE.inner && 
-                               planet.distance_au <= HABITABLE_ZONE.outer;
+        const inHabitableZone = planet.distance_au >= habitableZone.inner && 
+                               planet.distance_au <= habitableZone.outer;
         
         planetsHtml += `
             <div class="planet-card mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;"
@@ -132,6 +145,12 @@ function updateSystemInfo() {
                         <div>Radius: ${planet.radius_earth}× Earth</div>
                         <div>Period: ${planet.orbital_period_days} days</div>
                         <div>Discovery: ${planet.discovery_year}</div>
+                        ${planet.moons && planet.moons.length > 0 ? `
+                            <div class="text-info mt-1">
+                                🌙 ${planet.moons.length} moon${planet.moons.length > 1 ? 's' : ''}: 
+                                ${planet.moons.map(moon => moon.name).join(', ')}
+                            </div>
+                        ` : ''}
                     </small>
                 </div>
             </div>
@@ -153,9 +172,13 @@ function createSystemVisualization() {
     // Create traces for planets
     const traces = [];
     
+    // Calculate habitable zone for this star
+    const starLuminosity = currentSystemData.properties.luminosity || 1.0;
+    const habitableZone = calculateHabitableZone(starLuminosity);
+    
     // Add habitable zone
-    const hzInner = HABITABLE_ZONE.inner * scaleFactor;
-    const hzOuter = HABITABLE_ZONE.outer * scaleFactor;
+    const hzInner = habitableZone.inner * scaleFactor;
+    const hzOuter = habitableZone.outer * scaleFactor;
     
     // Habitable zone ring
     const hzAngles = Array.from({length: 100}, (_, i) => i * 2 * Math.PI / 100);

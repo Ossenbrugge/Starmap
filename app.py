@@ -11,6 +11,8 @@ from flask import Flask, render_template, jsonify, request
 import json
 from datetime import datetime
 from star_naming import StarNamingSystem
+from fictional_planets import fictional_planet_systems
+from fictional_names import fictional_star_names
 
 app = Flask(__name__)
 
@@ -21,22 +23,41 @@ class StarmapApp:
         self.load_star_data()
         
     def load_star_data(self):
-        """Load star data from CSV file"""
+        """Load star data from CSV files (real and fictional)"""
         try:
+            # Load real star data
             if os.path.exists("stars_output.csv"):
                 self.stars_data = pd.read_csv("stars_output.csv")
-                print(f"Loaded {len(self.stars_data)} stars from CSV")
-                
-                # Process star names using the naming system
-                print("Processing star names...")
-                self.stars_data = self.naming_system.process_star_dataframe(self.stars_data)
-                print("Star naming complete")
-                
-                # Add sample planetary systems
-                self.add_sample_planets()
+                print(f"Loaded {len(self.stars_data)} real stars from CSV")
             else:
                 print("stars_output.csv not found!")
                 self.stars_data = pd.DataFrame()
+            
+            # Load fictional star data
+            if os.path.exists("fictional_stars.csv"):
+                fictional_stars = pd.read_csv("fictional_stars.csv")
+                print(f"Loaded {len(fictional_stars)} fictional stars from CSV")
+                
+                # Merge fictional stars with real stars
+                if not self.stars_data.empty:
+                    self.stars_data = pd.concat([self.stars_data, fictional_stars], ignore_index=True)
+                else:
+                    self.stars_data = fictional_stars
+                    
+                print(f"Total stars after merging: {len(self.stars_data)}")
+            else:
+                print("fictional_stars.csv not found - using only real stars")
+                
+            # Process star names using the naming system
+            print("Processing star names...")
+            self.stars_data = self.naming_system.process_star_dataframe(self.stars_data)
+            print("Star naming complete")
+            
+            # Add sample planetary systems
+            self.add_sample_planets()
+            
+            # Add fictional names
+            self.add_fictional_names()
         except Exception as e:
             print(f"Error loading star data: {e}")
             self.stars_data = pd.DataFrame()
@@ -59,7 +80,14 @@ class StarmapApp:
                 {
                     "name": "Earth", "type": "Terrestrial", "distance_au": 1.0, "mass_earth": 1.0,
                     "radius_earth": 1.0, "orbital_period_days": 365.26, "temperature_k": 288,
-                    "atmosphere": "N2 (78%), O2 (21%)", "discovery_year": "N/A", "confirmed": True
+                    "atmosphere": "N2 (78%), O2 (21%)", "discovery_year": "N/A", "confirmed": True,
+                    "moons": [
+                        {
+                            "name": "Luna", "type": "Rocky", "mass_earth": 0.0123, "radius_earth": 0.2724,
+                            "orbital_distance_km": 384400, "orbital_period_days": 27.3, "temperature_k": 220,
+                            "atmosphere": "Virtually none", "description": "Earth's natural satellite"
+                        }
+                    ]
                 },
                 {
                     "name": "Mars", "type": "Terrestrial", "distance_au": 1.524, "mass_earth": 0.1074,
@@ -139,8 +167,33 @@ class StarmapApp:
             ]
         }
         
+        # Merge real and fictional planet systems
+        all_planet_systems = {**planet_systems, **fictional_planet_systems}
+        
         # Add planets column
-        self.stars_data['planets'] = self.stars_data['id'].map(planet_systems).fillna('').apply(list)
+        self.stars_data['planets'] = self.stars_data['id'].map(all_planet_systems).fillna('').apply(list)
+    
+    def add_fictional_names(self):
+        """Add fictional names from Felgenland Union Planetary Survey Database"""
+        # Add fictional names to stars
+        def get_fictional_name(star_id):
+            if star_id in fictional_star_names:
+                return fictional_star_names[star_id]['fictional_name']
+            return None
+        
+        def get_fictional_source(star_id):
+            if star_id in fictional_star_names:
+                return fictional_star_names[star_id]['source']
+            return None
+            
+        def get_fictional_description(star_id):
+            if star_id in fictional_star_names:
+                return fictional_star_names[star_id]['description']
+            return None
+        
+        self.stars_data['fictional_name'] = self.stars_data['id'].map(get_fictional_name)
+        self.stars_data['fictional_source'] = self.stars_data['id'].map(get_fictional_source)
+        self.stars_data['fictional_description'] = self.stars_data['id'].map(get_fictional_description)
 
 starmap = StarmapApp()
 
@@ -187,7 +240,10 @@ def get_stars():
                 'mag': float(star.get('mag', 0)),
                 'spect': str(star.get('spect', '')),
                 'dist': float(star.get('dist', 0)),
-                'planets': star.get('planets', [])
+                'planets': star.get('planets', []),
+                'fictional_name': star.get('fictional_name'),
+                'fictional_source': star.get('fictional_source'),
+                'fictional_description': star.get('fictional_description')
             }
             stars_json.append(star_data)
             
@@ -221,13 +277,19 @@ def get_star_details(star_id):
                 'magnitude': float(star_data.get('mag', 0)),
                 'spectral_class': str(star_data.get('spect', '')),
                 'distance': float(star_data.get('dist', 0)),
+                'luminosity': float(star_data.get('lum', 1.0)),
                 'proper_motion_ra': float(star_data.get('pmra', 0)),
                 'proper_motion_dec': float(star_data.get('pmdec', 0)),
                 'bayer': str(star_data.get('bayer', '')),
                 'flamsteed': str(star_data.get('flam', '')),
                 'variable': str(star_data.get('var', ''))
             },
-            'planets': star_data.get('planets', [])
+            'planets': star_data.get('planets', []),
+            'fictional_data': {
+                'name': star_data.get('fictional_name'),
+                'source': star_data.get('fictional_source'),
+                'description': star_data.get('fictional_description')
+            }
         }
         
         return jsonify(details)
@@ -248,6 +310,14 @@ def search_stars():
         if query:
             # Use the naming system to search by name
             results = starmap.naming_system.search_stars_by_name(starmap.stars_data, query)
+            
+            # Also search fictional names
+            fictional_matches = starmap.stars_data[
+                starmap.stars_data['fictional_name'].str.contains(query, case=False, na=False)
+            ]
+            
+            # Combine results and remove duplicates
+            results = pd.concat([results, fictional_matches]).drop_duplicates(subset=['id'])
         else:
             results = starmap.stars_data.copy()
         
@@ -302,7 +372,9 @@ def search_stars():
                     'x': float(star.get('x', 0)),
                     'y': float(star.get('y', 0)),
                     'z': float(star.get('z', 0))
-                }
+                },
+                'fictional_name': star.get('fictional_name'),
+                'fictional_source': star.get('fictional_source')
             }
             search_results.append(result)
         

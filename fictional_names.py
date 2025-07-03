@@ -1,0 +1,30 @@
+# Felgenland Union Planetary Survey Database
+# Fictional names for stars in the starmap application
+
+fictional_star_names = {
+    # Real stars with fictional names
+    48941: {  # 20 Leonis Minoris (HIP 49081, HD 86728)
+        "fictional_name": "Holsten Tor",
+        "source": "Felgenland Union Planetary Survey Database",
+        "description": "Primary system of Felgenland Union, rimward trading hub"
+    },
+    
+    43464: {  # 55 Cancri (HIP 43587, HD 75732)
+        "fictional_name": "Griefen Tor",
+        "source": "Felgenland Union Planetary Survey Database", 
+        "description": "Resource hub, home to Lochiel"
+    },
+    
+    46945: {  # 11 Leonis Minoris (HIP 47080, HD 82885)
+        "fictional_name": "Brandenburgh Tor",
+        "source": "Felgenland Union Planetary Survey Database",
+        "description": "Border fortress system, gateway to the outer territories"
+    },
+    
+    # Fictional stars
+    999999: {  # HD 86729 (fictional star)
+        "fictional_name": "Tiefe-Grenze Tor", 
+        "source": "Felgenland Union Planetary Survey Database",
+        "description": "Rimward trading hub in Felgenland Union"
+    }
+}

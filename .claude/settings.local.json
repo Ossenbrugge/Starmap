@@ -3,7 +3,10 @@
     "allow": [
       "Bash(pkill:*)",
       "Bash(source:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "mcp__ide__executeCode",
+      "Bash(grep:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

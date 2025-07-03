@@ -1,32 +1,23 @@
 #!/usr/bin/env python3
 """
-Starmap Application - Main Flask Web Application
-Interactive 3D starmap for science fiction novels
+Starmap Application - Simplified Version
+Interactive 3D starmap for science fiction novels (without PDF export dependencies)
 """
 
 import os
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
-from flask import Flask, render_template, jsonify, request, send_file
+from flask import Flask, render_template, jsonify, request
 import json
 from datetime import datetime
-import tempfile
-from jinja2 import Template
-
-# Try to import weasyprint, disable PDF export if not available
-try:
-    import weasyprint
-    PDF_EXPORT_AVAILABLE = True
-except ImportError:
-    print("WeasyPrint not available - PDF export disabled")
-    PDF_EXPORT_AVAILABLE = False
+from star_naming import StarNamingSystem
 
 app = Flask(__name__)
 
 class StarmapApp:
     def __init__(self):
         self.stars_data = None
+        self.naming_system = StarNamingSystem()
         self.load_star_data()
         
     def load_star_data(self):
@@ -35,6 +26,11 @@ class StarmapApp:
             if os.path.exists("stars_output.csv"):
                 self.stars_data = pd.read_csv("stars_output.csv")
                 print(f"Loaded {len(self.stars_data)} stars from CSV")
+                
+                # Process star names using the naming system
+                print("Processing star names...")
+                self.stars_data = self.naming_system.process_star_dataframe(self.stars_data)
+                print("Star naming complete")
                 
                 # Add sample planetary systems
                 self.add_sample_planets()
@@ -47,20 +43,99 @@ class StarmapApp:
     
     def add_sample_planets(self):
         """Add sample planetary data"""
-        # Sample planetary systems
+        # Comprehensive planetary systems with real and theoretical data
         planet_systems = {
-            0: [  # Sol
-                {"name": "Mercury", "type": "Terrestrial", "distance_au": 0.39, "mass_earth": 0.055},
-                {"name": "Venus", "type": "Terrestrial", "distance_au": 0.72, "mass_earth": 0.815},
-                {"name": "Earth", "type": "Terrestrial", "distance_au": 1.0, "mass_earth": 1.0},
-                {"name": "Mars", "type": "Terrestrial", "distance_au": 1.52, "mass_earth": 0.107}
+            0: [  # Sol - Our Solar System (complete with all 8 planets)
+                {
+                    "name": "Mercury", "type": "Terrestrial", "distance_au": 0.387, "mass_earth": 0.0553, 
+                    "radius_earth": 0.3829, "orbital_period_days": 87.97, "temperature_k": 440, 
+                    "atmosphere": "Virtually none", "discovery_year": "Ancient", "confirmed": True
+                },
+                {
+                    "name": "Venus", "type": "Terrestrial", "distance_au": 0.723, "mass_earth": 0.815,
+                    "radius_earth": 0.9499, "orbital_period_days": 224.7, "temperature_k": 737,
+                    "atmosphere": "CO2 (96.5%), N2 (3.5%)", "discovery_year": "Ancient", "confirmed": True
+                },
+                {
+                    "name": "Earth", "type": "Terrestrial", "distance_au": 1.0, "mass_earth": 1.0,
+                    "radius_earth": 1.0, "orbital_period_days": 365.26, "temperature_k": 288,
+                    "atmosphere": "N2 (78%), O2 (21%)", "discovery_year": "N/A", "confirmed": True
+                },
+                {
+                    "name": "Mars", "type": "Terrestrial", "distance_au": 1.524, "mass_earth": 0.1074,
+                    "radius_earth": 0.5320, "orbital_period_days": 686.98, "temperature_k": 210,
+                    "atmosphere": "CO2 (95%), Ar (1.9%)", "discovery_year": "Ancient", "confirmed": True
+                },
+                {
+                    "name": "Jupiter", "type": "Gas Giant", "distance_au": 5.204, "mass_earth": 317.8,
+                    "radius_earth": 10.97, "orbital_period_days": 4332.6, "temperature_k": 165,
+                    "atmosphere": "H2 (89%), He (10%)", "discovery_year": "Ancient", "confirmed": True
+                },
+                {
+                    "name": "Saturn", "type": "Gas Giant", "distance_au": 9.573, "mass_earth": 95.16,
+                    "radius_earth": 9.140, "orbital_period_days": 10759.2, "temperature_k": 134,
+                    "atmosphere": "H2 (96%), He (3%)", "discovery_year": "Ancient", "confirmed": True
+                },
+                {
+                    "name": "Uranus", "type": "Ice Giant", "distance_au": 19.165, "mass_earth": 14.54,
+                    "radius_earth": 3.981, "orbital_period_days": 30688.5, "temperature_k": 76,
+                    "atmosphere": "H2 (83%), He (15%), CH4 (2%)", "discovery_year": "1781", "confirmed": True
+                },
+                {
+                    "name": "Neptune", "type": "Ice Giant", "distance_au": 30.178, "mass_earth": 17.15,
+                    "radius_earth": 3.865, "orbital_period_days": 60182, "temperature_k": 72,
+                    "atmosphere": "H2 (80%), He (19%), CH4 (1%)", "discovery_year": "1846", "confirmed": True
+                }
             ],
-            16496: [  # Epsilon Eridani
-                {"name": "Epsilon Eridani b", "type": "Gas Giant", "distance_au": 3.4, "mass_earth": 317}
+            16496: [  # Epsilon Eridani - Real exoplanet system
+                {
+                    "name": "Epsilon Eridani b", "type": "Gas Giant", "distance_au": 3.4, "mass_earth": 317,
+                    "radius_earth": 4.1, "orbital_period_days": 2502, "temperature_k": 120,
+                    "atmosphere": "H2, He (estimated)", "discovery_year": "2000", "confirmed": True
+                }
             ],
-            70666: [  # Proxima Centauri
-                {"name": "Proxima Centauri b", "type": "Terrestrial", "distance_au": 0.05, "mass_earth": 1.27},
-                {"name": "Proxima Centauri c", "type": "Super-Earth", "distance_au": 1.5, "mass_earth": 6.0}
+            70666: [  # Proxima Centauri - Real exoplanets
+                {
+                    "name": "Proxima Centauri b", "type": "Terrestrial", "distance_au": 0.05, "mass_earth": 1.27,
+                    "radius_earth": 1.1, "orbital_period_days": 11.2, "temperature_k": 234,
+                    "atmosphere": "Unknown", "discovery_year": "2016", "confirmed": True
+                },
+                {
+                    "name": "Proxima Centauri c", "type": "Super-Earth", "distance_au": 1.5, "mass_earth": 6.0,
+                    "radius_earth": 1.5, "orbital_period_days": 1928, "temperature_k": 39,
+                    "atmosphere": "Unknown", "discovery_year": "2019", "confirmed": True
+                },
+                {
+                    "name": "Proxima Centauri d", "type": "Sub-Earth", "distance_au": 0.029, "mass_earth": 0.26,
+                    "radius_earth": 0.81, "orbital_period_days": 5.1, "temperature_k": 350,
+                    "atmosphere": "Unknown", "discovery_year": "2022", "confirmed": True
+                }
+            ],
+            32263: [  # Sirius - Hypothetical system for demonstration
+                {
+                    "name": "Sirius Ab", "type": "Hot Jupiter", "distance_au": 0.1, "mass_earth": 400,
+                    "radius_earth": 5.2, "orbital_period_days": 15, "temperature_k": 1200,
+                    "atmosphere": "H2, He (theoretical)", "discovery_year": "Future", "confirmed": False
+                }
+            ],
+            71456: [  # Alpha Centauri A - Theoretical planets
+                {
+                    "name": "Alpha Centauri Ab", "type": "Terrestrial", "distance_au": 1.25, "mass_earth": 1.13,
+                    "radius_earth": 1.05, "orbital_period_days": 400, "temperature_k": 250,
+                    "atmosphere": "Unknown (theoretical)", "discovery_year": "TBD", "confirmed": False
+                }
+            ],
+            8087: [  # Tau Ceti - Real candidate planets
+                {
+                    "name": "Tau Ceti e", "type": "Super-Earth", "distance_au": 0.55, "mass_earth": 3.93,
+                    "radius_earth": 1.51, "orbital_period_days": 168, "temperature_k": 240,
+                    "atmosphere": "Unknown", "discovery_year": "2012", "confirmed": False
+                },
+                {
+                    "name": "Tau Ceti f", "type": "Super-Earth", "distance_au": 1.35, "mass_earth": 3.93,
+                    "radius_earth": 1.51, "orbital_period_days": 642, "temperature_k": 150,
+                    "atmosphere": "Unknown", "discovery_year": "2012", "confirmed": False
+                }
             ]
         }
         
@@ -72,7 +147,21 @@ starmap = StarmapApp()
 @app.route('/')
 def index():
     """Main starmap page"""
-    return render_template('starmap.html')
+    try:
+        return render_template('starmap.html')
+    except Exception as e:
+        return f"""
+        <html>
+        <head><title>Starmap - Error</title></head>
+        <body>
+            <h1>Template Error</h1>
+            <p>Error: {str(e)}</p>
+            <p>Working directory: {os.getcwd()}</p>
+            <p>Templates directory exists: {os.path.exists('templates')}</p>
+            <p>Template file exists: {os.path.exists('templates/starmap.html')}</p>
+        </body>
+        </html>
+        """
 
 @app.route('/api/stars')
 def get_stars():
@@ -86,7 +175,12 @@ def get_stars():
         for _, star in stars_subset.iterrows():
             star_data = {
                 'id': int(star['id']),
-                'name': str(star.get('proper', '')),
+                'name': str(star.get('primary_name', f'Star {star["id"]}')),
+                'all_names': star.get('all_names', []),
+                'catalog_ids': star.get('catalog_ids', []),
+                'designation_type': str(star.get('designation_type', 'catalog')),
+                'constellation': str(star.get('constellation_short', '')),
+                'constellation_full': str(star.get('constellation_full', '')),
                 'x': float(star.get('x', 0)),
                 'y': float(star.get('y', 0)), 
                 'z': float(star.get('z', 0)),
@@ -112,7 +206,12 @@ def get_star_details(star_id):
         star_data = star.iloc[0]
         details = {
             'id': int(star_data['id']),
-            'name': str(star_data.get('proper', f'Star {star_id}')),
+            'name': str(star_data.get('primary_name', f'Star {star_id}')),
+            'all_names': star_data.get('all_names', []),
+            'catalog_ids': star_data.get('catalog_ids', []),
+            'designation_type': str(star_data.get('designation_type', 'catalog')),
+            'constellation': str(star_data.get('constellation_short', '')),
+            'constellation_full': str(star_data.get('constellation_full', '')),
             'coordinates': {
                 'x': float(star_data.get('x', 0)),
                 'y': float(star_data.get('y', 0)),
@@ -122,9 +221,11 @@ def get_star_details(star_id):
                 'magnitude': float(star_data.get('mag', 0)),
                 'spectral_class': str(star_data.get('spect', '')),
                 'distance': float(star_data.get('dist', 0)),
-                'constellation': str(star_data.get('con', '')),
                 'proper_motion_ra': float(star_data.get('pmra', 0)),
-                'proper_motion_dec': float(star_data.get('pmdec', 0))
+                'proper_motion_dec': float(star_data.get('pmdec', 0)),
+                'bayer': str(star_data.get('bayer', '')),
+                'flamsteed': str(star_data.get('flam', '')),
+                'variable': str(star_data.get('var', ''))
             },
             'planets': star_data.get('planets', [])
         }
@@ -133,132 +234,294 @@ def get_star_details(star_id):
     except Exception as e:
         return jsonify({'error': str(e)})
 
-@app.route('/api/starmap/plot')
-def generate_starmap_plot():
-    """Generate interactive 3D starmap plot"""
+@app.route('/api/search')
+def search_stars():
+    """Search stars by name, identifier, or spectral type"""
     try:
-        # Get parameters
-        mag_limit = float(request.args.get('mag_limit', 6.0))
-        star_count = int(request.args.get('count', 500))
+        query = request.args.get('q', '').strip()
+        spectral_type = request.args.get('spectral', '').strip()
         
-        # Filter stars
-        bright_stars = starmap.stars_data[starmap.stars_data['mag'] <= mag_limit].head(star_count)
+        if not query and not spectral_type:
+            return jsonify({'error': 'No search query or spectral type provided'})
         
-        # Create 3D scatter plot
-        fig = go.Figure(data=[
-            go.Scatter3d(
-                x=bright_stars['x'],
-                y=bright_stars['y'],
-                z=bright_stars['z'],
-                mode='markers',
-                marker=dict(
-                    size=3,
-                    color=bright_stars['mag'],
-                    colorscale='Viridis',
-                    showscale=True,
-                    colorbar=dict(title="Magnitude")
-                ),
-                text=bright_stars.apply(lambda row: 
-                    f"Name: {row.get('proper', 'Unknown')}<br>"
-                    f"Magnitude: {row.get('mag', 'N/A')}<br>"
-                    f"Distance: {row.get('dist', 'N/A')} pc<br>"
-                    f"Spectral Class: {row.get('spect', 'N/A')}", axis=1),
-                hovertemplate='%{text}<extra></extra>',
-                customdata=bright_stars['id']
-            )
-        ])
+        # Start with all stars
+        if query:
+            # Use the naming system to search by name
+            results = starmap.naming_system.search_stars_by_name(starmap.stars_data, query)
+        else:
+            results = starmap.stars_data.copy()
         
-        fig.update_layout(
-            title="Interactive 3D Starmap",
-            scene=dict(
-                xaxis_title="X (parsecs)",
-                yaxis_title="Y (parsecs)",
-                zaxis_title="Z (parsecs)",
-                bgcolor='black'
-            ),
-            paper_bgcolor='black',
-            font=dict(color='white')
-        )
+        # Filter by spectral type if provided
+        if spectral_type:
+            spectral_filter = spectral_type.upper()
+            # Enhanced filtering for binary stars - check if ANY component matches
+            def matches_spectral_type(spect_str):
+                if pd.isna(spect_str):
+                    return False
+                spect_upper = str(spect_str).upper()
+                
+                # Split by common binary star separators
+                components = []
+                for sep in ['+', '/', '&', ',']:
+                    if sep in spect_upper:
+                        components.extend([comp.strip() for comp in spect_upper.split(sep)])
+                        break
+                else:
+                    # No separator found, treat as single star
+                    components = [spect_upper.strip()]
+                
+                # Check if any component starts with the target spectral type
+                for component in components:
+                    if component.startswith(spectral_filter):
+                        return True
+                    # Also check for embedded spectral types (e.g., "M4+G2V")
+                    if spectral_filter in component:
+                        return True
+                return False
+            
+            # Apply the enhanced filter
+            mask = results['spect'].apply(matches_spectral_type)
+            results = results[mask]
         
-        return fig.to_json()
+        # Limit results and format - increased limit for spectral searches
+        limit = 100 if spectral_type else 50
+        results_subset = results.head(limit)
+        search_results = []
+        
+        for _, star in results_subset.iterrows():
+            result = {
+                'id': int(star['id']),
+                'name': str(star.get('primary_name', f'Star {star["id"]}')),
+                'all_names': star.get('all_names', []),
+                'designation_type': str(star.get('designation_type', 'catalog')),
+                'constellation': str(star.get('constellation_full', '')),
+                'magnitude': float(star.get('mag', 0)),
+                'distance': float(star.get('dist', 0)),
+                'spectral_class': str(star.get('spect', '')),
+                'coordinates': {
+                    'x': float(star.get('x', 0)),
+                    'y': float(star.get('y', 0)),
+                    'z': float(star.get('z', 0))
+                }
+            }
+            search_results.append(result)
+        
+        return jsonify({
+            'query': query,
+            'spectral_filter': spectral_type,
+            'count': len(search_results),
+            'total_matching': len(results),
+            'results': search_results
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)})
 
-@app.route('/export/pdf')
-def export_pdf():
-    """Export starmap as PDF"""
-    if not PDF_EXPORT_AVAILABLE:
-        return jsonify({'error': 'PDF export not available - WeasyPrint not installed'})
-    
+@app.route('/api/planet/add', methods=['POST'])
+def add_planet():
+    """Add a new planet to a star system"""
     try:
-        # Create a simple HTML template for PDF
-        html_template = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Starmap Export</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { color: #333; }
-                .star-table { width: 100%; border-collapse: collapse; }
-                .star-table th, .star-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                .star-table th { background-color: #f2f2f2; }
-            </style>
-        </head>
-        <body>
-            <h1>Starmap Data Export</h1>
-            <p>Generated on: {{ date }}</p>
-            <h2>Bright Stars (Magnitude ≤ 6.0)</h2>
-            <table class="star-table">
-                <tr>
-                    <th>Name</th>
-                    <th>Magnitude</th>
-                    <th>Distance (pc)</th>
-                    <th>Spectral Class</th>
-                    <th>Constellation</th>
-                </tr>
-                {% for star in stars %}
-                <tr>
-                    <td>{{ star.name }}</td>
-                    <td>{{ star.mag }}</td>
-                    <td>{{ star.dist }}</td>
-                    <td>{{ star.spect }}</td>
-                    <td>{{ star.con }}</td>
-                </tr>
-                {% endfor %}
-            </table>
-        </body>
-        </html>
-        """
+        data = request.get_json()
+        star_id = data.get('star_id')
+        planet_data = data.get('planet')
         
+        if not star_id or not planet_data:
+            return jsonify({'error': 'Missing star_id or planet data'})
+        
+        # Find the star
+        star_idx = starmap.stars_data[starmap.stars_data['id'] == star_id].index
+        if len(star_idx) == 0:
+            return jsonify({'error': 'Star not found'})
+        
+        star_idx = star_idx[0]
+        
+        # Get current planets
+        current_planets = starmap.stars_data.at[star_idx, 'planets']
+        if not isinstance(current_planets, list):
+            current_planets = []
+        
+        # Add new planet with required fields
+        new_planet = {
+            'name': planet_data.get('name', 'Unknown Planet'),
+            'type': planet_data.get('type', 'Unknown'),
+            'distance_au': float(planet_data.get('distance_au', 1.0)),
+            'mass_earth': float(planet_data.get('mass_earth', 1.0)),
+            'radius_earth': float(planet_data.get('radius_earth', 1.0)),
+            'orbital_period_days': float(planet_data.get('orbital_period_days', 365)),
+            'temperature_k': float(planet_data.get('temperature_k', 250)),
+            'atmosphere': planet_data.get('atmosphere', 'Unknown'),
+            'discovery_year': planet_data.get('discovery_year', 'TBD'),
+            'confirmed': planet_data.get('confirmed', False)
+        }
+        
+        current_planets.append(new_planet)
+        starmap.stars_data.at[star_idx, 'planets'] = current_planets
+        
+        return jsonify({
+            'success': True,
+            'message': f'Added planet {new_planet["name"]} to {starmap.stars_data.at[star_idx, "primary_name"]}',
+            'planet_count': len(current_planets)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/distance')
+def calculate_distance():
+    """Calculate distance between two stars"""
+    try:
+        star1_id = request.args.get('star1', type=int)
+        star2_id = request.args.get('star2', type=int)
+        
+        if not star1_id or not star2_id:
+            return jsonify({'error': 'Both star1 and star2 IDs required'})
+        
+        # Find the stars
+        star1 = starmap.stars_data[starmap.stars_data['id'] == star1_id]
+        star2 = starmap.stars_data[starmap.stars_data['id'] == star2_id]
+        
+        if star1.empty or star2.empty:
+            return jsonify({'error': 'One or both stars not found'})
+        
+        star1_data = star1.iloc[0]
+        star2_data = star2.iloc[0]
+        
+        # Calculate 3D distance
+        import math
+        
+        x1, y1, z1 = float(star1_data['x']), float(star1_data['y']), float(star1_data['z'])
+        x2, y2, z2 = float(star2_data['x']), float(star2_data['y']), float(star2_data['z'])
+        
+        distance_parsecs = math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+        distance_light_years = distance_parsecs * 3.26156  # 1 parsec = 3.26156 light years
+        
+        # Also calculate distances from Sol
+        sol_distance_1_pc = math.sqrt(x1**2 + y1**2 + z1**2)
+        sol_distance_2_pc = math.sqrt(x2**2 + y2**2 + z2**2)
+        sol_distance_1_ly = sol_distance_1_pc * 3.26156
+        sol_distance_2_ly = sol_distance_2_pc * 3.26156
+        
+        return jsonify({
+            'star1': {
+                'id': star1_id,
+                'name': str(star1_data.get('primary_name', f'Star {star1_id}')),
+                'distance_from_sol_pc': round(sol_distance_1_pc, 4),
+                'distance_from_sol_ly': round(sol_distance_1_ly, 4)
+            },
+            'star2': {
+                'id': star2_id,
+                'name': str(star2_data.get('primary_name', f'Star {star2_id}')),
+                'distance_from_sol_pc': round(sol_distance_2_pc, 4),
+                'distance_from_sol_ly': round(sol_distance_2_ly, 4)
+            },
+            'distance_between': {
+                'parsecs': round(distance_parsecs, 4),
+                'light_years': round(distance_light_years, 4),
+                'astronomical_units': round(distance_parsecs * 206265, 0),  # 1 pc ≈ 206,265 AU
+                'kilometers': round(distance_light_years * 9.461e12, 0)     # 1 ly ≈ 9.461×10^12 km
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/spectral-types')
+def get_spectral_types():
+    """Get list of available spectral types"""
+    try:
+        # Extract spectral types from the data
+        spectral_types = starmap.stars_data['spect'].dropna().unique()
+        
+        # Parse and categorize spectral types
+        main_types = {}
+        for spect in spectral_types:
+            if spect and len(spect) > 0:
+                main_class = spect[0].upper()
+                if main_class in ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T', 'Y']:
+                    if main_class not in main_types:
+                        main_types[main_class] = []
+                    main_types[main_class].append(spect)
+        
+        # Sort each category
+        for key in main_types:
+            main_types[key] = sorted(list(set(main_types[key])))
+        
+        return jsonify({
+            'main_types': main_types,
+            'total_types': len(spectral_types),
+            'description': {
+                'O': 'Blue giants - Very hot, massive stars',
+                'B': 'Blue-white stars - Hot, massive stars', 
+                'A': 'White stars - Hot stars with strong hydrogen lines',
+                'F': 'Yellow-white stars - Slightly hotter than Sun',
+                'G': 'Yellow stars - Sun-like stars',
+                'K': 'Orange stars - Cooler than Sun',
+                'M': 'Red stars - Cool, low-mass stars',
+                'L': 'Brown dwarfs - Very cool objects',
+                'T': 'Methane brown dwarfs - Ultra-cool objects'
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/systems')
+def get_planetary_systems():
+    """Get all stars with planetary systems"""
+    try:
+        # Find stars with planets
+        systems = []
+        for _, star in starmap.stars_data.iterrows():
+            if star.get('planets') and len(star['planets']) > 0:
+                systems.append({
+                    'id': int(star['id']),
+                    'name': str(star.get('primary_name', f'Star {star["id"]}')),
+                    'constellation': str(star.get('constellation_full', star.get('constellation_short', ''))),
+                    'distance': float(star.get('dist', 0)),
+                    'planet_count': len(star['planets']),
+                    'confirmed_planets': sum(1 for p in star['planets'] if p.get('confirmed', False)),
+                    'candidate_planets': sum(1 for p in star['planets'] if not p.get('confirmed', False))
+                })
+        
+        return jsonify({
+            'total_systems': len(systems),
+            'systems': sorted(systems, key=lambda x: x['planet_count'], reverse=True)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/export/csv')
+def export_csv():
+    """Export bright stars as CSV"""
+    try:
         # Get bright stars
         bright_stars = starmap.stars_data[starmap.stars_data['mag'] <= 6.0].head(100)
         
-        # Prepare data for template
-        stars_for_template = []
-        for _, star in bright_stars.iterrows():
-            stars_for_template.append({
-                'name': star.get('proper', 'Unknown'),
-                'mag': star.get('mag', 'N/A'),
-                'dist': star.get('dist', 'N/A'),
-                'spect': star.get('spect', 'N/A'),
-                'con': star.get('con', 'N/A')
-            })
+        # Select relevant columns including new naming data
+        export_columns = ['id', 'primary_name', 'designation_type', 'constellation_full', 'mag', 'dist', 'spect', 'x', 'y', 'z']
+        available_columns = [col for col in export_columns if col in bright_stars.columns]
+        export_data = bright_stars[available_columns]
         
-        # Render HTML
-        template = Template(html_template)
-        html_content = template.render(
-            stars=stars_for_template,
-            date=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Generate CSV
+        csv_content = export_data.to_csv(index=False)
+        
+        from flask import Response
+        return Response(
+            csv_content,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=starmap_export.csv'}
         )
-        
-        # Generate PDF
-        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
-            weasyprint.HTML(string=html_content).write_pdf(tmp_file.name)
-            return send_file(tmp_file.name, as_attachment=True, download_name='starmap_export.pdf')
             
     except Exception as e:
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("🌟 Starting Starmap Application")
+    print("📊 Loaded star data successfully" if not starmap.stars_data.empty else "⚠️  No star data loaded")
+    print("🌐 Access the application at:")
+    print("   Local:  http://localhost:8080")
+    print("   LAN:    http://[your-ip]:8080")
+    print("🚀 Press Ctrl+C to stop")
+    
+    app.run(host='0.0.0.0', port=8080, debug=True)

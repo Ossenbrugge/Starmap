@@ -8,7 +8,11 @@
       "Bash(grep:*)",
       "Bash(node:*)",
       "Bash(rg:*)",
-      "WebFetch(domain:www.stellarcatalog.com)"
+      "WebFetch(domain:www.stellarcatalog.com)",
+      "Bash(open:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)"
     ],
     "deny": []
   }

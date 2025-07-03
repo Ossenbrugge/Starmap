@@ -3,10 +3,16 @@
 
 fictional_star_names = {
     # Real stars with fictional names
-    48941: {  # 20 Leonis Minoris (HIP 49081, HD 86728)
+    48941: {  # 20 Leonis Minoris A (HIP 49081, HD 86728)
         "fictional_name": "Holsten Tor",
         "source": "Felgenland Union Planetary Survey Database",
         "description": "Primary system of Felgenland Union, rimward trading hub"
+    },
+    
+    115218: {  # 20 Leonis Minoris B (real M7V red dwarf companion)
+        "fictional_name": "Shattensonne",
+        "source": "Felgenland Union Planetary Survey Database",
+        "description": "M7V red dwarf companion to Holsten Tor, 2016 AU separation"
     },
     
     43464: {  # 55 Cancri (HIP 43587, HD 75732)

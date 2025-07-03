@@ -33,6 +33,85 @@ function calculateHabitableZone(starLuminosity) {
     };
 }
 
+// Binary star detection and separation calculation
+function detectBinarySystem(starData) {
+    const spectralClass = starData.properties.spectral_class || '';
+    const hasSpectralSeparator = /[+\/&]/.test(spectralClass);
+    const hasComponentData = starData.properties.comp || starData.properties.comp_primary;
+    
+    if (hasSpectralSeparator || hasComponentData) {
+        return {
+            isBinary: true,
+            spectralClass: spectralClass,
+            components: parseSpectralComponents(spectralClass),
+            estimatedSeparation: estimateBinarySeparation(starData)
+        };
+    }
+    
+    return { isBinary: false };
+}
+
+// Parse spectral components from combined spectral class
+function parseSpectralComponents(spectralClass) {
+    const components = [];
+    
+    // Split by common separators
+    const separators = ['+', '/', '&'];
+    for (const sep of separators) {
+        if (spectralClass.includes(sep)) {
+            const parts = spectralClass.split(sep).map(s => s.trim());
+            parts.forEach((part, index) => {
+                if (part) {
+                    components.push({
+                        spectralType: part,
+                        component: index === 0 ? 'A' : 'B',
+                        isPrimary: index === 0
+                    });
+                }
+            });
+            break;
+        }
+    }
+    
+    // If no separators found, assume single star
+    if (components.length === 0) {
+        components.push({
+            spectralType: spectralClass,
+            component: 'A',
+            isPrimary: true
+        });
+    }
+    
+    return components;
+}
+
+// Estimate binary star separation for visualization
+function estimateBinarySeparation(starData) {
+    const spectralClass = starData.properties.spectral_class || '';
+    const distance = starData.properties.distance || 10; // parsecs
+    
+    // Estimate separation based on spectral type and distance
+    // Most visual binaries have separations between 0.1" to 10" as seen from Earth
+    // Convert to AU using distance: separation_AU = separation_arcsec * distance_pc
+    
+    let estimatedSeparationArcsec = 1.0; // Default 1 arcsecond
+    
+    // Adjust based on spectral type patterns
+    if (spectralClass.includes('M')) {
+        estimatedSeparationArcsec = 0.5; // M-dwarf binaries tend to be closer
+    } else if (spectralClass.includes('G') || spectralClass.includes('K')) {
+        estimatedSeparationArcsec = 1.0; // Sun-like stars
+    } else if (spectralClass.includes('A') || spectralClass.includes('F')) {
+        estimatedSeparationArcsec = 2.0; // Hotter stars can be wider
+    }
+    
+    // Convert to AU
+    const separationAU = estimatedSeparationArcsec * distance;
+    
+    // For visualization purposes, ensure minimum separation
+    return Math.max(separationAU, 0.1);
+}
+
 // Planet size calculation for better proportional display
 function calculatePlanetSize(planet, typeInfo) {
     const radius = planet.radius_earth || 1.0;
@@ -92,8 +171,11 @@ function updateSystemInfo() {
     const starDetails = document.getElementById('starSystemDetails');
     const planetList = document.getElementById('planetList');
     
+    // Check if this is a binary system
+    const binaryInfo = detectBinarySystem(currentSystemData);
+    
     // Star information
-    starDetails.innerHTML = `
+    let starInfoHtml = `
         <div class="system-star-info">
             <div class="mb-2">
                 <strong>Star:</strong> ${currentSystemData.name}
@@ -106,15 +188,34 @@ function updateSystemInfo() {
             </div>
             <div class="mb-2">
                 <strong>Distance:</strong> ${currentSystemData.properties.distance.toFixed(2)} pc
+            </div>`;
+    
+    if (binaryInfo.isBinary) {
+        starInfoHtml += `
+            <div class="mb-2">
+                <strong>System Type:</strong> <span class="text-warning">Binary Star System</span>
             </div>
             <div class="mb-2">
-                <strong>Spectral Class:</strong> ${currentSystemData.properties.spectral_class}
+                <strong>Components:</strong> ${binaryInfo.components.map(comp => `${comp.component}: ${comp.spectralType}`).join(', ')}
             </div>
+            <div class="mb-2">
+                <strong>Est. Separation:</strong> ${binaryInfo.estimatedSeparation.toFixed(2)} AU
+            </div>`;
+    } else {
+        starInfoHtml += `
+            <div class="mb-2">
+                <strong>Spectral Class:</strong> ${currentSystemData.properties.spectral_class}
+            </div>`;
+    }
+    
+    starInfoHtml += `
             <div class="mb-2">
                 <strong>Planets:</strong> ${currentSystemData.planets.length}
             </div>
         </div>
     `;
+    
+    starDetails.innerHTML = starInfoHtml;
     
     // Calculate habitable zone for this star
     const starLuminosity = currentSystemData.properties.luminosity || 1.0;
@@ -165,9 +266,9 @@ function createSystemVisualization() {
     
     const planets = currentSystemData.planets;
     
-    // Calculate display scale
+    // Work directly in AU - no artificial scaling needed
     const maxDistance = Math.max(...planets.map(p => p.distance_au));
-    const scaleFactor = Math.min(300 / maxDistance, 50); // Reasonable scaling
+    // Remove artificial scaling - work in real AU coordinates
     
     // Create traces for planets
     const traces = [];
@@ -176,9 +277,9 @@ function createSystemVisualization() {
     const starLuminosity = currentSystemData.properties.luminosity || 1.0;
     const habitableZone = calculateHabitableZone(starLuminosity);
     
-    // Add habitable zone
-    const hzInner = habitableZone.inner * scaleFactor;
-    const hzOuter = habitableZone.outer * scaleFactor;
+    // Add habitable zone in AU
+    const hzInner = habitableZone.inner;
+    const hzOuter = habitableZone.outer;
     
     // Habitable zone ring
     const hzAngles = Array.from({length: 100}, (_, i) => i * 2 * Math.PI / 100);
@@ -206,7 +307,7 @@ function createSystemVisualization() {
     
     // Add orbital paths
     planets.forEach((planet, index) => {
-        const orbitRadius = planet.distance_au * scaleFactor;
+        const orbitRadius = planet.distance_au;
         const angles = Array.from({length: 100}, (_, i) => i * 2 * Math.PI / 100);
         
         traces.push({
@@ -224,7 +325,7 @@ function createSystemVisualization() {
     // Add planets with improved sizing
     planets.forEach((planet, index) => {
         const typeInfo = PLANET_TYPES[planet.type] || PLANET_TYPES['Unknown'];
-        const orbitRadius = planet.distance_au * scaleFactor;
+        const orbitRadius = planet.distance_au;
         
         // Calculate initial position (can be animated later)
         const angle = (index * 60) * Math.PI / 180; // Spread planets around
@@ -250,23 +351,87 @@ function createSystemVisualization() {
         });
     });
     
-    // Add the star at center
-    traces.push({
-        x: [0],
-        y: [0],
-        mode: 'markers',
-        type: 'scatter',
-        marker: {
-            color: 'yellow',
-            size: 20,
-            symbol: 'star',
-            line: { color: 'orange', width: 2 }
-        },
-        name: currentSystemData.name,
-        text: [`${currentSystemData.name}<br>Spectral Class: ${currentSystemData.properties.spectral_class}<br>Distance: ${currentSystemData.properties.distance.toFixed(2)} pc`],
-        hovertemplate: '%{text}<extra></extra>',
-        showlegend: true
-    });
+    // Add the star(s) at center - handle binary systems
+    const binaryInfo = detectBinarySystem(currentSystemData);
+    
+    if (binaryInfo.isBinary && binaryInfo.components.length > 1) {
+        // Binary star system - display both components
+        const separationAU = binaryInfo.estimatedSeparation;
+        
+        // Position stars along X-axis for simplicity (in AU)
+        const star1X = -separationAU / 2;
+        const star2X = separationAU / 2;
+        
+        // Primary star (Component A)
+        traces.push({
+            x: [star1X],
+            y: [0],
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                color: 'yellow',
+                size: 22,
+                symbol: 'star',
+                line: { color: 'orange', width: 2 }
+            },
+            name: `${currentSystemData.name} A`,
+            text: [`${currentSystemData.name} A (Primary)<br>Spectral Class: ${binaryInfo.components[0].spectralType}<br>Distance: ${currentSystemData.properties.distance.toFixed(2)} pc<br>Estimated Separation: ${separationAU.toFixed(2)} AU`],
+            hovertemplate: '%{text}<extra></extra>',
+            showlegend: true
+        });
+        
+        // Secondary star (Component B)
+        const secondarySize = binaryInfo.components[1].spectralType.includes('M') ? 16 : 20;
+        const secondaryColor = binaryInfo.components[1].spectralType.includes('M') ? 'red' : 
+                              binaryInfo.components[1].spectralType.includes('K') ? 'orange' : 'yellow';
+        
+        traces.push({
+            x: [star2X],
+            y: [0],
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                color: secondaryColor,
+                size: secondarySize,
+                symbol: 'star',
+                line: { color: 'darkorange', width: 2 }
+            },
+            name: `${currentSystemData.name} B`,
+            text: [`${currentSystemData.name} B (Secondary)<br>Spectral Class: ${binaryInfo.components[1].spectralType}<br>Distance: ${currentSystemData.properties.distance.toFixed(2)} pc<br>Estimated Separation: ${separationAU.toFixed(2)} AU`],
+            hovertemplate: '%{text}<extra></extra>',
+            showlegend: true
+        });
+        
+        // Add a line connecting the binary pair
+        traces.push({
+            x: [star1X, star2X],
+            y: [0, 0],
+            mode: 'lines',
+            type: 'scatter',
+            line: { color: 'rgba(255, 255, 255, 0.5)', width: 2, dash: 'dash' },
+            name: 'Binary Connection',
+            showlegend: false,
+            hoverinfo: 'skip'
+        });
+    } else {
+        // Single star system
+        traces.push({
+            x: [0],
+            y: [0],
+            mode: 'markers',
+            type: 'scatter',
+            marker: {
+                color: 'yellow',
+                size: 20,
+                symbol: 'star',
+                line: { color: 'orange', width: 2 }
+            },
+            name: currentSystemData.name,
+            text: [`${currentSystemData.name}<br>Spectral Class: ${currentSystemData.properties.spectral_class}<br>Distance: ${currentSystemData.properties.distance.toFixed(2)} pc`],
+            hovertemplate: '%{text}<extra></extra>',
+            showlegend: true
+        });
+    }
     
     const layout = {
         title: {
@@ -274,20 +439,24 @@ function createSystemVisualization() {
             font: { color: 'white', size: 16 }
         },
         xaxis: {
-            title: 'Distance (scaled)',
+            title: 'Distance (AU)',
             gridcolor: '#444',
             zerolinecolor: '#666',
             showgrid: true,
             zeroline: true,
             scaleanchor: 'y',
-            scaleratio: 1
+            scaleratio: 1,
+            tickformat: '.1f',
+            ticksuffix: ' AU'
         },
         yaxis: {
-            title: 'Distance (scaled)',
+            title: 'Distance (AU)',
             gridcolor: '#444',
             zerolinecolor: '#666',
             showgrid: true,
-            zeroline: true
+            zeroline: true,
+            tickformat: '.1f',
+            ticksuffix: ' AU'
         },
         paper_bgcolor: '#000000',
         plot_bgcolor: '#000000',
@@ -390,14 +559,13 @@ function animateSystem() {
     try {
         currentAnimationTime += 0.01; // Animation speed
         
-        const scaleFactor = Math.min(300 / Math.max(...currentSystemData.planets.map(p => p.distance_au)), 50);
-        
+        // Work directly in AU coordinates
         // Collect all updates for batch processing
         const updates = {};
         const traceIndices = [];
         
         currentSystemData.planets.forEach((planet, index) => {
-            const orbitRadius = planet.distance_au * scaleFactor;
+            const orbitRadius = planet.distance_au;
             
             // Calculate orbital speed (faster for closer planets - Kepler's laws)
             const orbitalSpeed = 0.5 / Math.sqrt(planet.distance_au); // Slower animation

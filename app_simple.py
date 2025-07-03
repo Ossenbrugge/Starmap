@@ -254,10 +254,38 @@ def search_stars():
         # Filter by spectral type if provided
         if spectral_type:
             spectral_filter = spectral_type.upper()
-            results = results[results['spect'].str.upper().str.contains(spectral_filter, na=False)]
+            # Enhanced filtering for binary stars - check if ANY component matches
+            def matches_spectral_type(spect_str):
+                if pd.isna(spect_str):
+                    return False
+                spect_upper = str(spect_str).upper()
+                
+                # Split by common binary star separators
+                components = []
+                for sep in ['+', '/', '&', ',']:
+                    if sep in spect_upper:
+                        components.extend([comp.strip() for comp in spect_upper.split(sep)])
+                        break
+                else:
+                    # No separator found, treat as single star
+                    components = [spect_upper.strip()]
+                
+                # Check if any component starts with the target spectral type
+                for component in components:
+                    if component.startswith(spectral_filter):
+                        return True
+                    # Also check for embedded spectral types (e.g., "M4+G2V")
+                    if spectral_filter in component:
+                        return True
+                return False
+            
+            # Apply the enhanced filter
+            mask = results['spect'].apply(matches_spectral_type)
+            results = results[mask]
         
-        # Limit results and format
-        results_subset = results.head(50)  # Increased for spectral type searches
+        # Limit results and format - increased limit for spectral searches
+        limit = 100 if spectral_type else 50
+        results_subset = results.head(limit)
         search_results = []
         
         for _, star in results_subset.iterrows():

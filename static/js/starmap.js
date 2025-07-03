@@ -143,8 +143,10 @@ async function updateStarmap() {
         
         // Add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
+            console.log('Starmap clicked:', data); // Debug
             if (data.points && data.points.length > 0) {
                 const starId = data.points[0].customdata;
+                console.log('Star ID:', starId, 'Distance mode:', distanceMeasurementMode); // Debug
                 
                 if (distanceMeasurementMode) {
                     handleDistanceModeClick(starId);
@@ -523,29 +525,35 @@ async function filterBySpectralType() {
     const searchInput = document.getElementById('starSearch');
     
     if (!selectedType) {
-        updateStatus('No spectral type selected for filtering');
+        // If no type selected, reload all stars
+        updateStarmap();
+        updateStatus('Filter cleared - showing all stars');
         return;
     }
     
     try {
-        updateStatus(`Filtering stars by spectral type ${selectedType}...`, true);
+        updateStatus(`Filtering starmap by spectral type ${selectedType}...`, true);
         
         const response = await fetch(`/api/search?spectral=${encodeURIComponent(selectedType)}`);
         if (!response.ok) throw new Error('Spectral type filtering failed');
         
         const searchData = await response.json();
         
-        // Display search results
-        const searchResults = document.getElementById('searchResults');
-        const searchResultsList = document.getElementById('searchResultsList');
-        
         if (searchData.results && searchData.results.length > 0) {
-            let resultsHtml = `<p><strong>${searchData.count} ${selectedType}-type stars found</strong></p>`;
+            // Update the starmap to show only filtered stars
+            await updateStarmapWithFilteredStars(searchData.results, selectedType);
+            
+            // Also display search results panel
+            const searchResults = document.getElementById('searchResults');
+            const searchResultsList = document.getElementById('searchResultsList');
+            
+            let resultsHtml = `<p><strong>${searchData.count} ${selectedType}-type stars on map</strong></p>`;
             if (searchData.total_matching > searchData.count) {
-                resultsHtml += `<p class="text-muted">Showing first ${searchData.count} of ${searchData.total_matching} results</p>`;
+                resultsHtml += `<p class="text-muted">Showing first ${searchData.count} of ${searchData.total_matching} total matches</p>`;
             }
             
-            searchData.results.forEach(star => {
+            // Show first few results in the panel
+            searchData.results.slice(0, 10).forEach(star => {
                 resultsHtml += `
                     <div class="search-result-item mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;" 
                          onclick="selectStar(${star.id})">
@@ -558,14 +566,18 @@ async function filterBySpectralType() {
                 `;
             });
             
+            if (searchData.results.length > 10) {
+                resultsHtml += `<p class="text-muted">...and ${searchData.results.length - 10} more on the map</p>`;
+            }
+            
+            resultsHtml += `<div class="mt-2"><button class="btn btn-sm btn-outline-light" onclick="clearSpectralFilter()">Show All Stars</button></div>`;
+            
             searchResultsList.innerHTML = resultsHtml;
             searchResults.style.display = 'block';
-            searchInput.value = `Spectral type: ${selectedType}`;
+            searchInput.value = `Spectral filter: ${selectedType}`;
             
-            updateStatus(`Found ${searchData.total_matching} ${selectedType}-type stars`);
+            updateStatus(`Starmap filtered to ${searchData.results.length} ${selectedType}-type stars`);
         } else {
-            searchResultsList.innerHTML = `<p class="text-muted">No ${selectedType}-type stars found</p>`;
-            searchResults.style.display = 'block';
             updateStatus(`No ${selectedType}-type stars found`);
         }
         
@@ -575,18 +587,150 @@ async function filterBySpectralType() {
     }
 }
 
+async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
+    try {
+        // Create 3D scatter plot with filtered stars
+        const trace = {
+            x: filteredStars.map(star => star.coordinates.x),
+            y: filteredStars.map(star => star.coordinates.y),
+            z: filteredStars.map(star => star.coordinates.z),
+            mode: 'markers',
+            type: 'scatter3d',
+            marker: {
+                size: filteredStars.map(star => Math.max(2, 8 - star.magnitude)), // Brighter stars are bigger
+                color: filteredStars.map(star => star.magnitude),
+                colorscale: [
+                    [0, '#ffffff'],      // Bright stars - white
+                    [0.3, '#ffff99'],    // Yellow
+                    [0.6, '#ff9933'],    // Orange
+                    [1, '#ff3333']       // Dim stars - red
+                ],
+                colorbar: {
+                    title: 'Magnitude',
+                    titleside: 'right'
+                },
+                opacity: 0.8
+            },
+            text: filteredStars.map(star => 
+                `${star.name}<br>` +
+                `${star.designation_type === 'proper' ? 'Common Name' : 'Designation'}: ${star.designation_type}<br>` +
+                `Constellation: ${star.constellation}<br>` +
+                `Magnitude: ${star.magnitude.toFixed(2)}<br>` +
+                `Distance: ${star.distance.toFixed(2)} pc<br>` +
+                `Spectral Class: ${star.spectral_class}<br>` +
+                `Coordinates: (${star.coordinates.x.toFixed(2)}, ${star.coordinates.y.toFixed(2)}, ${star.coordinates.z.toFixed(2)})`
+            ),
+            hovertemplate: '%{text}<extra></extra>',
+            customdata: filteredStars.map(star => star.id)
+        };
+        
+        const layout = {
+            title: {
+                text: `3D Starmap - ${filteredStars.length} ${spectralType}-type Stars`,
+                font: { color: 'white', size: 16 }
+            },
+            scene: {
+                xaxis: { 
+                    title: 'X (parsecs)', 
+                    gridcolor: '#444',
+                    zerolinecolor: '#666',
+                    backgroundcolor: '#000'
+                },
+                yaxis: { 
+                    title: 'Y (parsecs)', 
+                    gridcolor: '#444',
+                    zerolinecolor: '#666',
+                    backgroundcolor: '#000'
+                },
+                zaxis: { 
+                    title: 'Z (parsecs)', 
+                    gridcolor: '#444',
+                    zerolinecolor: '#666',
+                    backgroundcolor: '#000'
+                },
+                bgcolor: '#000000',
+                camera: {
+                    eye: { x: 1.5, y: 1.5, z: 1.5 }
+                }
+            },
+            paper_bgcolor: '#000000',
+            plot_bgcolor: '#000000',
+            font: { color: 'white' },
+            margin: { l: 0, r: 0, t: 40, b: 0 }
+        };
+        
+        const config = {
+            displayModeBar: true,
+            displaylogo: false,
+            modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
+            responsive: true
+        };
+        
+        // Update the plot with filtered data
+        await Plotly.newPlot('starmap', [trace], layout, config);
+        
+        // Re-add click event listener
+        document.getElementById('starmap').on('plotly_click', function(data) {
+            console.log('Starmap clicked:', data); // Debug
+            if (data.points && data.points.length > 0) {
+                const starId = data.points[0].customdata;
+                console.log('Star ID:', starId, 'Distance mode:', distanceMeasurementMode); // Debug
+                
+                if (distanceMeasurementMode) {
+                    handleDistanceModeClick(starId);
+                } else {
+                    selectStar(starId);
+                }
+            }
+        });
+        
+        // Update currentStars with filtered data for distance measurements
+        currentStars = filteredStars.map(star => ({
+            id: star.id,
+            name: star.name,
+            x: star.coordinates.x,
+            y: star.coordinates.y,
+            z: star.coordinates.z,
+            mag: star.magnitude,
+            spect: star.spectral_class,
+            dist: star.distance
+        }));
+        
+    } catch (error) {
+        console.error('Error updating starmap with filtered stars:', error);
+        updateStatus(`Error updating starmap: ${error.message}`);
+    }
+}
+
+function clearSpectralFilter() {
+    // Reset the spectral type dropdown
+    document.getElementById('spectralType').value = '';
+    
+    // Hide search results
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('starSearch').value = '';
+    
+    // Reload the full starmap
+    updateStarmap();
+    
+    updateStatus('Spectral filter cleared - showing all stars');
+}
+
 // Distance measurement functions
 function toggleDistanceMeasurement() {
     const toggleButton = document.getElementById('distanceToggle');
+    const indicator = document.getElementById('distanceModeIndicator');
     
     if (!distanceMeasurementMode) {
         // Start distance measurement mode
         distanceMeasurementMode = true;
         selectedStarsForDistance = [];
-        toggleButton.textContent = '📏 Cancel Distance Mode';
+        toggleButton.textContent = '❌ Cancel Distance Mode';
         toggleButton.classList.remove('btn-outline-primary');
         toggleButton.classList.add('btn-outline-warning');
-        updateStatus('Distance measurement mode ON - Click two stars to measure distance');
+        if (indicator) indicator.style.display = 'block';
+        updateStatus('🎯 Distance measurement mode ON - Click two stars to measure distance');
+        console.log('Distance measurement mode activated'); // Debug
     } else {
         // Cancel distance measurement mode
         distanceMeasurementMode = false;
@@ -594,10 +738,13 @@ function toggleDistanceMeasurement() {
         toggleButton.textContent = '📏 Start Distance Mode';
         toggleButton.classList.remove('btn-outline-warning');
         toggleButton.classList.add('btn-outline-primary');
+        if (indicator) indicator.style.display = 'none';
         
         // Remove distance visualization
         clearDistanceVisualization();
+        clearHighlight(); // Clear any selected stars
         updateStatus('Distance measurement mode OFF');
+        console.log('Distance measurement mode deactivated'); // Debug
     }
 }
 
@@ -616,17 +763,17 @@ async function measureDistance(starId1, starId2) {
         
         let resultsHtml = `
             <div class="distance-results">
-                <h6 class="text-primary mb-3">Distance Measurement</h6>
+                <h6 class="text-primary mb-3">🚀 Distance Measurement</h6>
                 
                 <div class="mb-3">
                     <strong>Between:</strong><br>
                     <div class="ms-2">
                         <div class="text-info">${distanceData.star1.name}</div>
-                        <small class="text-muted">Distance from Sol: ${distanceData.star1.distance_from_sol_ly} ly</small>
+                        <small class="text-muted">Distance from Sol: ${distanceData.star1.distance_from_sol_ly.toFixed(2)} ly</small>
                     </div>
                     <div class="ms-2 mt-1">
                         <div class="text-info">${distanceData.star2.name}</div>
-                        <small class="text-muted">Distance from Sol: ${distanceData.star2.distance_from_sol_ly} ly</small>
+                        <small class="text-muted">Distance from Sol: ${distanceData.star2.distance_from_sol_ly.toFixed(2)} ly</small>
                     </div>
                 </div>
                 
@@ -681,24 +828,32 @@ function addDistanceVisualization(distanceData) {
     // Remove previous distance line
     clearDistanceVisualization();
     
-    // Add line connecting the two stars
+    // We need to get the actual 3D coordinates from the star data
+    // Find the stars in currentStars array to get their coordinates
+    const star1 = currentStars.find(s => s.id === distanceData.star1.id);
+    const star2 = currentStars.find(s => s.id === distanceData.star2.id);
+    
+    if (!star1 || !star2) {
+        console.log('Could not find star coordinates for visualization');
+        return;
+    }
+    
+    // Add line connecting the two stars using their actual 3D coordinates
     distanceTrace = {
-        x: [distanceData.star1.distance_from_sol_pc * Math.cos(0), distanceData.star2.distance_from_sol_pc * Math.cos(0)],
-        y: [distanceData.star1.distance_from_sol_pc * Math.sin(0), distanceData.star2.distance_from_sol_pc * Math.sin(0)],
-        z: [0, 0], // Simplified for demonstration
+        x: [star1.x, star2.x],
+        y: [star1.y, star2.y],
+        z: [star1.z, star2.z],
         mode: 'lines',
         type: 'scatter3d',
         line: {
             color: '#00ff00',
-            width: 4
+            width: 6
         },
         name: 'Distance Measurement',
         showlegend: false,
         hoverinfo: 'skip'
     };
     
-    // Note: This is a simplified visualization. In a real implementation,
-    // we would use the actual 3D coordinates from the star data
     Plotly.addTraces('starmap', distanceTrace);
 }
 
@@ -726,24 +881,40 @@ function clearDistanceMeasurement() {
 }
 
 function handleDistanceModeClick(starId) {
+    console.log('Distance mode click:', starId); // Debug
+    
     if (selectedStarsForDistance.includes(starId)) {
         updateStatus('Star already selected for distance measurement');
         return;
     }
     
     selectedStarsForDistance.push(starId);
+    console.log('Selected stars for distance:', selectedStarsForDistance); // Debug
+    
+    // Find star name for better feedback
+    const star = currentStars.find(s => s.id === starId);
+    const starName = star ? star.name : `Star ${starId}`;
     
     if (selectedStarsForDistance.length === 1) {
-        updateStatus(`First star selected. Click another star to measure distance.`);
+        updateStatus(`First star selected: ${starName}. Click another star to measure distance.`);
+        
+        // Highlight the first selected star
+        if (star) {
+            highlightStarOnMap(starId, {
+                coordinates: { x: star.x, y: star.y, z: star.z },
+                name: starName
+            });
+        }
     } else if (selectedStarsForDistance.length === 2) {
+        const star2 = currentStars.find(s => s.id === selectedStarsForDistance[1]);
+        const star2Name = star2 ? star2.name : `Star ${selectedStarsForDistance[1]}`;
+        
+        updateStatus(`Measuring distance between ${starName} and ${star2Name}...`, true);
+        
         // Measure distance between the two selected stars
         measureDistance(selectedStarsForDistance[0], selectedStarsForDistance[1]);
         
-        // Exit distance measurement mode
-        distanceMeasurementMode = false;
-        const toggleButton = document.getElementById('distanceToggle');
-        toggleButton.textContent = '📏 Start Distance Mode';
-        toggleButton.classList.remove('btn-outline-warning');
-        toggleButton.classList.add('btn-outline-primary');
+        // Reset distance mode but don't exit automatically
+        selectedStarsForDistance = [];
     }
 }

@@ -56,18 +56,33 @@ class StarModel(BaseModel):
     def _add_fictional_data(self):
         """Add fictional names from the fictional names database"""
         def get_fictional_name(star_id):
-            if star_id in fictional_star_names:
-                return fictional_star_names[star_id]['fictional_name']
+            # Ensure star_id is an integer for lookup
+            try:
+                star_id_int = int(star_id)
+                if star_id_int in fictional_star_names:
+                    return fictional_star_names[star_id_int]['fictional_name']
+            except (ValueError, TypeError):
+                pass
             return None
         
         def get_fictional_source(star_id):
-            if star_id in fictional_star_names:
-                return fictional_star_names[star_id]['source']
+            # Ensure star_id is an integer for lookup
+            try:
+                star_id_int = int(star_id)
+                if star_id_int in fictional_star_names:
+                    return fictional_star_names[star_id_int]['source']
+            except (ValueError, TypeError):
+                pass
             return None
         
         def get_fictional_description(star_id):
-            if star_id in fictional_star_names:
-                return fictional_star_names[star_id]['description']
+            # Ensure star_id is an integer for lookup
+            try:
+                star_id_int = int(star_id)
+                if star_id_int in fictional_star_names:
+                    return fictional_star_names[star_id_int]['description']
+            except (ValueError, TypeError):
+                pass
             return None
         
         self.data['fictional_name'] = self.data['id'].map(get_fictional_name)
@@ -101,9 +116,21 @@ class StarModel(BaseModel):
             lambda x: 0 if get_star_nation(x) != 'neutral_zone' else 1
         )
         
-        # Filter by magnitude if specified
+        # Filter by magnitude if specified, but always include fictional stars and important systems
         if mag_limit:
-            display_stars = display_stars[display_stars['mag'] <= mag_limit]
+            # Create a mask for magnitude filtering
+            mag_filter = display_stars['mag'] <= mag_limit
+            
+            # Always include fictional stars (they have fictional names)
+            fictional_filter = display_stars['fictional_name'].notna() & (display_stars['fictional_name'] != '')
+            
+            # Always include stars that belong to nations (not neutral zone)
+            nation_filter = display_stars['nation_priority'] == 0
+            
+            # Combine filters: include if meets magnitude OR is fictional OR is important nation system
+            combined_filter = mag_filter | fictional_filter | nation_filter
+            
+            display_stars = display_stars[combined_filter]
         
         # Sort by nation priority (0 first), then by magnitude (bright first)
         display_stars = display_stars.sort_values(['nation_priority', 'mag'])
@@ -120,7 +147,16 @@ class StarModel(BaseModel):
         
         for _, star in stars_df.iterrows():
             star_id = int(star['id'])
-            nation_data = star.get('nation', {})
+            
+            # Always get fresh nation data to avoid pandas string conversion
+            nation_id = get_star_nation(star_id)
+            nation_info = get_nation_info(nation_id)
+            nation_data = {
+                'id': nation_id,
+                'name': nation_info['name'],
+                'color': nation_info['color'],
+                'government_type': nation_info['government_type']
+            }
             
             star_data = {
                 'id': star_id,

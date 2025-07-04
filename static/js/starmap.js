@@ -179,6 +179,9 @@ async function updateStarmap() {
         
         updateStatus(`Loaded ${filteredStars.length} stars successfully`);
         
+        // Reapply political overlay if it was active
+        reapplyPoliticalOverlay();
+        
     } catch (error) {
         console.error('Error updating starmap:', error);
         updateStatus(`Error: ${error.message}`, false);
@@ -1038,9 +1041,23 @@ function togglePoliticalOverlay() {
     politicalOverlayActive = checkbox.checked;
     
     if (politicalOverlayActive) {
+        // Ensure we have current star data
+        if (!currentStars || currentStars.length === 0) {
+            updateStatus('Loading star data for political overlay...');
+            // Reload starmap which will trigger reapplyPoliticalOverlay
+            updateStarmap();
+            return;
+        }
+        
         if (Object.keys(nationsData).length === 0) {
+            updateStatus('Loading nations data...');
             loadNationsData().then(() => {
                 applyPoliticalOverlay();
+            }).catch(error => {
+                console.error('Error loading nations data:', error);
+                updateStatus('Error loading nations data');
+                checkbox.checked = false;
+                politicalOverlayActive = false;
             });
         } else {
             applyPoliticalOverlay();
@@ -1067,6 +1084,18 @@ function applyPoliticalOverlay() {
     }, [0]);
     
     updateStatus('Political overlay applied');
+}
+
+function reapplyPoliticalOverlay() {
+    // Reapply political overlay if it's currently active
+    if (politicalOverlayActive && currentStars && starmapPlot) {
+        try {
+            applyPoliticalOverlay();
+        } catch (error) {
+            console.error('Error reapplying political overlay:', error);
+            updateStatus('Warning: Political overlay may need to be refreshed');
+        }
+    }
 }
 
 function clearPoliticalOverlay() {
@@ -1179,7 +1208,7 @@ async function showTradeRoutes() {
 }
 
 function hideTradeRoutes() {
-    clearPoliticalTraces();
+    clearTradeRouteTraces();
 }
 
 function toggleTerritoryBorders() {
@@ -1371,7 +1400,7 @@ function createStarConnections(stars, nation) {
 
 function hideTerritoryBorders() {
     // Clear territory border traces
-    clearPoliticalTraces();
+    clearTerritoryBorderTraces();
     updateStatus('Territory borders hidden');
 }
 
@@ -1389,6 +1418,58 @@ function clearPoliticalTraces() {
     }
     
     politicalTraces = [];
+}
+
+function clearTradeRouteTraces() {
+    if (!starmapPlot) return;
+    
+    // Remove only trade route traces from the plot
+    const currentData = starmapPlot.data;
+    const traceIndicesToRemove = [];
+    
+    currentData.forEach((trace, index) => {
+        if (trace.name && (trace.name.includes('Trade Route') || trace.name.includes('Route'))) {
+            traceIndicesToRemove.push(index);
+        }
+    });
+    
+    if (traceIndicesToRemove.length > 0) {
+        // Remove traces in reverse order to maintain indices
+        traceIndicesToRemove.reverse().forEach(index => {
+            Plotly.deleteTraces('starmap', index);
+        });
+    }
+    
+    // Reapply political overlay if it was active
+    reapplyPoliticalOverlay();
+    
+    updateStatus('Trade routes cleared');
+}
+
+function clearTerritoryBorderTraces() {
+    if (!starmapPlot) return;
+    
+    // Remove only territory border traces from the plot
+    const currentData = starmapPlot.data;
+    const traceIndicesToRemove = [];
+    
+    currentData.forEach((trace, index) => {
+        if (trace.name && (trace.name.includes('Territory') || trace.name.includes('Border'))) {
+            traceIndicesToRemove.push(index);
+        }
+    });
+    
+    if (traceIndicesToRemove.length > 0) {
+        // Remove traces in reverse order to maintain indices
+        traceIndicesToRemove.reverse().forEach(index => {
+            Plotly.deleteTraces('starmap', index);
+        });
+    }
+    
+    // Reapply political overlay if it was active
+    reapplyPoliticalOverlay();
+    
+    updateStatus('Territory borders cleared');
 }
 
 async function showNationLegend() {
@@ -1525,7 +1606,8 @@ async function loadGalacticDirections() {
 }
 
 async function toggleGalacticDirections() {
-    galacticDirectionsActive = !galacticDirectionsActive;
+    const checkbox = document.getElementById('galacticDirections');
+    galacticDirectionsActive = checkbox.checked;
     
     if (galacticDirectionsActive) {
         await loadGalacticDirections();
@@ -1535,7 +1617,8 @@ async function toggleGalacticDirections() {
 }
 
 async function toggleGalacticGrid() {
-    galacticGridActive = !galacticGridActive;
+    const checkbox = document.getElementById('galacticGrid');
+    galacticGridActive = checkbox.checked;
     
     if (galacticDirectionsActive || galacticGridActive) {
         await loadGalacticDirections();

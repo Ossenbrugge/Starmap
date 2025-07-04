@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, jsonify
 from .base_view import BaseView
 
 

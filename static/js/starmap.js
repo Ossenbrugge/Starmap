@@ -23,6 +23,12 @@ let galacticDirectionsData = {};
 let galacticDistance = 50;
 let galacticTraces = [];
 
+// Stellar regions variables
+let stellarRegionsActive = false;
+let stellarRegionsData = {};
+let stellarRegionsTraces = [];
+let selectedRegion = null;
+
 // Helper function to convert hex color to RGB values
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -181,6 +187,9 @@ async function updateStarmap() {
         
         // Reapply political overlay if it was active
         reapplyPoliticalOverlay();
+        
+        // Reapply stellar regions overlay if it was active
+        reapplyStellarRegionsOverlay();
         
     } catch (error) {
         console.error('Error updating starmap:', error);
@@ -1922,5 +1931,213 @@ function exportCSV() {
         console.error('CSV export failed:', error);
         statusBar.innerHTML = '❌ CSV export failed. Please try again.';
         setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+    }
+}
+
+// ==========================================
+// STELLAR REGIONS OVERLAY FUNCTIONS
+// ==========================================
+
+async function toggleStellarRegions() {
+    const checkbox = document.getElementById('stellarRegions');
+    stellarRegionsActive = checkbox.checked;
+    
+    if (stellarRegionsActive) {
+        await loadStellarRegions();
+    }
+    
+    updateStellarRegionsDisplay();
+}
+
+async function loadStellarRegions() {
+    if (Object.keys(stellarRegionsData).length > 0) {
+        return; // Already loaded
+    }
+    
+    try {
+        updateStatus('Loading stellar regions data...', true);
+        
+        const response = await fetch('/api/stellar-regions');
+        if (!response.ok) {
+            throw new Error('Failed to fetch stellar regions data');
+        }
+        
+        const data = await response.json();
+        stellarRegionsData = data;
+        
+        updateStatus('Stellar regions data loaded successfully');
+        
+    } catch (error) {
+        console.error('Error loading stellar regions:', error);
+        updateStatus(`Error loading stellar regions: ${error.message}`);
+        throw error;
+    }
+}
+
+function updateStellarRegionsDisplay() {
+    if (!starmapPlot) return;
+    
+    // Remove existing stellar regions traces
+    clearStellarRegionsTraces();
+    
+    if (!stellarRegionsActive || !stellarRegionsData.regions) return;
+    
+    const tracesToAdd = [];
+    
+    // Add region boundary traces
+    stellarRegionsData.regions.forEach((region, index) => {
+        // Create a simple region center marker
+        const centerTrace = {
+            x: [region.center_point[0]],
+            y: [region.center_point[1]],
+            z: [region.center_point[2]],
+            mode: 'markers+text',
+            type: 'scatter3d',
+            marker: {
+                size: 15,
+                color: region.color,
+                symbol: 'circle',
+                opacity: 0.7,
+                line: {
+                    width: 2,
+                    color: '#ffffff'
+                }
+            },
+            text: [region.name],
+            textposition: 'top center',
+            textfont: {
+                size: 12,
+                color: '#ffffff'
+            },
+            hovertemplate: 
+                `<b>${region.name}</b><br>` +
+                `${region.description}<br>` +
+                `Population: ${region.population}<br>` +
+                `Established: ${region.established}<br>` +
+                `Longitude: ${region.longitude_range[0]}° to ${region.longitude_range[1]}°<br>` +
+                `Latitude: ${region.latitude_range[0]}° to ${region.latitude_range[1]}°<br>` +
+                `Distance: ${region.distance_range[0]} to ${region.distance_range[1]} pc<br>` +
+                `<extra></extra>`,
+            name: `Region: ${region.name}`,
+            showlegend: true,
+            legendgroup: 'stellar_regions'
+        };
+        
+        tracesToAdd.push(centerTrace);
+    });
+    
+    // Add all traces to the plot
+    if (tracesToAdd.length > 0) {
+        Plotly.addTraces('starmap', tracesToAdd).then(() => {
+            // Track trace indices for cleanup
+            const currentTraceCount = starmapPlot.data.length;
+            for (let i = 0; i < tracesToAdd.length; i++) {
+                stellarRegionsTraces.push(currentTraceCount - tracesToAdd.length + i);
+            }
+            
+            updateStatus(`Stellar regions overlay applied (${stellarRegionsData.regions.length} regions)`);
+        });
+    }
+}
+
+function clearStellarRegionsTraces() {
+    if (!starmapPlot || stellarRegionsTraces.length === 0) return;
+    
+    // Remove traces in reverse order to maintain indices
+    stellarRegionsTraces.reverse().forEach(traceIndex => {
+        if (traceIndex < starmapPlot.data.length) {
+            Plotly.deleteTraces('starmap', traceIndex);
+        }
+    });
+    
+    stellarRegionsTraces = [];
+}
+
+function selectStellarRegion(regionName) {
+    selectedRegion = regionName;
+    
+    // Find the region data
+    const region = stellarRegionsData.regions?.find(r => r.name === regionName);
+    if (!region) return;
+    
+    // Update status with region info
+    updateStatus(`Selected region: ${region.name} (${region.population})`);
+    
+    // Optional: Focus camera on region center
+    if (starmapPlot) {
+        const center = region.center_point;
+        const currentCamera = starmapPlot.layout.scene.camera;
+        
+        // Calculate camera position to look at region center
+        const distance = 100; // Distance from center
+        const newCamera = {
+            eye: {
+                x: center[0] / distance + 1,
+                y: center[1] / distance + 1,
+                z: center[2] / distance + 1
+            },
+            center: {
+                x: center[0] / distance,
+                y: center[1] / distance,
+                z: center[2] / distance
+            }
+        };
+        
+        Plotly.relayout('starmap', {
+            'scene.camera': newCamera
+        });
+    }
+}
+
+async function loadRegionBoundaries(regionName) {
+    try {
+        updateStatus(`Loading boundaries for ${regionName}...`, true);
+        
+        const response = await fetch(`/api/stellar-region/${regionName}/boundaries?resolution=20`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch boundaries for ${regionName}`);
+        }
+        
+        const data = await response.json();
+        
+        // Add boundary trace
+        if (data.boundary_points && data.boundary_points.length > 0) {
+            const boundaryTrace = {
+                x: data.boundary_points.map(p => p[0]),
+                y: data.boundary_points.map(p => p[1]),
+                z: data.boundary_points.map(p => p[2]),
+                mode: 'markers',
+                type: 'scatter3d',
+                marker: {
+                    size: 3,
+                    color: '#ffffff',
+                    opacity: 0.5
+                },
+                name: `${regionName} Boundaries`,
+                showlegend: false,
+                hovertemplate: `${regionName} Boundary<extra></extra>`
+            };
+            
+            Plotly.addTraces('starmap', [boundaryTrace]).then(() => {
+                stellarRegionsTraces.push(starmapPlot.data.length - 1);
+                updateStatus(`Boundaries loaded for ${regionName}`);
+            });
+        }
+        
+    } catch (error) {
+        console.error(`Error loading boundaries for ${regionName}:`, error);
+        updateStatus(`Error loading boundaries: ${error.message}`);
+    }
+}
+
+// Function to reapply stellar regions overlay after starmap updates
+function reapplyStellarRegionsOverlay() {
+    if (stellarRegionsActive && stellarRegionsData.regions) {
+        try {
+            updateStellarRegionsDisplay();
+        } catch (error) {
+            console.error('Error reapplying stellar regions overlay:', error);
+            updateStatus('Warning: Stellar regions overlay may need to be refreshed');
+        }
     }
 }

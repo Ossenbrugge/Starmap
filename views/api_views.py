@@ -108,6 +108,49 @@ class ApiView(BaseView):
         """Format galactic directions data for API response"""
         return jsonify(directions_data)
     
+    def format_stellar_regions_response(self, regions_data):
+        """Format stellar regions data for API response"""
+        return jsonify({
+            'success': True,
+            'total_regions': len(regions_data),
+            'regions': regions_data
+        })
+    
+    def format_stellar_regions_summary_response(self, summary_data):
+        """Format stellar regions summary for API response"""
+        return jsonify(summary_data)
+    
+    def format_stellar_region_details_response(self, region_details):
+        """Format detailed stellar region information for API response"""
+        if not region_details:
+            return self.error_response("Stellar region not found", 404)
+        
+        return jsonify(region_details)
+    
+    def format_region_boundaries_response(self, region_name, boundary_points):
+        """Format region boundary points for API response"""
+        return jsonify({
+            'region_name': region_name,
+            'boundary_points': boundary_points,
+            'point_count': len(boundary_points)
+        })
+    
+    def format_star_region_response(self, region, x, y, z):
+        """Format star region check response"""
+        if region:
+            return jsonify({
+                'found': True,
+                'region': region,
+                'coordinates': {'x': x, 'y': y, 'z': z}
+            })
+        else:
+            return jsonify({
+                'found': False,
+                'region': None,
+                'coordinates': {'x': x, 'y': y, 'z': z},
+                'message': 'No stellar region found for this position'
+            })
+    
     def format_csv_export_response(self, csv_data, filename='starmap_export.csv'):
         """Format CSV export response"""
         if csv_data is None or csv_data.empty:

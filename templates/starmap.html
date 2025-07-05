@@ -400,6 +400,12 @@
                                     <label class="form-check-label small" for="galacticGrid">Grid</label>
                                 </div>
                             </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="stellarRegions" onchange="handleOverlayChange('stellarRegions')">
+                                    <label class="form-check-label small" for="stellarRegions">Regions</label>
+                                </div>
+                            </div>
                         </div>
                         <div class="mt-2">
                             <label class="form-label small">Distance (pc): <span id="galacticDistanceValue">50</span></label>
@@ -407,6 +413,9 @@
                         </div>
                         <div class="mt-2">
                             <small class="text-muted">💡 Trade routes require Nations overlay to be enabled</small>
+                        </div>
+                        <div class="mt-1">
+                            <small class="text-muted">🌌 Stellar regions show areas of human expansion</small>
                         </div>
                     </div>
                 </div>
@@ -629,6 +638,9 @@
                     break;
                 case 'galacticGrid':
                     if (typeof toggleGalacticGrid === 'function') toggleGalacticGrid();
+                    break;
+                case 'stellarRegions':
+                    if (typeof toggleStellarRegions === 'function') toggleStellarRegions();
                     break;
             }
         }

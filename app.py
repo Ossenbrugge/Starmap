@@ -8,11 +8,13 @@ from flask import Flask, request
 from models.star_model import StarModel
 from models.planet_model import PlanetModel
 from models.nation_model import NationModel
+from models.stellar_region_model import StellarRegionModel
 from views.api_views import ApiView, TemplateView
 from controllers.star_controller import StarController
 from controllers.planet_controller import PlanetController
 from controllers.nation_controller import NationController
 from controllers.map_controller import MapController
+from controllers.stellar_region_controller import StellarRegionController
 
 
 class StarmapApplication:
@@ -32,6 +34,7 @@ class StarmapApplication:
         self.star_model = StarModel()
         self.planet_model = PlanetModel()
         self.nation_model = NationModel()
+        self.stellar_region_model = StellarRegionModel()
         
         # Add planets to star model for compatibility
         self._integrate_planet_data()
@@ -51,6 +54,9 @@ class StarmapApplication:
         )
         self.map_controller = MapController(
             self.star_model, self.planet_model, self.api_view
+        )
+        self.stellar_region_controller = StellarRegionController(
+            self.stellar_region_model, self.api_view
         )
         
         print("✅ MVC components initialized successfully")
@@ -96,6 +102,13 @@ class StarmapApplication:
         
         # Map routes
         self.app.route('/api/galactic-directions')(self.map_controller.get_galactic_directions)
+        
+        # Stellar regions routes
+        self.app.route('/api/stellar-regions')(self.stellar_region_controller.get_stellar_regions)
+        self.app.route('/api/stellar-regions/summary')(self.stellar_region_controller.get_stellar_regions_summary)
+        self.app.route('/api/stellar-region/<region_name>')(self.stellar_region_controller.get_stellar_region_details)
+        self.app.route('/api/stellar-region/<region_name>/boundaries')(self.stellar_region_controller.get_region_boundaries)
+        self.app.route('/api/stellar-regions/check-star')(self.stellar_region_controller.check_star_region)
         
         # Additional API routes for enhanced functionality
         self._register_extended_routes()
@@ -198,7 +211,8 @@ class StarmapApplication:
         return {
             'star_model': self.star_model,
             'planet_model': self.planet_model,
-            'nation_model': self.nation_model
+            'nation_model': self.nation_model,
+            'stellar_region_model': self.stellar_region_model
         }
     
     def get_controllers(self):
@@ -207,7 +221,8 @@ class StarmapApplication:
             'star_controller': self.star_controller,
             'planet_controller': self.planet_controller,
             'nation_controller': self.nation_controller,
-            'map_controller': self.map_controller
+            'map_controller': self.map_controller,
+            'stellar_region_controller': self.stellar_region_controller
         }
 
 
@@ -233,10 +248,12 @@ if __name__ == '__main__':
                        not models['star_model'].data.empty)
     planet_data_loaded = len(models['planet_model'].data) > 0
     nation_data_loaded = len(models['nation_model'].data) > 0
+    stellar_region_data_loaded = len(models['stellar_region_model'].data) > 0
     
     print(f"📊 Star data loaded: {'✅' if star_data_loaded else '❌'}")
     print(f"🪐 Planet data loaded: {'✅' if planet_data_loaded else '❌'}")
     print(f"🏛️  Nation data loaded: {'✅' if nation_data_loaded else '❌'}")
+    print(f"🌌 Stellar region data loaded: {'✅' if stellar_region_data_loaded else '❌'}")
     
     if star_data_loaded:
         star_count = len(models['star_model'].data)
@@ -251,6 +268,10 @@ if __name__ == '__main__':
         nation_count = len(models['nation_model'].data)
         print(f"   └─ {nation_count} nations loaded")
     
+    if stellar_region_data_loaded:
+        region_count = len(models['stellar_region_model'].data)
+        print(f"   └─ {region_count} stellar regions loaded")
+    
     print("\n🌐 Server Information:")
     print("   Local:  http://localhost:8080")
     print("   LAN:    http://[your-ip]:8080")
@@ -259,6 +280,7 @@ if __name__ == '__main__':
     print("   /api/search - Search stars")
     print("   /api/systems - Planetary systems")
     print("   /api/nations - Political data")
+    print("   /api/stellar-regions - Stellar regions")
     print("   /api/map/settings - Visualization settings")
     print("\n🚀 Press Ctrl+C to stop")
     

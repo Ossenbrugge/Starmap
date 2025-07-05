@@ -1,4 +1,8 @@
-# Galactic Directions Feature
+# Galactic Directions Guide
+
+Complete documentation for the galactic coordinate system, navigation overlays, and directional indicators in the Starmap application.
+
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**
 
 ## Overview
 The Galactic Directions feature helps users visualize the starmap's orientation within the Milky Way galaxy by providing cardinal direction markers and coordinate grids based on galactic coordinates.
@@ -66,3 +70,12 @@ The coordinate transformations use standard astronomical constants:
 - Follows IAU galactic coordinate system conventions
 
 This ensures the directions accurately represent real galactic orientation for scientifically-grounded fiction.
+
+## Related Documentation
+
+- **[📖 Main Documentation](README.md)** - Complete application overview and user interface guide
+- **[🪐 Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Detailed planetary systems and world-building
+- **[🌍 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+
+---
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

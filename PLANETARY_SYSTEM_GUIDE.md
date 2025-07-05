@@ -1,7 +1,11 @@
-# Planetary System Mini-Map Guide
+# Planetary System Guide
+
+A comprehensive guide to planetary systems in the Starmap application, including how to add new worlds and configure orbital parameters.
+
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**
 
 ## Overview
-The Starmap application now includes interactive planetary system visualization for stars with known or theoretical exoplanets.
+The Starmap application includes interactive planetary system visualization for stars with known or theoretical exoplanets, featuring detailed system minimaps and planetary data.
 
 ## Current Systems Available
 
@@ -160,3 +164,12 @@ The mini-map now uses **logarithmic scaling** for large planets to ensure propor
 - ✅ **Habitable Zone**: Green circles for Sol system
 
 This system provides a foundation for incorporating future exoplanet discoveries and serves as an excellent tool for science fiction world-building!
+
+## Related Documentation
+
+- **[📖 Main Documentation](README.md)** - Complete application overview and quick start
+- **[🧭 Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems and navigation overlays
+- **[🔌 API Reference](README.md#-api-endpoints)** - Backend API for planetary system data
+
+---
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

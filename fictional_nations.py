@@ -55,16 +55,20 @@ for nation_id, nation_data in fictional_nations.items():
 
 def get_star_nation(star_id):
     """Get the nation that controls a specific star system"""
-    return star_nation_mapping.get(star_id, "neutral_zone")
+    return star_nation_mapping.get(star_id, None)
 
 def get_nation_info(nation_id):
     """Get full information about a nation"""
-    return fictional_nations.get(nation_id, fictional_nations["neutral_zone"])
+    if nation_id is None:
+        return None
+    return fictional_nations.get(nation_id, None)
 
 def get_nation_color(star_id):
     """Get the color for a star based on its controlling nation"""
     nation_id = get_star_nation(star_id)
     nation = get_nation_info(nation_id)
+    if nation is None:
+        return "#FFFFFF"  # Default white color for uncontrolled stars
     return nation["color"]
 
 def get_all_nations():

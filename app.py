@@ -70,6 +70,12 @@ class StarmapApplication:
         # Main page route
         self.app.route('/')(self._handle_index)
         
+        # Controls window route
+        self.app.route('/controls')(self._handle_controls)
+        
+        # Star data window route
+        self.app.route('/stardata')(self._handle_stardata)
+        
         # Star routes
         self.app.route('/api/stars')(self.star_controller.get_stars)
         self.app.route('/api/star/<int:star_id>')(self.star_controller.get_star_details)
@@ -174,6 +180,14 @@ class StarmapApplication:
     def _handle_index(self):
         """Handle main page request"""
         return self.map_controller.render_main_page()
+    
+    def _handle_controls(self):
+        """Handle controls window request"""
+        return self.template_view.render_controls()
+    
+    def _handle_stardata(self):
+        """Handle star data window request"""
+        return self.template_view.render_stardata()
     
     def get_app(self):
         """Get the Flask application instance"""

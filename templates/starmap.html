@@ -7,49 +7,333 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            overflow: hidden;
+        }
+        
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header-bar {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 8px 16px;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .content-area {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .starmap-container {
+            flex: 1;
+            position: relative;
+            background: #000;
+        }
+        
+        #starmap {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 320px;
+            background: rgba(45, 52, 54, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        
+        .control-panel.collapsed {
+            transform: translateX(-290px);
+        }
+        
+        .control-toggle {
+            position: absolute;
+            right: -40px;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(45, 52, 54, 0.95);
+            border: 1px solid #444;
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .data-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 320px;
+            max-height: calc(100vh - 120px);
+            background: rgba(45, 52, 54, 0.95);
+            border: 1px solid #444;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .data-panel.show {
+            display: block;
+        }
+        
+        .data-panel.collapsed {
+            transform: translateX(290px);
+        }
+        
+        .data-toggle {
+            position: absolute;
+            left: -40px;
+            top: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(45, 52, 54, 0.95);
+            border: 1px solid #444;
+            border-right: none;
+            border-radius: 8px 0 0 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .panel-header {
+            background: #636e72;
+            padding: 8px 12px;
+            border-bottom: 1px solid #444;
+            border-radius: 8px 8px 0 0;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-body {
+            padding: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .control-section {
+            margin-bottom: 16px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-section h6 {
+            margin-bottom: 8px;
+            color: #74b9ff;
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(116, 185, 255, 0.3);
+            padding-bottom: 4px;
+        }
+        
+        .form-control, .form-select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #555;
+            color: white;
+            font-size: 0.85rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: #74b9ff;
+            color: white;
+            box-shadow: 0 0 0 0.2rem rgba(116, 185, 255, 0.25);
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.75rem;
+        }
+        
+        .form-range {
+            margin: 4px 0;
+        }
+        
+        .form-check-input {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: #555;
+        }
+        
+        .form-check-input:checked {
+            background-color: #74b9ff;
+            border-color: #74b9ff;
+        }
+        
+        .bottom-controls {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            background: rgba(45, 52, 54, 0.95);
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: 1px solid #444;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-bar {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(45, 52, 54, 0.95);
+            padding: 6px 12px;
+            border-radius: 15px;
+            border: 1px solid #444;
+            backdrop-filter: blur(10px);
+            font-size: 0.8rem;
+        }
+        
+        .distance-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 193, 7, 0.9);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            display: none;
+            z-index: 1001;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 20px;
+        }
+        
+        .data-section {
+            margin-bottom: 12px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-section h6 {
+            margin-bottom: 6px;
+            color: #74b9ff;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(116, 185, 255, 0.3);
+            padding-bottom: 2px;
+        }
+        
+        .star-property {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            padding: 2px 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        
+        .collapse-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+    </style>
 </head>
 <body class="bg-dark text-light">
-    <div class="container-fluid">
-        <header class="row bg-primary p-3 mb-4">
-            <div class="col">
-                <h1 class="text-center">🌟 Starmap - Interactive 3D Star Viewer</h1>
-                <p class="text-center mb-0">Explore the galaxy for your science fiction novel</p>
+    <div class="main-container">
+        <!-- Header Bar -->
+        <div class="header-bar">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Starmap: A Picture of the Felgenland Saga</h5>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-light btn-sm" onclick="exportImage('png')">PNG</button>
+                    <button class="btn btn-outline-light btn-sm" onclick="exportImage('jpg')">JPG</button>
+                    <button class="btn btn-outline-light btn-sm" onclick="exportImage('pdf')">PDF</button>
+                </div>
             </div>
-        </header>
+        </div>
 
-        <div class="row">
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Starmap Container -->
+            <div class="starmap-container">
+                <div id="starmap"></div>
+                
+                <!-- Distance Measurement Indicator -->
+                <div class="distance-indicator" id="distanceModeIndicator">
+                    📍 Distance Mode Active - Click two stars to measure
+                </div>
+            </div>
+
             <!-- Control Panel -->
-            <div class="col-md-3">
-                <div class="card bg-secondary">
-                    <div class="card-header">
-                        <h5>Controls</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="magLimit" class="form-label">Magnitude Limit:</label>
-                            <input type="range" class="form-range" min="1" max="15" value="10" step="0.5" id="magLimit">
-                            <span id="magValue">10.0</span>
+            <div class="control-panel" id="controlPanel">
+                <div class="control-toggle" onclick="toggleControlPanel()">
+                    <span id="controlToggleIcon">‹</span>
+                </div>
+                
+                <div class="panel-header">
+                    <span>Controls</span>
+                    <button class="collapse-btn" onclick="toggleControlPanel()">×</button>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- Basic Controls -->
+                    <div class="control-section">
+                        <h6>
+                            Basic Settings
+                            <button class="collapse-btn float-end" onclick="toggleMagnitudeScale()" id="magToggleBtn">🔽</button>
+                        </h6>
+                        <div id="magnitudeControls">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small">Magnitude: <span id="magValue">10.0</span></label>
+                                    <input type="range" class="form-range" min="1" max="15" value="10" step="0.5" id="magLimit">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small">Max Stars: <span id="countValue">500</span></label>
+                                    <input type="range" class="form-range" min="100" max="2000" value="500" step="100" id="starCount">
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="starCount" class="form-label">Max Stars:</label>
-                            <input type="range" class="form-range" min="100" max="2000" value="500" step="100" id="starCount">
-                            <span id="countValue">500</span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="starSearch" class="form-label">Search Stars:</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="starSearch" placeholder="Star name, constellation...">
+                        <div class="mt-2">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="starSearch" placeholder="Search stars...">
                                 <button class="btn btn-outline-light" onclick="searchStars()">🔍</button>
                             </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label for="spectralType" class="form-label">Spectral Type Filter:</label>
-                            <div class="input-group">
+                        <div class="mt-2">
+                            <div class="input-group input-group-sm">
                                 <select class="form-select" id="spectralType">
-                                    <option value="">All Types</option>
+                                    <option value="">All Spectral Types</option>
                                     <option value="O">O - Blue Giants</option>
                                     <option value="B">B - Blue-White</option>
                                     <option value="A">A - White</option>
@@ -61,142 +345,141 @@
                                 <button class="btn btn-outline-info" onclick="filterBySpectralType()">Filter</button>
                             </div>
                         </div>
-                        
-                        <div class="mb-3">
-                            <button class="btn btn-primary w-100 mb-2" onclick="updateStarmap()">Update Starmap</button>
-                            <button class="btn btn-success w-100 mb-2" onclick="exportCSV()">Export CSV</button>
-                            <button class="btn btn-info w-100 mb-2" onclick="resetView()">Reset View</button>
-                            <button class="btn btn-warning w-100 mb-2" onclick="clearHighlight()">Clear Selection</button>
-                        </div>
-                        
-                        <div class="border-top pt-3">
-                            <h6 class="text-primary">Distance Measurement</h6>
-                            <div class="mb-2">
-                                <button class="btn btn-outline-primary w-100" onclick="toggleDistanceMeasurement()" id="distanceToggle">
-                                    📏 Start Distance Mode
-                                </button>
-                            </div>
-                            <div class="text-muted small" id="distanceInstructions">
-                                Click two stars to measure distance
-                            </div>
-                            <div class="alert alert-warning mt-2" id="distanceModeIndicator" style="display: none;">
-                                <small>📍 Distance mode active - click stars on map</small>
-                            </div>
-                        </div>
-                        
-                        <div class="border-top pt-3">
-                            <h6 class="text-success">Political Overlay</h6>
-                            <div class="mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="politicalOverlay" onchange="togglePoliticalOverlay()">
-                                    <label class="form-check-label" for="politicalOverlay">
-                                        Show Nations
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="tradeRoutes" onchange="toggleTradeRoutes()">
-                                    <label class="form-check-label" for="tradeRoutes">
-                                        Show Trade Routes
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="territoryBorders" onchange="toggleTerritoryBorders()">
-                                    <label class="form-check-label" for="territoryBorders">
-                                        Show Borders
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <button class="btn btn-outline-success w-100" onclick="showNationLegend()">
-                                    🏛️ Nation Legend
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="border-top pt-3">
-                            <h6 class="text-info">Galactic Directions</h6>
-                            <div class="mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="galacticDirections" onchange="toggleGalacticDirections()">
-                                    <label class="form-check-label" for="galacticDirections">
-                                        Show Cardinal Directions
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="galacticGrid" onchange="toggleGalacticGrid()">
-                                    <label class="form-check-label" for="galacticGrid">
-                                        Show Galactic Grid
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <label for="galacticDistance" class="form-label">Distance (parsecs): <span id="galacticDistanceValue">50</span></label>
-                                <input type="range" class="form-range" id="galacticDistance" min="25" max="100" value="50" oninput="updateGalacticDistance()">
+                        <div class="mt-2">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-primary btn-sm" onclick="updateStarmap()">Update</button>
+                                <button class="btn btn-success btn-sm" onclick="exportCSV()">CSV</button>
+                                <button class="btn btn-info btn-sm" onclick="resetView()">Reset</button>
+                                <button class="btn btn-warning btn-sm" onclick="clearHighlight()">Clear</button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Search Results Panel -->
-                <div class="card bg-secondary mt-3" id="searchResults" style="display: none;">
-                    <div class="card-header">
-                        <h5>Search Results</h5>
-                    </div>
-                    <div class="card-body" id="searchResultsList">
-                        <!-- Search results will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Star Information Panel -->
-                <div class="card bg-secondary mt-3" id="starInfo" style="display: none;">
-                    <div class="card-header">
-                        <h5>Star Information</h5>
-                    </div>
-                    <div class="card-body" id="starDetails">
-                        <!-- Star details will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Planet System Panel -->
-                <div class="card bg-secondary mt-3" id="planetInfo" style="display: none;">
-                    <div class="card-header">
-                        <h5 id="planetSystemTitle">Planetary System</h5>
-                        <button class="btn btn-sm btn-outline-light float-end" onclick="toggleSystemView()" id="systemViewToggle">
-                            🌌 System View
+                    <!-- Tools -->
+                    <div class="control-section">
+                        <h6>Tools</h6>
+                        <button class="btn btn-outline-primary btn-sm w-100 mb-2" onclick="toggleDistanceMeasurement()" id="distanceToggle">
+                            📏 Start Distance Mode
+                        </button>
+                        <button class="btn btn-outline-success btn-sm w-100" onclick="showNationLegend()">
+                            🏛️ Nation Legend
                         </button>
                     </div>
-                    <div class="card-body" id="planetDetails">
-                        <!-- Planet details will be populated here -->
+
+                    <!-- Overlays -->
+                    <div class="control-section">
+                        <h6>Overlays</h6>
+                        <div class="row g-1">
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="politicalOverlay" onchange="handleOverlayChange('politicalOverlay')">
+                                    <label class="form-check-label small" for="politicalOverlay">Nations</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="territoryBorders" onchange="handleOverlayChange('territoryBorders')">
+                                    <label class="form-check-label small" for="territoryBorders">Borders</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="tradeRoutes" onchange="handleOverlayChange('tradeRoutes')">
+                                    <label class="form-check-label small" for="tradeRoutes">Trade Routes</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="galacticDirections" onchange="handleOverlayChange('galacticDirections')">
+                                    <label class="form-check-label small" for="galacticDirections">Directions</label>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="galacticGrid" onchange="handleOverlayChange('galacticGrid')">
+                                    <label class="form-check-label small" for="galacticGrid">Grid</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="form-label small">Distance (pc): <span id="galacticDistanceValue">50</span></label>
+                            <input type="range" class="form-range" id="galacticDistance" min="25" max="100" value="50" oninput="updateGalacticDistance()">
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">💡 Trade routes require Nations overlay to be enabled</small>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Starmap Display -->
-            <div class="col-md-9">
-                <div class="card bg-secondary">
-                    <div class="card-body p-0">
-                        <div id="starmap" style="height: 80vh;"></div>
+            <!-- Data Panel -->
+            <div class="data-panel" id="dataPanel">
+                <div class="data-toggle" onclick="toggleDataPanel()">
+                    <span id="dataToggleIcon">›</span>
+                </div>
+                
+                <div class="panel-header">
+                    <span>Star Data</span>
+                    <button class="collapse-btn" onclick="toggleDataPanel()">×</button>
+                </div>
+                
+                <div class="panel-body">
+                    <!-- No Data Message -->
+                    <div class="no-data" id="noDataMessage">
+                        <small>Click on a star to view its details</small>
+                    </div>
+
+                    <!-- Search Results -->
+                    <div class="data-section" id="searchResults" style="display: none;">
+                        <h6>Search Results</h6>
+                        <div id="searchResultsList"></div>
+                    </div>
+
+                    <!-- Star Information -->
+                    <div class="data-section" id="starInfo" style="display: none;">
+                        <h6>Star Information</h6>
+                        <div id="starDetails"></div>
+                    </div>
+
+                    <!-- Planet System -->
+                    <div class="data-section" id="planetInfo" style="display: none;">
+                        <h6 id="planetSystemTitle">Planetary System</h6>
+                        <button class="btn btn-sm btn-outline-light mb-2" onclick="toggleSystemView()" id="systemViewToggle">
+                            🌌 System View
+                        </button>
+                        <div id="planetDetails"></div>
+                    </div>
+
+                    <!-- Distance Results -->
+                    <div class="data-section" id="distanceResults" style="display: none;">
+                        <h6>Distance Measurement</h6>
+                        <div id="distanceDetails"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Bottom Controls -->
+            <div class="bottom-controls">
+                <button class="btn btn-outline-light btn-sm" onclick="toggleControlPanel()" title="Toggle Controls">
+                    🎛️
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="toggleDataPanel()" title="Toggle Data Panel">
+                    📊
+                </button>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="includeUI" checked>
+                    <label class="form-check-label small" for="includeUI">Include UI in exports</label>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <small id="statusBar">Ready - Click "Update" to load stars</small>
             </div>
         </div>
-
-        <!-- Status Bar -->
-        <footer class="row mt-3">
-            <div class="col">
-                <div class="alert alert-info" id="statusBar">
-                    Ready - Click "Update Starmap" to load stars
-                </div>
-            </div>
-        </footer>
     </div>
 
+    <!-- Include the same modals from the original template -->
     <!-- Planetary System Modal -->
     <div class="modal fade" id="systemModal" tabindex="-1" aria-labelledby="systemModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -257,5 +540,234 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/planetary_system.js') }}"></script>
     <script src="{{ url_for('static', filename='js/starmap.js') }}"></script>
+    <script>
+        // UI Control Functions
+        function toggleControlPanel() {
+            const panel = document.getElementById('controlPanel');
+            const icon = document.getElementById('controlToggleIcon');
+            
+            if (panel.classList.contains('collapsed')) {
+                panel.classList.remove('collapsed');
+                icon.textContent = '‹';
+            } else {
+                panel.classList.add('collapsed');
+                icon.textContent = '›';
+            }
+        }
+        
+        function toggleDataPanel() {
+            const panel = document.getElementById('dataPanel');
+            const icon = document.getElementById('dataToggleIcon');
+            
+            if (panel.classList.contains('show')) {
+                if (panel.classList.contains('collapsed')) {
+                    panel.classList.remove('collapsed');
+                    icon.textContent = '›';
+                } else {
+                    panel.classList.add('collapsed');
+                    icon.textContent = '‹';
+                }
+            } else {
+                panel.classList.add('show');
+                panel.classList.remove('collapsed');
+                icon.textContent = '›';
+            }
+        }
+        
+        function toggleMagnitudeScale() {
+            const controls = document.getElementById('magnitudeControls');
+            const btn = document.getElementById('magToggleBtn');
+            
+            if (controls.style.display === 'none') {
+                controls.style.display = 'block';
+                btn.textContent = '🔽';
+            } else {
+                controls.style.display = 'none';
+                btn.textContent = '🔼';
+            }
+        }
+        
+        function handleOverlayChange(overlayType) {
+            const checkbox = document.getElementById(overlayType);
+            const nationsCheckbox = document.getElementById('politicalOverlay');
+            const tradeRoutesCheckbox = document.getElementById('tradeRoutes');
+            
+            // Handle dependencies
+            if (overlayType === 'tradeRoutes' && checkbox.checked) {
+                // Trade routes require nations overlay
+                if (!nationsCheckbox.checked) {
+                    nationsCheckbox.checked = true;
+                    if (typeof togglePoliticalOverlay === 'function') {
+                        togglePoliticalOverlay();
+                    }
+                }
+            }
+            
+            if (overlayType === 'politicalOverlay' && !checkbox.checked) {
+                // If turning off nations, also turn off trade routes
+                if (tradeRoutesCheckbox.checked) {
+                    tradeRoutesCheckbox.checked = false;
+                    if (typeof toggleTradeRoutes === 'function') {
+                        toggleTradeRoutes();
+                    }
+                }
+            }
+            
+            // Call the appropriate toggle function
+            switch(overlayType) {
+                case 'politicalOverlay':
+                    if (typeof togglePoliticalOverlay === 'function') togglePoliticalOverlay();
+                    break;
+                case 'territoryBorders':
+                    if (typeof toggleTerritoryBorders === 'function') toggleTerritoryBorders();
+                    break;
+                case 'tradeRoutes':
+                    if (typeof toggleTradeRoutes === 'function') toggleTradeRoutes();
+                    break;
+                case 'galacticDirections':
+                    if (typeof toggleGalacticDirections === 'function') toggleGalacticDirections();
+                    break;
+                case 'galacticGrid':
+                    if (typeof toggleGalacticGrid === 'function') toggleGalacticGrid();
+                    break;
+            }
+        }
+        
+        function showDataPanel() {
+            const panel = document.getElementById('dataPanel');
+            const noData = document.getElementById('noDataMessage');
+            
+            panel.classList.add('show');
+            panel.classList.remove('collapsed');
+            noData.style.display = 'none';
+        }
+        
+        function hideDataPanel() {
+            const panel = document.getElementById('dataPanel');
+            const noData = document.getElementById('noDataMessage');
+            
+            // Don't auto-hide, just show no data message
+            noData.style.display = 'block';
+        }
+        
+        // Set up event listeners for sliders
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('magLimit').addEventListener('input', function() {
+                document.getElementById('magValue').textContent = this.value;
+            });
+            
+            document.getElementById('starCount').addEventListener('input', function() {
+                document.getElementById('countValue').textContent = this.value;
+            });
+            
+            document.getElementById('galacticDistance').addEventListener('input', function() {
+                document.getElementById('galacticDistanceValue').textContent = this.value;
+            });
+            
+            document.getElementById('starSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchStars();
+                }
+            });
+            
+            // Start with control panel open
+            setTimeout(function() {
+                updateStarmap();
+            }, 500);
+        });
+        
+        // Override starmap functions to show data in panel
+        let originalToggleDistanceMeasurement = null;
+        let originalShowStarInfo = null;
+        let originalShowSearchResults = null;
+        let originalShowPlanetInfo = null;
+        
+        setTimeout(function() {
+            // Store original functions
+            if (typeof toggleDistanceMeasurement !== 'undefined') {
+                originalToggleDistanceMeasurement = toggleDistanceMeasurement;
+                
+                // Override distance measurement function
+                window.toggleDistanceMeasurement = function() {
+                    originalToggleDistanceMeasurement();
+                    
+                    // Update UI indicator
+                    const indicator = document.getElementById('distanceModeIndicator');
+                    const toggle = document.getElementById('distanceToggle');
+                    
+                    if (distanceMeasurementMode) {
+                        indicator.style.display = 'block';
+                        toggle.textContent = '📏 Stop Distance Mode';
+                    } else {
+                        indicator.style.display = 'none';
+                        toggle.textContent = '📏 Start Distance Mode';
+                    }
+                };
+            }
+            
+            // Override data display functions
+            if (typeof showStarInfo !== 'undefined') {
+                originalShowStarInfo = showStarInfo;
+                
+                window.showStarInfo = function(starData) {
+                    showDataPanel();
+                    
+                    // Hide other panels
+                    document.getElementById('searchResults').style.display = 'none';
+                    document.getElementById('planetInfo').style.display = 'none';
+                    document.getElementById('distanceResults').style.display = 'none';
+                    
+                    // Show star info
+                    const starInfo = document.getElementById('starInfo');
+                    const starDetails = document.getElementById('starDetails');
+                    
+                    starDetails.innerHTML = originalShowStarInfo ? originalShowStarInfo(starData) : '';
+                    starInfo.style.display = 'block';
+                };
+            }
+            
+            if (typeof showSearchResults !== 'undefined') {
+                originalShowSearchResults = showSearchResults;
+                
+                window.showSearchResults = function(results) {
+                    showDataPanel();
+                    
+                    // Hide other panels
+                    document.getElementById('starInfo').style.display = 'none';
+                    document.getElementById('planetInfo').style.display = 'none';
+                    document.getElementById('distanceResults').style.display = 'none';
+                    
+                    // Show search results
+                    const searchResults = document.getElementById('searchResults');
+                    const searchResultsList = document.getElementById('searchResultsList');
+                    
+                    if (originalShowSearchResults) {
+                        searchResultsList.innerHTML = originalShowSearchResults(results);
+                    }
+                    searchResults.style.display = 'block';
+                };
+            }
+            
+            if (typeof showPlanetInfo !== 'undefined') {
+                originalShowPlanetInfo = showPlanetInfo;
+                
+                window.showPlanetInfo = function(planetData) {
+                    showDataPanel();
+                    
+                    // Store the current system data for toggleSystemView
+                    window.currentSystemData = planetData;
+                    
+                    // Show planet info alongside star info
+                    const planetInfo = document.getElementById('planetInfo');
+                    const planetDetails = document.getElementById('planetDetails');
+                    
+                    if (originalShowPlanetInfo) {
+                        planetDetails.innerHTML = originalShowPlanetInfo(planetData);
+                    }
+                    planetInfo.style.display = 'block';
+                };
+            }
+        }, 1000);
+    </script>
 </body>
 </html>

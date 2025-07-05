@@ -136,6 +136,18 @@ class TemplateView(BaseView):
         """Render the main starmap template"""
         return render_template('starmap.html')
     
+    def render_controls(self):
+        """Render the controls window template"""
+        return render_template('controls.html')
+    
+    def render_stardata(self):
+        """Render the star data window template"""
+        return render_template('stardata.html')
+    
+    def render_template(self, template_name):
+        """Generic template rendering method"""
+        return render_template(template_name)
+    
     def render_error(self, error_message, status_code=500):
         """Render an error template"""
         # For now, return a simple error page

@@ -94,6 +94,8 @@ class StarModel(BaseModel):
         def get_nation_for_star(star_id):
             nation_id = get_star_nation(star_id)
             nation_info = get_nation_info(nation_id)
+            if nation_info is None:
+                return None
             return {
                 'id': nation_id,
                 'name': nation_info['name'],
@@ -113,7 +115,7 @@ class StarModel(BaseModel):
         
         # Add nation priority - stars with nations get priority
         display_stars['nation_priority'] = display_stars['id'].apply(
-            lambda x: 0 if get_star_nation(x) != 'neutral_zone' else 1
+            lambda x: 0 if get_star_nation(x) is not None else 1
         )
         
         # Filter by magnitude if specified, but always include fictional stars and important systems
@@ -151,13 +153,23 @@ class StarModel(BaseModel):
             # Always get fresh nation data to avoid pandas string conversion
             nation_id = get_star_nation(star_id)
             nation_info = get_nation_info(nation_id)
-            nation_data = {
-                'id': nation_id,
-                'name': nation_info['name'],
-                'color': nation_info['color'],
-                'government_type': nation_info['government_type']
-            }
+            if nation_info is not None:
+                nation_data = {
+                    'id': nation_id,
+                    'name': nation_info['name'],
+                    'color': nation_info['color'],
+                    'government_type': nation_info['government_type']
+                }
+            else:
+                nation_data = None
             
+            # Get planet data if available
+            planets = star.get('planets', [])
+            if planets and isinstance(planets, list) and len(planets) > 0:
+                planet_data = planets
+            else:
+                planet_data = []
+
             star_data = {
                 'id': star_id,
                 'name': str(star.get('primary_name', f'Star {star["id"]}')),
@@ -175,7 +187,8 @@ class StarModel(BaseModel):
                 'fictional_name': star.get('fictional_name'),
                 'fictional_source': star.get('fictional_source'),
                 'fictional_description': star.get('fictional_description'),
-                'nation': nation_data
+                'nation': nation_data,
+                'planets': planet_data
             }
             stars_json.append(star_data)
         
@@ -190,6 +203,13 @@ class StarModel(BaseModel):
         nation_id = get_star_nation(star_id)
         nation_info = get_nation_info(nation_id)
         
+        # Get planet data if available
+        planets = star.get('planets', [])
+        if planets and isinstance(planets, list) and len(planets) > 0:
+            planet_data = planets
+        else:
+            planet_data = []
+
         details = {
             'id': int(star['id']),
             'name': str(star.get('primary_name', f'Star {star_id}')),
@@ -221,13 +241,14 @@ class StarModel(BaseModel):
             },
             'nation': {
                 'id': nation_id,
-                'name': nation_info['name'],
-                'color': nation_info['color'],
-                'government_type': nation_info['government_type'],
-                'capital_system': nation_info.get('capital_system'),
-                'population': nation_info.get('population'),
-                'description': nation_info.get('description')
-            }
+                'name': nation_info['name'] if nation_info else None,
+                'color': nation_info['color'] if nation_info else '#FFFFFF',
+                'government_type': nation_info['government_type'] if nation_info else None,
+                'capital_system': nation_info.get('capital_system') if nation_info else None,
+                'population': nation_info.get('population') if nation_info else None,
+                'description': nation_info.get('description') if nation_info else None
+            } if nation_info else None,
+            'planets': planet_data
         }
         
         return details

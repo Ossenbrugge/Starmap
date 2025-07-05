@@ -1732,3 +1732,195 @@ function updateGalacticDirectionsDisplay() {
         });
     }
 }
+
+// Image Export Functionality
+function exportImage(format) {
+    if (!starmapPlot) {
+        alert('Please update the starmap first before exporting.');
+        return;
+    }
+
+    // Get the current timestamp for filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `starmap-felgenland-${timestamp}`;
+    
+    // Check if we should include UI elements
+    const includeUI = document.getElementById('includeUI').checked;
+    
+    // Export configuration
+    const config = {
+        filename: filename,
+        format: format,
+        width: includeUI ? 1920 : 1600,
+        height: includeUI ? 1080 : 1200,
+        scale: 2 // Higher resolution
+    };
+
+    // Show loading indicator
+    const statusBar = document.getElementById('statusBar');
+    const originalStatus = statusBar.innerHTML;
+    statusBar.innerHTML = '<span class="loading"></span>Exporting ' + format.toUpperCase() + ' image...';
+
+    try {
+        if (format === 'png') {
+            Plotly.downloadImage('starmap', {
+                format: 'png',
+                width: config.width,
+                height: config.height,
+                filename: config.filename,
+                scale: config.scale
+            }).then(() => {
+                statusBar.innerHTML = '✅ PNG exported successfully!';
+                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+            }).catch(error => {
+                console.error('PNG export failed:', error);
+                statusBar.innerHTML = '❌ PNG export failed. Please try again.';
+                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+            });
+        } else if (format === 'jpg') {
+            Plotly.downloadImage('starmap', {
+                format: 'jpeg',
+                width: config.width,
+                height: config.height,
+                filename: config.filename,
+                scale: config.scale
+            }).then(() => {
+                statusBar.innerHTML = '✅ JPG exported successfully!';
+                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+            }).catch(error => {
+                console.error('JPG export failed:', error);
+                statusBar.innerHTML = '❌ JPG export failed. Please try again.';
+                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+            });
+        } else if (format === 'pdf') {
+            // For PDF, we'll use a different approach
+            exportToPDF(config);
+        }
+    } catch (error) {
+        console.error('Export failed:', error);
+        statusBar.innerHTML = '❌ Export failed. Please try again.';
+        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+    }
+}
+
+function exportToPDF(config) {
+    // First get the image as base64
+    Plotly.toImage('starmap', {
+        format: 'png',
+        width: config.width,
+        height: config.height,
+        scale: config.scale
+    }).then(function(dataURL) {
+        // Create PDF using jsPDF (we'll need to include this library)
+        // For now, we'll convert the image to PDF on the client side
+        
+        // Create a temporary canvas to draw the image
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Draw white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the starmap image
+            ctx.drawImage(img, 0, 0);
+            
+            // Add title and metadata
+            ctx.fillStyle = '#000000';
+            ctx.font = '24px Arial';
+            ctx.fillText('Starmap: A Picture of the Felgenland Saga', 50, 50);
+            
+            ctx.font = '14px Arial';
+            ctx.fillText('Generated on: ' + new Date().toLocaleDateString(), 50, 80);
+            
+            // Convert canvas to blob and download
+            canvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = config.filename + '.png'; // We'll save as PNG for now
+                link.click();
+                
+                const statusBar = document.getElementById('statusBar');
+                statusBar.innerHTML = '✅ PDF (as PNG) exported successfully!';
+                setTimeout(() => statusBar.innerHTML = 'Ready - Starmap exported', 3000);
+            }, 'image/png');
+        };
+        
+        img.src = dataURL;
+    }).catch(error => {
+        console.error('PDF export failed:', error);
+        const statusBar = document.getElementById('statusBar');
+        statusBar.innerHTML = '❌ PDF export failed. Please try again.';
+        setTimeout(() => statusBar.innerHTML = 'Ready - Click "Update Starmap" to load stars', 3000);
+    });
+}
+
+// Enhanced CSV export with image metadata
+function exportCSV() {
+    if (currentStars.length === 0) {
+        alert('No star data to export. Please update the starmap first.');
+        return;
+    }
+
+    const statusBar = document.getElementById('statusBar');
+    const originalStatus = statusBar.innerHTML;
+    statusBar.innerHTML = '<span class="loading"></span>Exporting CSV data...';
+
+    try {
+        // Add timestamp and export metadata
+        const timestamp = new Date().toISOString();
+        const metadata = [
+            '# Starmap CSV Export - Felgenland Saga',
+            '# Generated: ' + timestamp,
+            '# Total Stars: ' + currentStars.length,
+            '# Magnitude Limit: ' + document.getElementById('magLimit').value,
+            '# Max Stars: ' + document.getElementById('starCount').value,
+            '#'
+        ];
+
+        // Create CSV header
+        const headers = ['name', 'ra', 'dec', 'distance', 'magnitude', 'spectral_type', 'x', 'y', 'z'];
+        
+        // Create CSV content
+        let csvContent = metadata.join('\n') + '\n';
+        csvContent += headers.join(',') + '\n';
+        
+        currentStars.forEach(star => {
+            const row = [
+                `"${star.name || 'Unknown'}"`,
+                star.ra || 0,
+                star.dec || 0,
+                star.distance || 0,
+                star.magnitude || 0,
+                `"${star.spectral_type || 'Unknown'}"`,
+                star.x || 0,
+                star.y || 0,
+                star.z || 0
+            ];
+            csvContent += row.join(',') + '\n';
+        });
+
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `starmap-felgenland-${timestamp.replace(/[:.]/g, '-').slice(0, 19)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        statusBar.innerHTML = '✅ CSV exported successfully!';
+        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+    } catch (error) {
+        console.error('CSV export failed:', error);
+        statusBar.innerHTML = '❌ CSV export failed. Please try again.';
+        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
+    }
+}

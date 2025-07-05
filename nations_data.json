@@ -61,29 +61,6 @@
       "diplomatic_stance": "Hostile to Terran Directorate, seeks independence through economic alliances"
     },
     
-    "outer_colonies": {
-      "name": "Outer Colonies",
-      "full_name": "Independent Outer Colony Alliance",
-      "capital_system": "Sirius",
-      "capital_star_id": 32263,
-      "capital_planet": "New Libertad",
-      "government_type": "Loose Confederacy",
-      "color": "#FF9800",
-      "border_color": "#F57C00",
-      "established_year": 2245,
-      "description": "Independent colonies on the galactic rim, formed in opposition to Terran centralization. Known for their fierce independence, frontier technology, and resistance to external authority.",
-      "territories": [
-        32263,
-        16496,
-        8087
-      ],
-      "specialties": ["Mining", "Frontier Technology", "Independent Innovation", "Resource Extraction"],
-      "population": "~1.2 billion across scattered colonies",
-      "military_strength": "Irregular Defense Forces, Colonial Militia, Guerrilla Fleet",
-      "economic_focus": "Raw material extraction, frontier technology, black market trade",
-      "political_alignment": "Libertarian, Anti-Centralist",
-      "diplomatic_stance": "Isolationist with selective trade partnerships"
-    },
     
     "protelani_republic": {
       "name": "Protelani Republic",
@@ -127,26 +104,6 @@
       "economic_focus": "Military services export, tactical training, defense contracts",
       "political_alignment": "Militarist, Pro-Alliance Defense",
       "diplomatic_stance": "Allied with Felgenland Union and Protelani Republic, neutral toward Terran Directorate"
-    },
-    
-    "neutral_zone": {
-      "name": "Neutral Zone",
-      "full_name": "Neutral Systems Territory",
-      "capital_system": null,
-      "capital_star_id": null,
-      "capital_planet": null,
-      "government_type": "Neutral Territory",
-      "color": "#9E9E9E",
-      "border_color": "#616161",
-      "established_year": 2267,
-      "description": "Neutral buffer zones between major powers, often hosting diplomatic meetings and free trade. Governed by interstellar treaties and peacekeeping forces.",
-      "territories": [],
-      "specialties": ["Diplomacy", "Free Trade", "Mediation", "Peacekeeping"],
-      "population": "Variable, transit populations",
-      "military_strength": "Peacekeeping Forces Only, Treaty Enforcement",
-      "economic_focus": "Transit trade, diplomatic services, neutral banking",
-      "political_alignment": "Neutral",
-      "diplomatic_stance": "Mediator between major powers"
     }
   },
   
@@ -388,21 +345,6 @@
         "controlling_nation": "protelani_republic",
         "security_level": "High",
         "description": "Primary rimward trade corridor connecting Protelani corporate hub to Terran core systems, essential for Protelan Republic's economy and neutral diplomatic relations with Earth"
-      },
-      {
-        "name": "Outer Colony Connection",
-        "from_star_id": 32263,
-        "to_star_id": 16496,
-        "from_system": "Sirius",
-        "to_system": "Epsilon Eridani",
-        "route_type": "Independence Supply",
-        "established": 2248,
-        "cargo_types": ["Independent Trade Goods", "Contraband", "Refugees"],
-        "travel_time_days": 89,
-        "frequency": "Irregular",
-        "controlling_nation": "outer_colonies",
-        "security_level": "Variable",
-        "description": "Irregular route connecting independent colonies, often used for smuggling"
       }
     ]
   },
@@ -424,15 +366,6 @@
       "trade_regulations": "Free trade with minimal oversight",
       "tax_rate": "5% union maintenance fee",
       "description": "Low-regulation trade zone promoting commercial activity"
-    },
-    
-    "outer_frontier": {
-      "name": "Outer Frontier Economic Zone",
-      "member_systems": [32263, 16496, 8087],
-      "primary_currency": "Frontier Dollar (FD)",
-      "trade_regulations": "Minimal regulation, barter common",
-      "tax_rate": "Variable by colony",
-      "description": "Loosely regulated frontier economy with high independence"
     }
   }
 }

@@ -308,3 +308,132 @@ body {
     background-color: #2d3436;
     color: #fff;
 }
+
+/* Horizontal toolbar layout */
+.controls-toolbar {
+    max-height: 100px;
+    overflow: hidden;
+}
+
+/* Slim form controls */
+.form-range-sm {
+    height: 0.75rem;
+}
+
+.form-check-sm .form-check-input {
+    width: 0.75rem;
+    height: 0.75rem;
+    margin-top: 0.125rem;
+}
+
+.form-check-sm .form-check-label {
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
+.form-select-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+}
+
+.controls-toolbar .form-range {
+    width: 100%;
+    margin-bottom: 2px;
+}
+
+.controls-toolbar .form-check {
+    margin-bottom: 2px;
+}
+
+.controls-toolbar .form-label {
+    margin-bottom: 2px;
+    font-weight: 500;
+}
+
+.controls-toolbar .btn-group {
+    display: flex;
+    width: 100%;
+}
+
+.controls-toolbar .btn-group .btn {
+    flex: 1;
+    font-size: 0.8em;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Compact form controls */
+.form-check-input {
+    margin-right: 0.25rem;
+}
+
+.form-check-label {
+    font-size: 0.85em;
+}
+
+.input-group-sm .form-control,
+.input-group-sm .form-select {
+    font-size: 0.85em;
+}
+
+/* Responsive toolbar */
+@media (max-width: 1200px) {
+    .controls-toolbar .btn-group .btn {
+        font-size: 0.7em;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .form-check-label {
+        font-size: 0.75em;
+    }
+    
+    .controls-toolbar .form-label {
+        font-size: 0.8em;
+    }
+}
+
+@media (max-width: 992px) {
+    .controls-toolbar {
+        max-height: 160px;
+    }
+    
+    .controls-toolbar .row {
+        flex-direction: column;
+    }
+    
+    .controls-toolbar .col-md-2,
+    .controls-toolbar .col-md-3 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* Ensure no vertical scrolling */
+html, body {
+    overflow-x: hidden;
+}
+
+.container-fluid {
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* Info panels sizing */
+.col-md-3 .card {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.col-md-3 .card-body {
+    padding: 0.5rem;
+}
+
+.col-md-3 .card-header {
+    padding: 0.5rem;
+}

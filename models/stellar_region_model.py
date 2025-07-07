@@ -82,6 +82,7 @@ class StellarRegionModel(BaseModel):
                 'longitude_range': region['longitude_range'],
                 'latitude_range': region['latitude_range'],
                 'distance_range': region['distance_range'],
+                'diameter': region.get('diameter', 50),
                 'color': color_hex,
                 'color_rgb': color_rgb,
                 'established': region.get('established'),

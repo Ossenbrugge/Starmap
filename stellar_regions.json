@@ -13,107 +13,116 @@
       "longitude_range": [0, 360],
       "latitude_range": [-20, 20],
       "distance_range": [0, 22.8],
-      "center_point": [-11.4, 0.0, 0.0],
+      "center_point": [0.0, 0.0, 0.0],
       "color": [255, 215, 0],
       "established": 2150,
       "population": "18+ billion",
-      "significance": "Core human territory including Sol, Alpha Centauri, and primary colonies"
+      "significance": "Core human territory including Sol, Alpha Centauri, and primary colonies",
+      "diameter": 23
     },
     {
       "name": "Protelan Trade Corridor",
       "description": "Key trade route dominated by the Protelani Republic, connecting rimward systems to the core.",
       "longitude_range": [120, 150],
       "latitude_range": [50, 70],
-      "distance_range": [20, 40],
-      "center_point": [7.74, 13.42, 25.98],
+      "distance_range": [20, 75],
+      "center_point": [-7.914966, -0.025672, 5.379364],
       "color": [0, 102, 204],
       "established": 2260,
       "population": "850 million",
-      "significance": "Primary rimward trade corridor, Protelani Republic stronghold"
+      "significance": "Primary rimward trade corridor, Protelani Republic stronghold",
+      "diameter": 20
     },
     {
       "name": "Felgenland Rim",
       "description": "Rimward territories controlled by the Felgenland Union, known for independence and trade prosperity.",
-      "longitude_range": [180, 200],
+      "longitude_range": [190, 210],
       "latitude_range": [30, 60],
-      "distance_range": [30, 45],
-      "center_point": [-26.22, 3.62, 26.09],
+      "distance_range": [30, 100],
+      "center_point": [-11.088308, 6.336788, 7.956742],
       "color": [204, 0, 0],
       "established": 2210,
       "population": "2.8 billion",
-      "significance": "Felgenland Union territory, Eclipse Festival worlds, trade hub"
+      "significance": "Felgenland Union territory, Eclipse Festival worlds, trade hub",
+      "diameter": 30
     },
     {
       "name": "Anti-Driftward Contested Zone",
       "description": "Disputed territory below the galactic plane, site of frequent conflicts between major powers.",
       "longitude_range": [90, 180],
       "latitude_range": [-50, -20],
-      "distance_range": [20, 45],
-      "center_point": [-8.59, 14.88, -26.75],
+      "distance_range": [20, 75],
+      "center_point": [-15.0, 15.0, -25.0],
       "color": [102, 0, 153],
       "established": 2300,
       "population": "Variable",
-      "significance": "Contested space, frequent territorial disputes, strategic resources"
+      "significance": "Contested space, frequent territorial disputes, strategic resources",
+      "diameter": 20
     },
     {
       "name": "Spinward Expanse",
       "description": "Expanding frontier region in the direction of galactic rotation, site of new colonies and exploration.",
       "longitude_range": [60, 120],
       "latitude_range": [20, 50],
-      "distance_range": [20, 45],
-      "center_point": [12.64, 21.89, 18.73],
+      "distance_range": [20, 75],
+      "center_point": [25.0, 15.0, 20.0],
       "color": [0, 153, 0],
       "established": 2280,
       "population": "1.5 billion",
-      "significance": "Active colonization front, new world development, frontier spirit"
+      "significance": "Active colonization front, new world development, frontier spirit",
+      "diameter": 20
     },
     {
       "name": "Anti-Spinward Fringe",
       "description": "Remote frontier region opposite to galactic rotation, sparsely populated with isolated outposts.",
       "longitude_range": [180, 240],
       "latitude_range": [20, 50],
-      "distance_range": [20, 45],
-      "center_point": [-21.89, 12.64, 18.73],
+      "distance_range": [20, 75],
+      "center_point": [-20.0, 25.0, 15.0],
       "color": [255, 153, 0],
       "established": 2320,
       "population": "200 million",
-      "significance": "Remote frontier, independent settlements, exploration outposts"
+      "significance": "Remote frontier, independent settlements, exploration outposts",
+      "diameter": 20
     },
     {
       "name": "Trailing Void",
       "description": "Vast region with sparse stellar density, largely unexplored with few permanent settlements.",
       "longitude_range": [240, 360],
       "latitude_range": [-50, 50],
-      "distance_range": [20, 45],
-      "center_point": [-28.16, 0.0, 0.0],
+      "distance_range": [20, 75],
+      "center_point": [-45.0, -8.0, 5.0],
       "color": [128, 128, 128],
       "established": 2350,
       "population": "50 million",
-      "significance": "Sparse stellar density, research stations, deep space monitoring"
+      "significance": "Sparse stellar density, research stations, deep space monitoring",
+      "diameter": 20
     },
     {
       "name": "Spinward Crescent",
       "description": "Arc-shaped region extending spinward from the core, site of rapid industrial development.",
       "longitude_range": [0, 120],
       "latitude_range": [-20, 20],
-      "distance_range": [20, 45],
-      "center_point": [28.16, 16.25, 0.0],
+      "distance_range": [20, 75],
+      "center_point": [30.0, -5.0, 8.0],
       "color": [0, 255, 255],
       "established": 2290,
       "population": "3.2 billion",
-      "significance": "Industrial development corridor, manufacturing centers, trade routes"
+      "significance": "Industrial development corridor, manufacturing centers, trade routes",
+      "diameter": 20
     },
     {
       "name": "Anti-Spinward Reach",
       "description": "Extended region opposite to galactic rotation, featuring established colonies and defensive positions.",
       "longitude_range": [180, 360],
       "latitude_range": [-20, 20],
-      "distance_range": [20, 45],
-      "center_point": [-32.5, 0.0, 0.0],
+      "distance_range": [20, 75],
+      "center_point": [-35.0, 5.0, -10.0],
       "color": [204, 0, 204],
       "established": 2270,
       "population": "1.8 billion",
-      "significance": "Defensive perimeter, established colonies, strategic buffer zone"
+      "significance": "Defensive perimeter, established colonies, strategic buffer zone",
+      "diameter": 20
     }
   ]
 }

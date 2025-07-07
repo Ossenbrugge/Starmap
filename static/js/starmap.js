@@ -172,14 +172,23 @@ async function updateStarmap() {
         
         // Add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
-            if (data.points && data.points.length > 0) {
-                const starId = data.points[0].customdata;
-                
-                if (distanceMeasurementMode) {
-                    handleDistanceModeClick(starId);
-                } else {
-                    selectStar(starId);
+            try {
+                if (data.points && data.points.length > 0 && data.points[0].customdata) {
+                    const starId = data.points[0].customdata;
+                    
+                    if (typeof starId === 'number' && starId > 0) {
+                        if (distanceMeasurementMode) {
+                            handleDistanceModeClick(starId);
+                        } else {
+                            selectStar(starId);
+                        }
+                    } else {
+                        console.warn('Invalid star ID:', starId);
+                    }
                 }
+            } catch (error) {
+                console.error('Error handling star click:', error);
+                updateStatus('Error processing star selection');
             }
         });
         
@@ -1432,27 +1441,36 @@ function clearPoliticalTraces() {
 function clearTradeRouteTraces() {
     if (!starmapPlot) return;
     
-    // Remove only trade route traces from the plot
-    const currentData = starmapPlot.data;
-    const traceIndicesToRemove = [];
-    
-    currentData.forEach((trace, index) => {
-        if (trace.name && (trace.name.includes('Trade Route') || trace.name.includes('Route'))) {
-            traceIndicesToRemove.push(index);
-        }
-    });
-    
-    if (traceIndicesToRemove.length > 0) {
-        // Remove traces in reverse order to maintain indices
-        traceIndicesToRemove.reverse().forEach(index => {
-            Plotly.deleteTraces('starmap', index);
+    try {
+        // Remove only trade route traces from the plot
+        const currentData = starmapPlot.data;
+        const traceIndicesToRemove = [];
+        
+        currentData.forEach((trace, index) => {
+            if (trace.name && trace.name.includes('Trade Route')) {
+                traceIndicesToRemove.push(index);
+            }
         });
+        
+        if (traceIndicesToRemove.length > 0) {
+            // Remove traces in reverse order to maintain indices
+            traceIndicesToRemove.reverse().forEach(index => {
+                try {
+                    Plotly.deleteTraces('starmap', index);
+                } catch (traceError) {
+                    console.error('Failed to delete trace at index', index, traceError);
+                }
+            });
+        }
+        
+        // Reapply political overlay if it was active
+        reapplyPoliticalOverlay();
+        
+        updateStatus('Trade routes cleared');
+    } catch (error) {
+        console.error('Error clearing trade route traces:', error);
+        updateStatus('Error clearing trade routes');
     }
-    
-    // Reapply political overlay if it was active
-    reapplyPoliticalOverlay();
-    
-    updateStatus('Trade routes cleared');
 }
 
 function clearTerritoryBorderTraces() {
@@ -1974,6 +1992,47 @@ async function loadStellarRegions() {
     }
 }
 
+function generateSpherePoints(center, radius, resolution = 16) {
+    const x = [], y = [], z = [];
+    const i = [], j = [], k = [];
+    
+    // Generate sphere vertices using spherical coordinates
+    for (let phi = 0; phi <= resolution; phi++) {
+        for (let theta = 0; theta <= resolution; theta++) {
+            const phiRad = (phi * Math.PI) / resolution;
+            const thetaRad = (theta * 2 * Math.PI) / resolution;
+            
+            const px = center[0] + radius * Math.sin(phiRad) * Math.cos(thetaRad);
+            const py = center[1] + radius * Math.sin(phiRad) * Math.sin(thetaRad);
+            const pz = center[2] + radius * Math.cos(phiRad);
+            
+            x.push(px);
+            y.push(py);
+            z.push(pz);
+        }
+    }
+    
+    // Generate triangular faces for the sphere mesh
+    for (let phi = 0; phi < resolution; phi++) {
+        for (let theta = 0; theta < resolution; theta++) {
+            const first = phi * (resolution + 1) + theta;
+            const second = first + resolution + 1;
+            
+            // First triangle
+            i.push(first);
+            j.push(second);
+            k.push(first + 1);
+            
+            // Second triangle
+            i.push(second);
+            j.push(second + 1);
+            k.push(first + 1);
+        }
+    }
+    
+    return { x, y, z, i, j, k };
+}
+
 function updateStellarRegionsDisplay() {
     if (!starmapPlot) return;
     
@@ -1986,44 +2045,56 @@ function updateStellarRegionsDisplay() {
     
     // Add region boundary traces
     stellarRegionsData.regions.forEach((region, index) => {
-        // Create a simple region center marker
-        const centerTrace = {
-            x: [region.center_point[0]],
-            y: [region.center_point[1]],
-            z: [region.center_point[2]],
-            mode: 'markers+text',
-            type: 'scatter3d',
-            marker: {
-                size: 15,
-                color: region.color,
-                symbol: 'circle',
-                opacity: 0.7,
-                line: {
-                    width: 2,
-                    color: '#ffffff'
-                }
-            },
-            text: [region.name],
-            textposition: 'top center',
-            textfont: {
-                size: 12,
-                color: '#ffffff'
-            },
+        // Generate 3D sphere mesh that scales with zoom
+        const radius = region.diameter / 2;
+        const center = region.center_point;
+        const resolution = 12; // Reduced for performance
+        
+        // Generate sphere points
+        const sphereData = generateSpherePoints(center, radius, resolution);
+        
+        // Create sphere mesh trace
+        const sphereTrace = {
+            type: 'mesh3d',
+            x: sphereData.x,
+            y: sphereData.y,
+            z: sphereData.z,
+            i: sphereData.i,
+            j: sphereData.j,
+            k: sphereData.k,
+            color: region.color,
+            opacity: 0.2,
+            name: `Region: ${region.name}`,
+            showlegend: true,
+            legendgroup: 'stellar_regions',
             hovertemplate: 
                 `<b>${region.name}</b><br>` +
                 `${region.description}<br>` +
                 `Population: ${region.population}<br>` +
                 `Established: ${region.established}<br>` +
-                `Longitude: ${region.longitude_range[0]}° to ${region.longitude_range[1]}°<br>` +
-                `Latitude: ${region.latitude_range[0]}° to ${region.latitude_range[1]}°<br>` +
-                `Distance: ${region.distance_range[0]} to ${region.distance_range[1]} pc<br>` +
-                `<extra></extra>`,
-            name: `Region: ${region.name}`,
-            showlegend: true,
-            legendgroup: 'stellar_regions'
+                `Diameter: ${region.diameter} parsecs<br>` +
+                `<extra></extra>`
         };
         
-        tracesToAdd.push(centerTrace);
+        // Create center label marker
+        const labelTrace = {
+            x: [center[0]],
+            y: [center[1]],
+            z: [center[2]],
+            mode: 'text',
+            type: 'scatter3d',
+            text: [region.name],
+            textfont: {
+                size: 12,
+                color: '#ffffff'
+            },
+            name: `${region.name} Label`,
+            showlegend: false,
+            hoverinfo: 'skip'
+        };
+        
+        tracesToAdd.push(sphereTrace);
+        tracesToAdd.push(labelTrace);
     });
     
     // Add all traces to the plot

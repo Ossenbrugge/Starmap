@@ -6,7 +6,7 @@ import os
 
 # Load nations data from JSON file
 def load_nations_data():
-    """Load nations and trade routes data from JSON file"""
+    """Load nations data from JSON file"""
     try:
         data_file = os.path.join(os.path.dirname(__file__), 'nations_data.json')
         with open(data_file, 'r', encoding='utf-8') as f:
@@ -38,14 +38,12 @@ def get_fallback_data():
                 "population": "Variable",
                 "military_strength": "Peacekeeping Forces Only"
             }
-        },
-        "trade_routes": {}
+        }
     }
 
 # Load the data
 nations_data = load_nations_data()
 fictional_nations = nations_data.get('nations', {})
-trade_routes_data = nations_data.get('trade_routes', {})
 
 # Star-to-nation mapping for quick lookup
 star_nation_mapping = {}

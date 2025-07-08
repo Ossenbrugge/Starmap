@@ -1,5 +1,6 @@
 from .base_model import BaseModel
-from fictional_nations import fictional_nations, trade_routes_data
+from fictional_nations import fictional_nations
+from trade_routes import get_all_trade_routes
 
 
 class NationModel(BaseModel):
@@ -8,7 +9,7 @@ class NationModel(BaseModel):
     def load_data(self):
         """Load nation data from fictional_nations module"""
         self.data = fictional_nations.copy()
-        self.trade_routes = trade_routes_data.copy()
+        self.trade_routes = get_all_trade_routes()
     
     def get_all_nations(self):
         """Get all fictional nations"""

@@ -214,17 +214,43 @@ async function updateStarmap(retryCount = 0) {
             displayModeBar: true,
             displaylogo: false,
             modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
-            responsive: true
+            responsive: true,
+            doubleClick: 'reset'
         };
         
         // Create the plot
         starmapPlot = await Plotly.newPlot('starmap', [trace], layout, config);
+        
+        // Add legend click event listener to prevent default double-click behavior
+        document.getElementById('starmap').on('plotly_legendclick', function(data) {
+            // Allow single clicks on legend items but prevent double-click toggle all
+            return false; // This prevents the default behavior
+        });
+        
+        document.getElementById('starmap').on('plotly_legenddoubleclick', function(data) {
+            // Prevent double-click legend behavior entirely
+            return false;
+        });
         
         // Add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
             try {
                 if (data.points && data.points.length > 0) {
                     const point = data.points[0];
+                    
+                    // Check if this is a stellar region click
+                    if (point.data && point.data.name && point.data.name.startsWith('Region: ')) {
+                        const regionName = point.data.name.replace('Region: ', '');
+                        console.debug('Stellar region clicked:', regionName);
+                        
+                        // Select the region in the dropdown
+                        const regionSelect = document.getElementById('regionSelect');
+                        if (regionSelect) {
+                            regionSelect.value = regionName;
+                            handleRegionSelection();
+                        }
+                        return;
+                    }
                     
                     // Only process clicks on the main star trace (trace index 0) with valid customdata
                     if (point.curveNumber === 0 && point.customdata && 
@@ -952,7 +978,8 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
             displayModeBar: true,
             displaylogo: false,
             modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
-            responsive: true
+            responsive: true,
+            doubleClick: 'reset'
         };
         
         // Update the plot with filtered data
@@ -963,6 +990,20 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
             try {
                 if (data.points && data.points.length > 0) {
                     const point = data.points[0];
+                    
+                    // Check if this is a stellar region click
+                    if (point.data && point.data.name && point.data.name.startsWith('Region: ')) {
+                        const regionName = point.data.name.replace('Region: ', '');
+                        console.debug('Stellar region clicked:', regionName);
+                        
+                        // Select the region in the dropdown
+                        const regionSelect = document.getElementById('regionSelect');
+                        if (regionSelect) {
+                            regionSelect.value = regionName;
+                            handleRegionSelection();
+                        }
+                        return;
+                    }
                     
                     // Only process clicks on the main star trace (trace index 0) with valid customdata
                     if (point.curveNumber === 0 && point.customdata && 
@@ -1388,12 +1429,23 @@ async function showTradeRoutes() {
     hideTradeRoutes();
     
     try {
+        // Ensure nations data is loaded before showing trade routes
+        if (Object.keys(nationsData).length === 0) {
+            updateStatus('Loading nations data for trade routes...', true);
+            await loadNationsData();
+        }
+        
         // Load trade routes data
+        updateStatus('Loading trade routes data...', true);
         const response = await fetch('/api/trade-routes');
         if (!response.ok) throw new Error('Failed to fetch trade routes');
         
         const tradeData = await response.json();
         const allRoutes = tradeData.trade_routes;
+        
+        updateStatus('Processing trade routes...', true);
+        let processedRoutes = 0;
+        let skippedRoutes = 0;
         
         // Process all route groups
         Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
@@ -1401,58 +1453,83 @@ async function showTradeRoutes() {
                 const fromStar = currentStars.find(s => s.id === route.from_star_id);
                 const toStar = currentStars.find(s => s.id === route.to_star_id);
                 
-                if (fromStar && toStar) {
-                    // Get nation color for the route
-                    let routeColor = '#FFFFFF'; // Default white
-                    if (route.controlling_nation && nationsData[route.controlling_nation]) {
-                        routeColor = nationsData[route.controlling_nation].color;
-                    }
-                    
-                    // Determine line style based on route type
-                    let lineStyle = 'dash';
-                    let lineWidth = 3;
-                    if (route.route_type === 'Primary Trade') {
-                        lineStyle = 'solid';
-                        lineWidth = 5;
-                    } else if (route.route_type === 'Administrative') {
-                        lineStyle = 'dot';
-                        lineWidth = 4;
-                    } else if (route.route_type === 'Research/Military') {
-                        lineStyle = 'dashdot';
-                        lineWidth = 3;
-                    }
-                    
-                    const tradeRouteTrace = {
-                        x: [fromStar.x, toStar.x],
-                        y: [fromStar.y, toStar.y],
-                        z: [fromStar.z, toStar.z],
-                        mode: 'lines',
-                        type: 'scatter3d',
-                        line: {
-                            color: routeColor,
-                            width: lineWidth,
-                            dash: lineStyle
-                        },
-                        name: `Trade Route: ${route.name}`,
-                        hovertemplate: `<b>${route.name}</b><br>` +
-                                     `${fromStar.name} → ${toStar.name}<br>` +
-                                     `Type: ${route.route_type}<br>` +
-                                     `Est. ${route.established}<br>` +
-                                     `Frequency: ${route.frequency}<br>` +
-                                     `Travel Time: ${route.travel_time_days} days<br>` +
-                                     `Security: ${route.security_level}<br>` +
-                                     `${route.description}<extra></extra>`,
-                        showlegend: false,
-                        hoverinfo: 'skip'
-                    };
-                    
-                    Plotly.addTraces('starmap', tradeRouteTrace);
-                    politicalTraces.push(tradeRouteTrace);
+                if (!fromStar || !toStar) {
+                    console.warn(`Trade route "${route.name}" skipped - missing stars:`, {
+                        from_star_id: route.from_star_id,
+                        to_star_id: route.to_star_id,
+                        fromStar: fromStar ? 'found' : 'not found',
+                        toStar: toStar ? 'found' : 'not found'
+                    });
+                    skippedRoutes++;
+                    return;
                 }
+                
+                // Get nation color for the route
+                let routeColor = '#FFFFFF'; // Default white
+                if (route.controlling_nation && nationsData[route.controlling_nation]) {
+                    routeColor = nationsData[route.controlling_nation].color;
+                } else if (route.controlling_nation) {
+                    console.warn(`Nation "${route.controlling_nation}" not found for route "${route.name}"`);
+                }
+                
+                // Determine line style based on route type
+                let lineStyle = 'dash';
+                let lineWidth = 3;
+                if (route.route_type === 'Primary Trade') {
+                    lineStyle = 'solid';
+                    lineWidth = 5;
+                } else if (route.route_type === 'Administrative') {
+                    lineStyle = 'dot';
+                    lineWidth = 4;
+                } else if (route.route_type === 'Research/Military') {
+                    lineStyle = 'dashdot';
+                    lineWidth = 3;
+                } else if (route.route_type === 'Military Alliance') {
+                    lineStyle = 'solid';
+                    lineWidth = 4;
+                } else if (route.route_type === 'Neutral Trade') {
+                    lineStyle = 'longdash';
+                    lineWidth = 2;
+                }
+                
+                const tradeRouteTrace = {
+                    x: [fromStar.x, toStar.x],
+                    y: [fromStar.y, toStar.y],
+                    z: [fromStar.z, toStar.z],
+                    mode: 'lines',
+                    type: 'scatter3d',
+                    line: {
+                        color: routeColor,
+                        width: lineWidth,
+                        dash: lineStyle
+                    },
+                    name: `Trade Route: ${route.name}`,
+                    hovertemplate: `<b>${route.name}</b><br>` +
+                                 `${fromStar.name} → ${toStar.name}<br>` +
+                                 `Type: ${route.route_type}<br>` +
+                                 `Est. ${route.established}<br>` +
+                                 `Frequency: ${route.frequency}<br>` +
+                                 `Travel Time: ${route.travel_time_days} days<br>` +
+                                 `Security: ${route.security_level}<br>` +
+                                 `Controlling Nation: ${route.controlling_nation}<br>` +
+                                 `${route.description}<extra></extra>`,
+                    showlegend: false,
+                    hoverinfo: 'skip'
+                };
+                
+                Plotly.addTraces('starmap', tradeRouteTrace);
+                politicalTraces.push(tradeRouteTrace);
+                processedRoutes++;
             });
         });
         
-        updateStatus(`Trade routes displayed (${Object.values(allRoutes).flat().length} routes)`);
+        const totalRoutes = Object.values(allRoutes).flat().length;
+        updateStatus(`Trade routes displayed (${processedRoutes}/${totalRoutes} routes${skippedRoutes > 0 ? `, ${skippedRoutes} skipped` : ''})`);
+        
+        if (skippedRoutes > 0) {
+            console.warn(`${skippedRoutes} trade routes were skipped due to missing star data`);
+        }
+        
     } catch (error) {
         console.error('Error loading trade routes:', error);
         updateStatus('Error loading trade routes');
@@ -1481,16 +1558,16 @@ function showTerritoryBorders() {
     hideTerritoryBorders();
     
     try {
-        // Create territory borders for each nation with multiple systems
+        // Create territory borders for each nation
         Object.entries(nationsData).forEach(([nationId, nation]) => {
-            if (nationId === 'neutral_zone' || nation.territories.length < 2) return;
+            if (nationId === 'neutral_zone') return;
             
             // Get stars belonging to this nation
             const nationStars = currentStars.filter(star => 
                 nation.territories && nation.territories.includes(star.id)
             );
             
-            if (nationStars.length >= 2) {
+            if (nationStars.length >= 1) {
                 createTerritoryBoundary(nationStars, nation);
             }
         });
@@ -1503,19 +1580,24 @@ function showTerritoryBorders() {
 }
 
 function createTerritoryBoundary(stars, nation) {
-    if (stars.length < 2) return;
+    if (stars.length < 1) return;
     
     // Calculate bounding sphere center and radius
     const center = calculateCentroid(stars);
-    const radius = calculateBoundingRadius(stars, center);
+    let radius = calculateBoundingRadius(stars, center);
+    
+    // For single-star nations, set a minimum radius
+    if (stars.length === 1) {
+        radius = Math.max(radius, 5.0); // Minimum 5 parsecs radius
+    }
     
     // Create a larger radius for visual buffer
     // Apply larger multipliers for Protelani and Dorsai Republics
     let multiplier = 1.3; // Default multiplier
     if (nation.name === "Protelani Republic") {
-        multiplier = 2.0; // Larger sphere for Protelani Republic
+        multiplier = 3.0; // Much larger sphere for Protelani Republic
     } else if (nation.name === "Dorsai Republic") {
-        multiplier = 2.0; // Larger sphere for Dorsai Republic
+        multiplier = 3.0; // Much larger sphere for Dorsai Republic
     }
     const borderRadius = radius * multiplier;
     
@@ -2205,6 +2287,10 @@ async function toggleStellarRegions() {
     
     if (stellarRegionsActive) {
         await loadStellarRegions();
+        showRegionSelectionUI();
+    } else {
+        hideRegionSelectionUI();
+        clearRegionSelection();
     }
     
     updateStellarRegionsDisplay();
@@ -2309,7 +2395,7 @@ function updateStellarRegionsDisplay() {
             opacity: 0.05,
             name: `Region: ${region.name}`,
             showlegend: true,
-            legendgroup: 'stellar_regions',
+            legendgroup: `stellar_region_${region.name.replace(/\s+/g, '_')}`,
             hovertemplate: 
                 `<b>${region.name}</b><br>` +
                 `${region.description}<br>` +
@@ -2455,6 +2541,244 @@ function reapplyStellarRegionsOverlay() {
             updateStatus('Warning: Stellar regions overlay may need to be refreshed');
         }
     }
+}
+
+// ==========================================
+// STELLAR REGIONS SELECTION FUNCTIONS
+// ==========================================
+
+function showRegionSelectionUI() {
+    const regionSelectionDiv = document.getElementById('regionSelection');
+    const regionSelect = document.getElementById('regionSelect');
+    
+    if (regionSelectionDiv && regionSelect) {
+        // Clear existing options
+        regionSelect.innerHTML = '<option value="">Select a Region...</option>';
+        
+        // Add regions to the dropdown
+        if (stellarRegionsData.regions) {
+            stellarRegionsData.regions.forEach(region => {
+                const option = document.createElement('option');
+                option.value = region.name;
+                option.textContent = region.name;
+                regionSelect.appendChild(option);
+            });
+        }
+        
+        // Add event listener for region selection
+        regionSelect.addEventListener('change', handleRegionSelection);
+        
+        // Show the region selection UI
+        regionSelectionDiv.style.display = 'block';
+    }
+}
+
+function hideRegionSelectionUI() {
+    const regionSelectionDiv = document.getElementById('regionSelection');
+    if (regionSelectionDiv) {
+        regionSelectionDiv.style.display = 'none';
+    }
+}
+
+function handleRegionSelection() {
+    const regionSelect = document.getElementById('regionSelect');
+    const selectedRegionName = regionSelect.value;
+    
+    // Enable/disable buttons based on selection
+    const focusBtn = document.getElementById('focusRegionBtn');
+    const detailsBtn = document.getElementById('detailsRegionBtn');
+    const boundariesBtn = document.getElementById('boundariesRegionBtn');
+    
+    if (selectedRegionName) {
+        focusBtn.disabled = false;
+        detailsBtn.disabled = false;
+        boundariesBtn.disabled = false;
+        selectedRegion = selectedRegionName;
+        updateStatus(`Selected region: ${selectedRegionName}`);
+    } else {
+        focusBtn.disabled = true;
+        detailsBtn.disabled = true;
+        boundariesBtn.disabled = true;
+        selectedRegion = null;
+        updateStatus('Region selection cleared');
+    }
+}
+
+function focusOnSelectedRegion() {
+    if (!selectedRegion || !stellarRegionsData.regions) {
+        updateStatus('Please select a region first');
+        return;
+    }
+    
+    const region = stellarRegionsData.regions.find(r => r.name === selectedRegion);
+    if (!region) {
+        updateStatus('Selected region not found');
+        return;
+    }
+    
+    // Focus the camera on the region's center
+    const centerX = region.center_point[0];
+    const centerY = region.center_point[1];
+    const centerZ = region.center_point[2];
+    
+    // Calculate appropriate zoom level based on region diameter
+    const diameter = region.diameter || 50;
+    const distance = Math.max(diameter * 2, 100); // Minimum distance of 100
+    
+    const newCamera = {
+        center: {
+            x: centerX / distance,
+            y: centerY / distance,
+            z: centerZ / distance
+        },
+        eye: {
+            x: centerX / distance + 1.5,
+            y: centerY / distance + 1.5,
+            z: centerZ / distance + 1.5
+        }
+    };
+    
+    Plotly.relayout('starmap', {
+        'scene.camera': newCamera
+    });
+    
+    updateStatus(`Focused on ${selectedRegion}`);
+}
+
+function showRegionDetails() {
+    if (!selectedRegion || !stellarRegionsData.regions) {
+        updateStatus('Please select a region first');
+        return;
+    }
+    
+    const region = stellarRegionsData.regions.find(r => r.name === selectedRegion);
+    if (!region) {
+        updateStatus('Selected region not found');
+        return;
+    }
+    
+    // Show region details in the search results panel
+    const searchResults = document.getElementById('searchResults');
+    const searchResultsList = document.getElementById('searchResultsList');
+    
+    if (searchResults && searchResultsList) {
+        const detailsHtml = `
+            <div class="region-details">
+                <h6 class="text-primary mb-3">🌌 ${region.name}</h6>
+                
+                <div class="region-info mb-3">
+                    <div class="star-property">
+                        <span><strong>Description:</strong></span>
+                        <span>${region.description}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Established:</strong></span>
+                        <span>${region.established}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Population:</strong></span>
+                        <span>${region.population}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Diameter:</strong></span>
+                        <span>${region.diameter} parsecs</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Economic Zone:</strong></span>
+                        <span>${region.economic_zone}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Trade Routes:</strong></span>
+                        <span>${region.trade_routes}</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Significance:</strong></span>
+                        <span>${region.significance}</span>
+                    </div>
+                </div>
+                
+                <div class="region-coordinates mb-3">
+                    <h6>Coordinates</h6>
+                    <div class="star-property">
+                        <span><strong>Center:</strong></span>
+                        <span>(${region.center_point[0].toFixed(2)}, ${region.center_point[1].toFixed(2)}, ${region.center_point[2].toFixed(2)})</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>RA Range:</strong></span>
+                        <span>${region.ra_range[0]}° - ${region.ra_range[1]}°</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Dec Range:</strong></span>
+                        <span>${region.dec_range[0]}° - ${region.dec_range[1]}°</span>
+                    </div>
+                    <div class="star-property">
+                        <span><strong>Distance Range:</strong></span>
+                        <span>${region.distance_range[0]} - ${region.distance_range[1]} parsecs</span>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-sm btn-outline-primary" onclick="focusOnSelectedRegion()">Focus on Region</button>
+                    <button class="btn btn-sm btn-outline-success" onclick="showRegionBoundaries()">Show Boundaries</button>
+                    <button class="btn btn-sm btn-outline-light" onclick="clearRegionSelection()">Clear</button>
+                </div>
+            </div>
+        `;
+        
+        searchResultsList.innerHTML = detailsHtml;
+        searchResults.style.display = 'block';
+        
+        updateStatus(`Showing details for ${selectedRegion}`);
+    }
+}
+
+function showRegionBoundaries() {
+    if (!selectedRegion) {
+        updateStatus('Please select a region first');
+        return;
+    }
+    
+    loadRegionBoundaries(selectedRegion);
+}
+
+function clearRegionSelection() {
+    const regionSelect = document.getElementById('regionSelect');
+    if (regionSelect) {
+        regionSelect.value = '';
+        handleRegionSelection(); // This will disable buttons and clear selectedRegion
+    }
+    
+    // Clear the search results panel
+    const searchResults = document.getElementById('searchResults');
+    if (searchResults) {
+        searchResults.style.display = 'none';
+    }
+}
+
+function clearRegionBoundaries() {
+    // Clear existing boundary traces
+    if (starmapPlot && starmapPlot.data) {
+        const traces = starmapPlot.data;
+        const boundaryIndices = [];
+        
+        traces.forEach((trace, index) => {
+            if (trace.name && trace.name.includes('Boundaries')) {
+                boundaryIndices.push(index);
+            }
+        });
+        
+        if (boundaryIndices.length > 0) {
+            boundaryIndices.reverse().forEach(index => {
+                try {
+                    Plotly.deleteTraces('starmap', index);
+                } catch (error) {
+                    console.error('Error deleting boundary trace:', error);
+                }
+            });
+        }
+    }
+    
+    updateStatus('Region boundaries cleared');
 }
 
 // Function to fetch habitability explanation for a star

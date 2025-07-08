@@ -418,6 +418,28 @@
                             <small class="text-muted">🌌 Stellar regions show areas of human expansion</small>
                         </div>
                     </div>
+                    
+                    <!-- Region Selection Section -->
+                    <div class="control-section" id="regionSelection" style="display: none;">
+                        <h6>🌌 Stellar Region Selection</h6>
+                        <div class="mb-2">
+                            <select class="form-select form-select-sm" id="regionSelect">
+                                <option value="">Select a Region...</option>
+                            </select>
+                        </div>
+                        <div class="btn-group w-100 mb-2" role="group">
+                            <button class="btn btn-primary btn-sm" id="focusRegionBtn" onclick="focusOnSelectedRegion()" disabled>Focus</button>
+                            <button class="btn btn-info btn-sm" id="detailsRegionBtn" onclick="showRegionDetails()" disabled>Details</button>
+                            <button class="btn btn-success btn-sm" id="boundariesRegionBtn" onclick="showRegionBoundaries()" disabled>Boundaries</button>
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="clearRegionSelection()">Clear Selection</button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="clearRegionBoundaries()">Clear Boundaries</button>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Select a region to focus on it or view boundaries</small>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -1,0 +1,478 @@
+{
+  "metadata": {
+    "title": "Felgenland Saga Stellar Regions",
+    "description": "Diplomatic division of human space post-Union Directorate War (2353-2356), per the Treaty of Dual Spheres (2357) signed on Earth, dividing space between the Terran Directorate and the Allies (Felgenland Union, Protelani Republic, Dorsai Republic), with neutral frontier zones and Sol as a multinational neutral system (Terran Directorate, Free Democracy of Terminus, Nation of Titan). Trade routes are defined in trade_routes.json.",
+    "version": "2.2",
+    "last_updated": "2025-07-08",
+    "coordinate_system": "Galactic coordinates (ra in degrees, dec in degrees, distance in light-years)",
+    "trade_routes_file": "trade_routes.json"
+  },
+  "regions": [
+    {
+      "name": "Allied Union Core Quadrant",
+      "description": "Core of the Felgenland Union, centered on Holsten Tor (20 LMi A&B, Stahlburgh and Eisenwald), Brandenburgh Tor (Hansaburgh), Greifen Tor (Lochiel), and Tiefe-Grenze Tor (Brandstadt). Hosts MacCarthy Limited shipyards and Campbell Industries exosuits. Part of the Felgenland Free Trade Zone.",
+      "ra_range": [135, 225],
+      "dec_range": [0, 90],
+      "distance_range": [5, 50],
+      "center_point": [-7.5, 0.5, 5.0],
+      "color": [76, 175, 80],
+      "established": 2210,
+      "population": "600 million",
+      "significance": "Union’s capital region, producing Falke-VI interceptors and SternHammer Cannons, linked by trade routes in trade_routes.json.",
+      "diameter": 30,
+      "economic_zone": "Felgenland Free Trade Zone",
+      "sectors": [
+        {
+          "name": "Holsten Sector",
+          "center_star": "20 LMi A",
+          "star_id": 48941,
+          "ra": 150.53256,
+          "dec": 31.923672,
+          "distance_from_sol": 9.57,
+          "description": "Capital system with Stahlburgh (20 LMi A) and Eisenwald moon (20 LMi B), relay hub for Quantum Entanglement Communicators, ~200 million."
+        },
+        {
+          "name": "Brandenburg Sector",
+          "center_star": "11 LMi",
+          "star_id": 46945,
+          "ra": 141.165885,
+          "dec": 35.806305,
+          "distance_from_sol": 11.02,
+          "description": "Hansaburgh, helium-3 mining from gas giant, major manufacturing center, ~150 million."
+        },
+        {
+          "name": "Greifen Sector",
+          "center_star": "55 Cancri",
+          "star_id": 43464,
+          "ra": 132.663465,
+          "dec": 28.332901,
+          "distance_from_sol": 12.58,
+          "description": "Lochiel, core Union territory, supplies rare metals (titanium, lithium), ~150 million."
+        },
+        {
+          "name": "Brandstadt Sector",
+          "center_star": "Tiefe-Grenze Tor",
+          "star_id": 999999,
+          "ra": 151.25,
+          "dec": 30.0,
+          "distance_from_sol": 16.86,
+          "description": "Core Union world, Brandstadt, exports food and metals, ~100 million."
+        }
+      ]
+    },
+    {
+      "name": "Allied Union Rim Quadrant",
+      "description": "Rimward Union territory, including colonial worlds like Heatherly, Gliese 876, Delta Pavonis, and HD 10180. Part of the Felgenland Free Trade Zone, supporting logistics and industrial expansion.",
+      "ra_range": [135, 225],
+      "dec_range": [-90, 0],
+      "distance_range": [5, 60],
+      "center_point": [-7.0, -1.0, -5.0],
+      "color": [94, 194, 98],
+      "established": 2230,
+      "population": "80 million",
+      "significance": "Frontier expansion with Heatherly, Gliese 876, Delta Pavonis, and HD 10180, linked by trade routes in trade_routes.json.",
+      "diameter": 40,
+      "economic_zone": "Felgenland Free Trade Zone",
+      "sectors": [
+        {
+          "name": "Heatherly Sector",
+          "center_star": "HD 95128",
+          "star_id": 53601,
+          "ra": 152.091975,
+          "dec": 40.429599,
+          "distance_from_sol": 45.91,
+          "description": "Union colonial world, Heatherly, in Ursa Major, near Holsten Tor, ~30 million."
+        },
+        {
+          "name": "Gliese 876 Sector",
+          "center_star": "Gliese 876",
+          "star_id": 200003,
+          "ra": 200.0,
+          "dec": 22.0,
+          "distance_from_sol": 15.2,
+          "description": "Union logistics hub, Gliese 876 d in habitable zone, ~5 million."
+        },
+        {
+          "name": "Delta Pavonis Sector",
+          "center_star": "Delta Pavonis",
+          "star_id": 200011,
+          "ra": 23.0,
+          "dec": -30.0,
+          "distance_from_sol": 19.9,
+          "description": "Union industrial colony, potential Earth-like planets, supplies metals to Holsten Tor and Pentothia, ~20 million."
+        },
+        {
+          "name": "HD 10180 Sector",
+          "center_star": "HD 10180",
+          "star_id": 200012,
+          "ra": 200.0,
+          "dec": -22.0,
+          "distance_from_sol": 48.9,
+          "description": "Union colonial hub, high habitability, supports trade and defense, ~25 million."
+        }
+      ]
+    },
+    {
+      "name": "Directorate Core Quadrant",
+      "description": "Core of the Terran Directorate, centered on Sol, a multinational neutral system hosting Terran Directorate (Earth and Moon), Free Democracy of Terminus (Mars), and Nation of Titan (Saturn’s moon). Treaty of Dual Spheres signed on Earth. Part of the Terran Core Economic Zone with robust internal trade.",
+      "ra_range": [0, 90],
+      "dec_range": [0, 90],
+      "distance_range": [0, 15],
+      "center_point": [0.0, 0.0, 5.0],
+      "color": [100, 100, 100],
+      "established": 2157,
+      "population": "50.55 billion",
+      "significance": "Multinational Sol system (Directorate: Earth/Moon, Terminus: Mars, Titan: Saturn) and Alpha Centauri. Poised for treaty violations targeting neutral frontiers, with trade links in trade_routes.json.",
+      "diameter": 15,
+      "economic_zone": "Terran Core Economic Zone",
+      "sectors": [
+        {
+          "name": "Sol Sector",
+          "center_star": "Sol",
+          "star_id": 0,
+          "ra": 0.0,
+          "dec": 0.0,
+          "distance_from_sol": 0.0,
+          "description": "Multinational neutral system: Terran Directorate (Earth/Moon, ~50B), Free Democracy of Terminus (Mars, ~500M), Nation of Titan (Saturn’s moon, ~50M)."
+        },
+        {
+          "name": "Centauri Sector",
+          "center_star": "Alpha Centauri A",
+          "star_id": 71456,
+          "ra": 219.90519,
+          "dec": -60.833976,
+          "distance_from_sol": 4.37,
+          "description": "Oldest Directorate colony, key administrative hub, trades with Sol and Sirius, ~500 million."
+        }
+      ]
+    },
+    {
+      "name": "Directorate Rim Quadrant",
+      "description": "Rimward Directorate territory, including Sirius and Proxima Centauri, claimed to prevent Allied encirclement. Part of the Terran Core Economic Zone with enhanced internal trade routes.",
+      "ra_range": [0, 90],
+      "dec_range": [-90, 0],
+      "distance_range": [5, 15],
+      "center_point": [0.0, -0.5, -5.0],
+      "color": [33, 150, 243],
+      "established": 2170,
+      "population": "1.5 billion",
+      "significance": "Strategic systems to maintain open corridors, with trade routes in trade_routes.json. Flashpoint for expansion into neutral frontiers.",
+      "diameter": 15,
+      "economic_zone": "Terran Core Economic Zone",
+      "sectors": [
+        {
+          "name": "Sirius Sector",
+          "center_star": "Sirius",
+          "star_id": 32263,
+          "ra": 101.287215,
+          "dec": -16.716116,
+          "distance_from_sol": 8.58,
+          "description": "Key Directorate industrial hub, trades with Sol, Alpha Centauri, and Proxima, ~1 billion."
+        },
+        {
+          "name": "Proxima Sector",
+          "center_star": "Proxima Centauri",
+          "star_id": 70666,
+          "ra": 217.439775,
+          "dec": -62.679485,
+          "distance_from_sol": 4.22,
+          "description": "Frontier colony under Directorate control, trades with Sirius and Sol, ~500 million."
+        }
+      ]
+    },
+    {
+      "name": "Neutral Spinward Frontier",
+      "description": "Neutral frontier zone with independent systems like Wolf 359, Pentothia Prime (GJ 380), Gliese 581, HD 40307, Gliese 1061, Ross 154, Struve 2398, Barnard’s Star, Lalande 21185, and Ross 128. Hosts reptilian traders and research outposts, with Pentothia as a central trade hub.",
+      "ra_range": [90, 180],
+      "dec_range": [0, 90],
+      "distance_range": [5, 50],
+      "center_point": [5.0, 0.0, 5.0],
+      "color": [156, 39, 176],
+      "established": 2356,
+      "population": "122 million",
+      "significance": "Demilitarized trade and research hub, open to Allies and Directorate, contested for high-habitability systems, with Pentothia Prime as a key trade node linked via trade_routes.json.",
+      "diameter": 20,
+      "economic_zone": "None",
+      "sectors": [
+        {
+          "name": "Wolf Sector",
+          "center_star": "Wolf 359",
+          "star_id": 118720,
+          "ra": 164.12226,
+          "dec": 7.01532,
+          "distance_from_sol": 7.78,
+          "description": "Neutral system with research stations and independent settlements, trades with Pentothia, ~30 million."
+        },
+        {
+          "name": "Pentothian Sector",
+          "center_star": "GJ 380",
+          "star_id": 52409,
+          "ra": 176.93499,
+          "dec": 0.804563,
+          "distance_from_sol": 11.01,
+          "description": "Pentothia Prime, capital of the Pentothian Trade Conglomerate, reptilian traders in a temperate Virgo biome, central trade hub, ~50 million."
+        },
+        {
+          "name": "Gliese 581 Sector",
+          "center_star": "Gliese 581",
+          "star_id": 200004,
+          "ra": 78.0,
+          "dec": -23.0,
+          "distance_from_sol": 20.4,
+          "description": "Neutral research colony, hosts Gliese 581 c and d in habitable zone, trades with Pentothia, ~10 million."
+        },
+        {
+          "name": "HD 40307 Sector",
+          "center_star": "HD 40307",
+          "star_id": 200013,
+          "ra": 90.0,
+          "dec": -20.0,
+          "distance_from_sol": 42.0,
+          "description": "Neutral colonial system, high habitability, trade outpost linked to Pentothia and Protelan, ~15 million."
+        },
+        {
+          "name": "Gliese 1061 Sector",
+          "center_star": "Gliese 1061",
+          "star_id": 200015,
+          "ra": 53.948,
+          "dec": -44.513,
+          "distance_from_sol": 12.0,
+          "description": "Neutral research outpost, moderate habitability, trades with Pentothia, ~5 million."
+        },
+        {
+          "name": "Ross 154 Sector",
+          "center_star": "Ross 154",
+          "star_id": 200016,
+          "ra": 283.628,
+          "dec": -23.835,
+          "distance_from_sol": 9.68,
+          "description": "Neutral research outpost, moderate habitability, trades with Pentothia, ~3 million."
+        },
+        {
+          "name": "Struve 2398 Sector",
+          "center_star": "Struve 2398",
+          "star_id": 200017,
+          "ra": 280.133,
+          "dec": 19.172,
+          "distance_from_sol": 11.5,
+          "description": "Neutral mining outpost, binary system, trades with Pentothia, ~3 million."
+        },
+        {
+          "name": "Barnard’s Star Sector",
+          "center_star": "GJ 699",
+          "star_id": 200018,
+          "ra": 269.452,
+          "dec": 4.693,
+          "distance_from_sol": 5.96,
+          "description": "Neutral research outpost, moderate habitability, potential trade hub with Pentothia, ~3 million."
+        },
+        {
+          "name": "Lalande 21185 Sector",
+          "center_star": "GJ 411",
+          "star_id": 200019,
+          "ra": 165.834,
+          "dec": 35.970,
+          "distance_from_sol": 8.31,
+          "description": "Neutral mining and research outpost, moderate habitability, trades with Pentothia, ~3 million."
+        },
+        {
+          "name": "Ross 128 Sector",
+          "center_star": "GJ 447",
+          "star_id": 200020,
+          "ra": 176.934,
+          "dec": -0.804,
+          "distance_from_sol": 11.01,
+          "description": "Neutral research outpost, moderate habitability with potential habitable planet, trades with Pentothia, ~3 million."
+        }
+      ]
+    },
+    {
+      "name": "Neutral Anti-Spinward Frontier",
+      "description": "Neutral frontier with independent systems like Ross 248, Tau Ceti (Cetan Confederacy), Epsilon Eridani (Eridani Open Democracy), Gliese 832, and EZ Aquarii. Open to Allies and Directorate, contested post-2357, with Pentothian trade links.",
+      "ra_range": [270, 360],
+      "dec_range": [0, 90],
+      "distance_range": [5, 30],
+      "center_point": [-5.0, 0.0, 5.0],
+      "color": [186, 104, 200],
+      "established": 2356,
+      "population": "313 million",
+      "significance": "Independent systems with high habitability, potential Allied allies, targeted by Directorate expansion, linked by trade routes in trade_routes.json.",
+      "diameter": 20,
+      "economic_zone": "None",
+      "sectors": [
+        {
+          "name": "Ross 248 Sector",
+          "center_star": "Ross 248",
+          "star_id": 119585,
+          "ra": 355.475685,
+          "dec": 44.174924,
+          "distance_from_sol": 10.32,
+          "description": "Isolated neutral system with research stations, potential Directorate target, trades with Pentothia, ~20 million."
+        },
+        {
+          "name": "Cetan Sector",
+          "center_star": "Tau Ceti",
+          "star_id": 200005,
+          "ra": 26.017083,
+          "dec": -15.937278,
+          "distance_from_sol": 11.9,
+          "description": "Cetan Confederacy, independent post-2356, hosts Asimov and Heinlein, trade hub linked to Pentothia, ~35 million."
+        },
+        {
+          "name": "Eridani Sector",
+          "center_star": "Epsilon Eridani",
+          "star_id": 200014,
+          "ra": 53.232625,
+          "dec": -9.458305,
+          "distance_from_sol": 10.52,
+          "description": "Eridani Open Democracy, independent, high habitability, potential Allied ally, trades with Pentothia, ~250 million."
+        },
+        {
+          "name": "Gliese 832 Sector",
+          "center_star": "Gliese 832",
+          "star_id": 200021,
+          "ra": 324.885,
+          "dec": -49.013,
+          "distance_from_sol": 16.2,
+          "description": "Neutral research and trade outpost, moderate habitability with potential habitable planet, linked to Pentothia and Protelan, ~5 million."
+        },
+        {
+          "name": "EZ Aquarii Sector",
+          "center_star": "EZ Aquarii",
+          "star_id": 200022,
+          "ra": 336.694,
+          "dec": -15.298,
+          "distance_from_sol": 11.1,
+          "description": "Neutral mining outpost, moderate habitability, trades with Pentothia, ~3 million."
+        }
+      ]
+    },
+    {
+      "name": "Allied Spinward Quadrant",
+      "description": "Allied region led by the Protelani Republic on Protelan (moon orbiting Grandpere, 61 Ursae Majoris), a Dubai-like trade hub for torch drive commerce. Part of the Felgenland Free Trade Zone, linked to neutral frontiers via trade_routes.json.",
+      "ra_range": [90, 180],
+      "dec_range": [-90, 0],
+      "distance_range": [5, 50],
+      "center_point": [5.0, -0.5, -5.0],
+      "color": [0, 150, 136],
+      "established": 2260,
+      "population": "36 million",
+      "significance": "Protelani Republic’s chic trade hub, linked by trade routes in trade_routes.json.",
+      "diameter": 25,
+      "economic_zone": "Felgenland Free Trade Zone",
+      "sectors": [
+        {
+          "name": "Protelan Sector",
+          "center_star": "61 Ursae Majoris",
+          "star_id": 200001,
+          "ra": 180.185833,
+          "dec": 34.201639,
+          "distance_from_sol": 9.57,
+          "description": "Protelani Republic’s trade hub, Protelan (moon orbiting Grandpere), allied with the Union, trades with Pentothia, ~36 million."
+        }
+      ]
+    },
+    {
+      "name": "Allied Anti-Spinward Quadrant",
+      "description": "Allied frontier region with Dorsai Republic systems on Fomalhaut (Valorgraemo), providing elite military support with Campbell Industries exosuits. Part of the Felgenland Free Trade Zone, linked to neutral frontiers via trade_routes.json.",
+      "ra_range": [270, 360],
+      "dec_range": [-90, 0],
+      "distance_range": [5, 50],
+      "center_point": [-5.0, -0.5, -5.0],
+      "color": [244, 67, 54],
+      "established": 2267,
+      "population": "80 million",
+      "significance": "Dorsai Republic’s military stronghold, linked by trade routes in trade_routes.json, supports neutral frontier defense.",
+      "diameter": 25,
+      "economic_zone": "Felgenland Free Trade Zone",
+      "sectors": [
+        {
+          "name": "Dorsai Sector",
+          "center_star": "Fomalhaut",
+          "star_id": 200002,
+          "ra": 344.912778,
+          "dec": -29.622236,
+          "distance_from_sol": 7.70,
+          "description": "Dorsai Republic’s Citadel of Valoro, training elite soldiers, trades with Pentothia, ~80 million."
+        }
+      ]
+    },
+    {
+      "name": "Anti-Driftward Frontier",
+      "description": "Neutral frontier zone below the galactic plane, centered on L 98-59, a former Directorate stronghold. Hosts Fortress Echelon, site of the Battle of Foxtrot (2353). Open to Allies and Directorate, contested post-2357, with trade links in trade_routes.json.",
+      "ra_range": [90, 180],
+      "dec_range": [-50, -20],
+      "distance_range": [20, 45],
+      "center_point": [5.0, -0.5, -10.0],
+      "color": [150, 150, 150],
+      "established": 2357,
+      "population": "45 million",
+      "significance": "Contested neutral zone with Directorate and Union interests, linked to trade_routes.json. Vulnerable to Directorate treaty violations.",
+      "diameter": 25,
+      "economic_zone": "None",
+      "sectors": [
+        {
+          "name": "L 98-59 Sector",
+          "center_star": "L 98-59",
+          "star_id": 200006,
+          "ra": 90.0,
+          "dec": -40.0,
+          "distance_from_sol": 34.6,
+          "description": "Former Directorate stronghold, Fortress Echelon, site of Battle of Foxtrot (2353), now neutral, trades with Pentothia, ~15 million."
+        },
+        {
+          "name": "Gliese 667 Sector",
+          "center_star": "Gliese 667",
+          "star_id": 200007,
+          "ra": 78.0,
+          "dec": -27.0,
+          "distance_from_sol": 23.6,
+          "description": "Neutral outpost, hosts Gliese 667 Cc in habitable zone, reconnaissance hub, trades with Pentothia, ~10 million."
+        },
+        {
+          "name": "HD 69830 Sector",
+          "center_star": "HD 69830",
+          "star_id": 200008,
+          "ra": 105.0,
+          "dec": -35.0,
+          "distance_from_sol": 40.7,
+          "description": "Independent research colony, hosts Neptune-mass planets with habitable moons, trades with Pentothia, ~20 million."
+        }
+      ]
+    },
+    {
+      "name": "Trailing Frontier",
+      "description": "Neutral frontier zone with sparse mining outposts like Eta Cassiopeiae and 82 G. Eridani. Supplies resources to Protelan and Pentothian trade corridors, open to both Allies and Directorate, neutral post-2357.",
+      "ra_range": [240, 360],
+      "dec_range": [-20, 20],
+      "distance_range": [20, 45],
+      "center_point": [-5.0, 0.0, 0.0],
+      "color": [160, 160, 160],
+      "established": 2357,
+      "population": "25 million",
+      "significance": "Neutral mining frontier, supports trade routes in trade_routes.json, contested by both sides but stabilized by Treaty of Dual Spheres.",
+      "diameter": 25,
+      "economic_zone": "None",
+      "sectors": [
+        {
+          "name": "Eta Cassiopeiae Sector",
+          "center_star": "Eta Cassiopeiae",
+          "star_id": 200009,
+          "ra": 260.0,
+          "dec": 20.0,
+          "distance_from_sol": 19.4,
+          "description": "Neutral mining colony, supplies metals to Pentothia and Protelan, ~10 million."
+        },
+        {
+          "name": "82 G. Eridani Sector",
+          "center_star": "82 G. Eridani",
+          "star_id": 200010,
+          "ra": 260.0,
+          "dec": -20.0,
+          "distance_from_sol": 19.7,
+          "description": "Neutral industrial colony, hosts super-Earths, supports trade with Pentothia and Union, ~15 million."
+        }
+      ]
+    }
+  ]
+}

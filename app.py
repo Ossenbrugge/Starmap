@@ -85,6 +85,7 @@ class StarmapApplication:
         # Star routes
         self.app.route('/api/stars')(self.star_controller.get_stars)
         self.app.route('/api/star/<int:star_id>')(self.star_controller.get_star_details)
+        self.app.route('/api/star/<int:star_id>/habitability')(self.star_controller.get_habitability_explanation)
         self.app.route('/api/search')(self.star_controller.search_stars)
         self.app.route('/api/distance')(self.star_controller.calculate_distance)
         self.app.route('/api/spectral-types')(self.star_controller.get_spectral_types)

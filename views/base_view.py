@@ -60,13 +60,19 @@ class BaseView(ABC):
         for key, value in star_data.items():
             if key in ['id']:
                 formatted_data[key] = int(value) if value is not None else None
-            elif key in ['x', 'y', 'z', 'mag', 'dist']:
+            elif key in ['x', 'y', 'z', 'mag', 'dist', 'habitability_score']:
                 formatted_data[key] = float(value) if value is not None else 0.0
             elif key in ['all_names', 'catalog_ids']:
                 formatted_data[key] = value if isinstance(value, list) else []
             elif key == 'nation':
                 # Keep nation as dictionary, don't convert to string
                 formatted_data[key] = value if isinstance(value, dict) else {}
+            elif key == 'habitability_breakdown':
+                # Keep habitability breakdown as dictionary
+                formatted_data[key] = value if isinstance(value, dict) else {}
+            elif key == 'parsed_spectral_type':
+                # Keep parsed spectral type as tuple/list
+                formatted_data[key] = value if isinstance(value, (tuple, list)) else []
             else:
                 formatted_data[key] = str(value) if value is not None else ''
         

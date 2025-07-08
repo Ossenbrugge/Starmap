@@ -42,8 +42,8 @@
       "capital_star_id": 48941,
       "capital_planet": "Stahlburgh",
       "government_type": "Personal Federal Republic",
-      "color": "#4CAF50",
-      "border_color": "#2E7D32",
+      "color": "#F44336",
+      "border_color": "#C62828",
       "established_year": 2210,
       "description": "A prosperous trade federation controlling key rimward systems, known for their Eclipse Festivals and efficient trade networks. Maintains independence from Terran control through economic leverage.",
       "territories": [
@@ -91,8 +91,8 @@
       "capital_star_id": 200002,
       "capital_planet": "Valorgraemo (α PsA c)",
       "government_type": "Military Republic",
-      "color": "#F44336",
-      "border_color": "#C62828",
+      "color": "#BDBDBD",
+      "border_color": "#9E9E9E",
       "established_year": 2226,
       "description": "Elite military republic based on Fomalhaut system, training the galaxy's finest soldiers at the Citadel of Valoro. Inspired by Dorsai!'s Cletus Grahame and Starship Troopers' Mobile Infantry, they serve as rimward defense specialists.",
       "territories": [

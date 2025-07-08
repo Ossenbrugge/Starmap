@@ -93,6 +93,21 @@ class StarController(BaseController):
         
         return self.handle_request(handler)
     
+    def get_habitability_explanation(self, star_id):
+        """Get habitability explanation for a specific star"""
+        def handler():
+            star_id_int = self.parse_int_param(star_id, 'star_id')
+            
+            # Get habitability explanation from model
+            explanation = self.model.get_habitability_explanation(star_id_int)
+            
+            return self.view.success_response({
+                'star_id': star_id_int,
+                'explanation': explanation
+            })
+        
+        return self.handle_request(handler)
+    
     def export_csv(self):
         """Export bright stars as CSV"""
         def handler():

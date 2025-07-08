@@ -79,15 +79,18 @@ class StellarRegionModel(BaseModel):
                 'name': region['name'],
                 'description': region.get('description', ''),
                 'center_point': region['center_point'],
-                'longitude_range': region['longitude_range'],
-                'latitude_range': region['latitude_range'],
+                'ra_range': region.get('ra_range', [0, 360]),
+                'dec_range': region.get('dec_range', [-90, 90]),
                 'distance_range': region['distance_range'],
                 'diameter': region.get('diameter', 50),
                 'color': color_hex,
                 'color_rgb': color_rgb,
                 'established': region.get('established'),
                 'population': region.get('population'),
-                'significance': region.get('significance', '')
+                'significance': region.get('significance', ''),
+                'trade_routes': region.get('trade_routes', []),
+                'economic_zone': region.get('economic_zone', ''),
+                'sectors': region.get('sectors', [])
             }
             visualization_data.append(viz_region)
         
@@ -119,20 +122,20 @@ class StellarRegionModel(BaseModel):
         # Galactic latitude (-90 to +90 degrees)
         latitude = math.degrees(math.asin(z / distance))
         
-        # Check longitude range
-        lon_min, lon_max = region['longitude_range']
-        if lon_min <= lon_max:
+        # Check RA range (longitude equivalent)
+        ra_min, ra_max = region.get('ra_range', [0, 360])
+        if ra_min <= ra_max:
             # Normal range (e.g., 60-120)
-            if longitude < lon_min or longitude > lon_max:
+            if longitude < ra_min or longitude > ra_max:
                 return False
         else:
             # Wrapped range (e.g., 300-60 wraps around 0)
-            if longitude < lon_min and longitude > lon_max:
+            if longitude < ra_min and longitude > ra_max:
                 return False
         
-        # Check latitude range
-        lat_min, lat_max = region['latitude_range']
-        if latitude < lat_min or latitude > lat_max:
+        # Check Dec range (latitude equivalent)
+        dec_min, dec_max = region.get('dec_range', [-90, 90])
+        if latitude < dec_min or latitude > dec_max:
             return False
         
         return True

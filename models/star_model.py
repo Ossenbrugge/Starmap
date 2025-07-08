@@ -5,6 +5,7 @@ from .base_model import BaseModel
 from star_naming import StarNamingSystem
 from fictional_names import fictional_star_names
 from fictional_nations import get_star_nation, get_nation_info
+from habitability import HabitabilityAssessment
 
 
 class StarModel(BaseModel):
@@ -12,6 +13,11 @@ class StarModel(BaseModel):
     
     def __init__(self):
         self.naming_system = StarNamingSystem()
+        self.habitability_assessment = HabitabilityAssessment()
+        # Add caching for frequently accessed data
+        self._cache = {}
+        self._filtered_cache = {}
+        self._search_cache = {}
         super().__init__()
     
     def load_data(self):
@@ -48,6 +54,9 @@ class StarModel(BaseModel):
             # Add fictional names and nation data
             self._add_fictional_data()
             self._add_nation_data()
+            
+            # Add habitability data
+            self._add_habitability_data()
             
         except Exception as e:
             print(f"Error loading star data: {e}")
@@ -105,43 +114,108 @@ class StarModel(BaseModel):
         
         self.data['nation'] = self.data['id'].apply(get_nation_for_star)
     
+    def _add_habitability_data(self):
+        """Add habitability assessment data to stars"""
+        print("Calculating habitability scores...")
+        
+        def calculate_habitability(row):
+            try:
+                star_data = {
+                    'spect': row.get('spect', 'Unknown'),
+                    'lum': row.get('lum', 1.0),
+                    'mag': row.get('mag', 5.0),
+                    'dist': row.get('dist', 100.0)
+                }
+                return self.habitability_assessment.calculate_habitability_score(star_data)
+            except Exception as e:
+                # Return default values if calculation fails
+                return {
+                    'habitability_score': 0.0,
+                    'habitability_category': 'Unknown',
+                    'exploration_priority': 'Unknown',
+                    'score_breakdown': {},
+                    'parsed_spectral_type': ('Unknown', 0, 'V')
+                }
+        
+        # Calculate habitability for all stars
+        habitability_data = self.data.apply(calculate_habitability, axis=1)
+        
+        # Extract individual components
+        self.data['habitability_score'] = habitability_data.apply(lambda x: x['habitability_score'])
+        self.data['habitability_category'] = habitability_data.apply(lambda x: x['habitability_category'])
+        self.data['exploration_priority'] = habitability_data.apply(lambda x: x['exploration_priority'])
+        self.data['habitability_breakdown'] = habitability_data.apply(lambda x: x['score_breakdown'])
+        self.data['parsed_spectral_type'] = habitability_data.apply(lambda x: x['parsed_spectral_type'])
+        
+        print(f"Habitability assessment complete for {len(self.data)} stars")
+        
+        # Print summary statistics
+        category_counts = self.data['habitability_category'].value_counts()
+        print("Habitability distribution:")
+        for category, count in category_counts.items():
+            print(f"  {category}: {count} stars")
+    
+    def get_habitability_explanation(self, star_id):
+        """Get habitability explanation for a specific star"""
+        star_row = self.data[self.data['id'] == star_id]
+        if star_row.empty:
+            return "Star not found"
+        
+        star_data = star_row.iloc[0]
+        habitability_data = {
+            'habitability_score': star_data['habitability_score'],
+            'habitability_category': star_data['habitability_category'],
+            'parsed_spectral_type': star_data['parsed_spectral_type']
+        }
+        
+        return self.habitability_assessment.get_habitability_explanation(habitability_data)
+    
     def get_stars_for_display(self, mag_limit=6.0, count_limit=1000):
-        """Get stars suitable for display with filtering and sorting"""
+        """Get stars suitable for display with filtering and sorting (cached)"""
         if self.data is None or self.data.empty:
             return []
         
-        # Prioritize stars that belong to nations and bright stars
-        display_stars = self.data.copy()
+        # Create cache key based on parameters
+        cache_key = f"display_{mag_limit}_{count_limit}"
         
-        # Add nation priority - stars with nations get priority
-        display_stars['nation_priority'] = display_stars['id'].apply(
-            lambda x: 0 if get_star_nation(x) is not None else 1
-        )
+        # Check cache first
+        if cache_key in self._filtered_cache:
+            return self._filtered_cache[cache_key]
         
-        # Filter by magnitude if specified, but always include fictional stars and important systems
+        # Check if we have pre-computed nation priorities
+        if 'nation_priority' not in self.data.columns:
+            # Add nation priority - stars with nations get priority (cache this computation)
+            self.data['nation_priority'] = self.data['id'].apply(
+                lambda x: 0 if get_star_nation(x) is not None else 1
+            )
+        
+        # Use view instead of copy for better performance
+        display_stars = self.data
+        
+        # Apply filters
         if mag_limit:
-            # Create a mask for magnitude filtering
+            # Create masks for efficient filtering
             mag_filter = display_stars['mag'] <= mag_limit
-            
-            # Always include fictional stars (they have fictional names)
-            fictional_filter = display_stars['fictional_name'].notna() & (display_stars['fictional_name'] != '')
-            
-            # Always include stars that belong to nations (not neutral zone)
+            fictional_filter = (display_stars['fictional_name'].notna() & 
+                              (display_stars['fictional_name'] != ''))
             nation_filter = display_stars['nation_priority'] == 0
             
-            # Combine filters: include if meets magnitude OR is fictional OR is important nation system
+            # Combine filters efficiently
             combined_filter = mag_filter | fictional_filter | nation_filter
-            
             display_stars = display_stars[combined_filter]
         
-        # Sort by nation priority (0 first), then by magnitude (bright first)
+        # Sort efficiently
         display_stars = display_stars.sort_values(['nation_priority', 'mag'])
         
-        # Limit count for performance
+        # Apply count limit
         if count_limit:
             display_stars = display_stars.head(count_limit)
         
-        return self._format_stars_for_json(display_stars)
+        # Format and cache result
+        result = self._format_stars_for_json(display_stars)
+        self._filtered_cache[cache_key] = result
+        
+        return result
     
     def _format_stars_for_json(self, stars_df):
         """Convert star dataframe to JSON-serializable format"""
@@ -239,6 +313,12 @@ class StarModel(BaseModel):
                 'source': star.get('fictional_source'),
                 'description': star.get('fictional_description')
             },
+            'habitability': {
+                'score': float(star.get('habitability_score', 0.0)),
+                'category': str(star.get('habitability_category', 'Unknown')),
+                'exploration_priority': str(star.get('exploration_priority', 'Unknown')),
+                'breakdown': star.get('habitability_breakdown', {})
+            },
             'nation': {
                 'id': nation_id,
                 'name': nation_info['name'] if nation_info else None,
@@ -254,9 +334,16 @@ class StarModel(BaseModel):
         return details
     
     def search_stars(self, query, spectral_type=None):
-        """Search stars by name, identifier, or spectral type"""
+        """Search stars by name, identifier, or spectral type (cached)"""
         if not query and not spectral_type:
             return []
+        
+        # Create cache key
+        cache_key = f"search_{query}_{spectral_type}"
+        
+        # Check cache first
+        if cache_key in self._search_cache:
+            return self._search_cache[cache_key]
         
         results = pd.DataFrame()
         
@@ -264,21 +351,42 @@ class StarModel(BaseModel):
             # Use the naming system to search by name
             results = self.naming_system.search_stars_by_name(self.data, query)
             
-            # Also search fictional names
+            # Also search fictional names efficiently
             fictional_matches = self.data[
                 self.data['fictional_name'].str.contains(query, case=False, na=False)
             ]
             
-            # Combine results and remove duplicates
-            results = pd.concat([results, fictional_matches]).drop_duplicates(subset=['id'])
+            # Combine results and remove duplicates efficiently
+            if not results.empty and not fictional_matches.empty:
+                results = pd.concat([results, fictional_matches]).drop_duplicates(subset=['id'])
+            elif not fictional_matches.empty:
+                results = fictional_matches
         else:
-            results = self.data.copy()
+            results = self.data
         
         # Filter by spectral type if provided
         if spectral_type:
             results = self._filter_by_spectral_type(results, spectral_type)
         
-        return self._format_search_results(results)
+        # Format results and cache them
+        formatted_results = self._format_search_results(results)
+        self._search_cache[cache_key] = formatted_results
+        
+        return formatted_results
+    
+    def clear_cache(self):
+        """Clear all cached data to free memory"""
+        self._cache.clear()
+        self._filtered_cache.clear()
+        self._search_cache.clear()
+    
+    def get_cache_stats(self):
+        """Get cache statistics for monitoring"""
+        return {
+            'cache_entries': len(self._cache),
+            'filtered_cache_entries': len(self._filtered_cache),
+            'search_cache_entries': len(self._search_cache)
+        }
     
     def _filter_by_spectral_type(self, data, spectral_type):
         """Enhanced filtering for binary stars - check if ANY component matches"""

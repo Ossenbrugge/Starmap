@@ -40,8 +40,41 @@ function hexToRgb(hex) {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
-    updateStarmap(); // Load initial starmap
+    initializeStarmap(); // Initialize with server readiness check
 });
+
+async function initializeStarmap() {
+    updateStatus('Checking server connection...', true);
+    
+    // Check if server is ready
+    let serverReady = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (!serverReady && attempts < maxAttempts) {
+        try {
+            const response = await fetch('/api/stars?limit=1');
+            if (response.ok) {
+                serverReady = true;
+            } else {
+                throw new Error('Server not ready');
+            }
+        } catch (error) {
+            attempts++;
+            console.log(`Server check attempt ${attempts}/${maxAttempts} failed:`, error.message);
+            if (attempts < maxAttempts) {
+                updateStatus(`Waiting for server... (${attempts}/${maxAttempts})`, true);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+    
+    if (serverReady) {
+        updateStarmap(); // Load initial starmap
+    } else {
+        updateStatus('Failed to connect to server. Please refresh the page.', false);
+    }
+}
 
 function setupEventListeners() {
     // Range slider updates
@@ -72,18 +105,31 @@ function updateStatus(message, isLoading = false) {
     }
 }
 
-async function updateStarmap() {
+async function updateStarmap(retryCount = 0) {
     const magLimit = document.getElementById('magLimit').value;
     const starCount = document.getElementById('starCount').value;
     
     updateStatus('Loading starmap...', true);
     
     try {
-        // Fetch star data
-        const response = await fetch('/api/stars');
-        if (!response.ok) throw new Error('Failed to fetch star data');
+        // Fetch star data with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await fetch('/api/stars', {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         currentStars = await response.json();
+        
+        if (!Array.isArray(currentStars)) {
+            throw new Error('Invalid data format received from server');
+        }
         
         // Filter stars based on parameters
         let filteredStars = currentStars
@@ -98,7 +144,11 @@ async function updateStarmap() {
             mode: 'markers',
             type: 'scatter3d',
             marker: {
-                size: filteredStars.map(star => Math.max(2, 8 - star.mag)), // Brighter stars are bigger
+                size: filteredStars.map(star => {
+                    const baseSize = Math.max(2, 8 - star.mag);
+                    // Reduce Sol's (star ID 0) circle radius by half
+                    return star.id === 0 ? baseSize / 2 : baseSize;
+                }), // Brighter stars are bigger
                 color: filteredStars.map(star => star.mag),
                 colorscale: [
                     [0, '#ffffff'],      // Bright stars - white
@@ -173,18 +223,31 @@ async function updateStarmap() {
         // Add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
             try {
-                if (data.points && data.points.length > 0 && data.points[0].customdata) {
-                    const starId = data.points[0].customdata;
+                if (data.points && data.points.length > 0) {
+                    const point = data.points[0];
                     
-                    if (typeof starId === 'number' && starId > 0) {
+                    // Only process clicks on the main star trace (trace index 0) with valid customdata
+                    if (point.curveNumber === 0 && point.customdata && 
+                        typeof point.customdata === 'number' && point.customdata > 0) {
+                        
+                        const starId = point.customdata;
+                        
                         if (distanceMeasurementMode) {
                             handleDistanceModeClick(starId);
                         } else {
                             selectStar(starId);
                         }
                     } else {
-                        console.warn('Invalid star ID:', starId);
+                        console.debug('Click ignored - not on main star trace or invalid customdata:', {
+                            curveNumber: point.curveNumber,
+                            customdata: point.customdata,
+                            hasValidCustomdata: point.customdata && typeof point.customdata === 'number' && point.customdata > 0
+                        });
                     }
+                } else {
+                    // Handle empty space clicks - prevent default camera movement
+                    console.debug('Click on empty space - preventing default behavior');
+                    return false;
                 }
             } catch (error) {
                 console.error('Error handling star click:', error);
@@ -202,7 +265,21 @@ async function updateStarmap() {
         
     } catch (error) {
         console.error('Error updating starmap:', error);
-        updateStatus(`Error: ${error.message}`, false);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        // Retry logic for network errors
+        if ((error.name === 'AbortError' || error.message.includes('fetch')) && retryCount < 3) {
+            console.log(`Retrying starmap load... Attempt ${retryCount + 1}`);
+            updateStatus(`Connection failed, retrying... (${retryCount + 1}/3)`, true);
+            setTimeout(() => updateStarmap(retryCount + 1), 2000);
+            return;
+        }
+        
+        updateStatus(`Error loading starmap: ${error.message}. Check browser console for details.`, false);
     }
 }
 
@@ -284,7 +361,7 @@ function highlightStarOnMap(starId, starData) {
         mode: 'markers',
         type: 'scatter3d',
         marker: {
-            size: 15,
+            size: starData.id === 0 ? 7.5 : 15, // Reduce Sol's highlight size by half
             color: '#ff6b6b',
             symbol: 'circle-open',
             line: {
@@ -329,6 +406,82 @@ function clearHighlight() {
     document.getElementById('planetInfo').style.display = 'none';
     
     updateStatus('Selection cleared');
+}
+
+function getHabitabilityHtml(starData) {
+    // Create habitability section HTML - check both direct properties and nested habitability object
+    let habitabilityData = starData.habitability || {};
+    
+    // Support both formats for backward compatibility
+    const score = habitabilityData.score !== undefined ? habitabilityData.score : starData.habitability_score;
+    const category = habitabilityData.category || starData.habitability_category || 'Unknown';
+    const priority = habitabilityData.exploration_priority || starData.exploration_priority || 'Unknown';
+    
+    // If no habitability data available, return empty
+    if (score === undefined || score === null) {
+        return '';
+    }
+    
+    // Determine color based on habitability category
+    let categoryColor = 'secondary';
+    let priorityColor = 'secondary';
+    
+    switch (category) {
+        case 'Excellent':
+            categoryColor = 'success';
+            break;
+        case 'Good':
+            categoryColor = 'primary';
+            break;
+        case 'Moderate':
+            categoryColor = 'warning';
+            break;
+        case 'Poor':
+            categoryColor = 'danger';
+            break;
+        case 'Unsuitable':
+            categoryColor = 'dark';
+            break;
+    }
+    
+    switch (priority) {
+        case 'High':
+            priorityColor = 'success';
+            break;
+        case 'Medium-High':
+            priorityColor = 'primary';
+            break;
+        case 'Medium':
+            priorityColor = 'warning';
+            break;
+        case 'Low':
+            priorityColor = 'danger';
+            break;
+        case 'None':
+            priorityColor = 'dark';
+            break;
+    }
+    
+    return `
+        <div class="habitability-section mb-3 p-2" style="background-color: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; border-radius: 4px;">
+            <div class="star-property">
+                <span><strong>🌍 Habitability Score:</strong></span>
+                <span class="fw-bold">${(score * 100).toFixed(1)}%</span>
+            </div>
+            <div class="star-property">
+                <span><strong>Category:</strong></span>
+                <span class="badge bg-${categoryColor}">${category}</span>
+            </div>
+            <div class="star-property">
+                <span><strong>Exploration Priority:</strong></span>
+                <span class="badge bg-${priorityColor}">${priority}</span>
+            </div>
+            <div class="star-property">
+                <span><strong>Assessment:</strong></span>
+                <span class="text-muted small" id="habitability-explanation-${starData.id}">Loading...</span>
+            </div>
+        </div>
+    `;
 }
 
 function showStarDetails(starData) {
@@ -436,6 +589,7 @@ function showStarDetails(starData) {
                 <span><strong>Spectral Class:</strong></span>
                 <span>${starData.properties.spectral_class}</span>
             </div>
+            ${getHabitabilityHtml(starData)}
             <div class="star-property">
                 <span><strong>Coordinates:</strong></span>
                 <span>(${starData.coordinates.x.toFixed(2)}, ${starData.coordinates.y.toFixed(2)}, ${starData.coordinates.z.toFixed(2)})</span>
@@ -443,6 +597,11 @@ function showStarDetails(starData) {
         `;
         
         starInfoPanel.style.display = 'block';
+        
+        // Fetch and display habitability explanation if habitability data is available
+        if (starData.habitability_score !== undefined) {
+            fetchHabitabilityExplanation(starData.id);
+        }
         
         // Show planetary system if available
         if (starData.planets && starData.planets.length > 0) {
@@ -723,7 +882,11 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
             mode: 'markers',
             type: 'scatter3d',
             marker: {
-                size: filteredStars.map(star => Math.max(2, 8 - star.magnitude)), // Brighter stars are bigger
+                size: filteredStars.map(star => {
+                    const baseSize = Math.max(2, 8 - star.magnitude);
+                    // Reduce Sol's (star ID 0) circle radius by half
+                    return star.id === 0 ? baseSize / 2 : baseSize;
+                }), // Brighter stars are bigger
                 color: filteredStars.map(star => star.magnitude),
                 colorscale: [
                     [0, '#ffffff'],      // Bright stars - white
@@ -797,14 +960,36 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
         
         // Re-add click event listener
         document.getElementById('starmap').on('plotly_click', function(data) {
-            if (data.points && data.points.length > 0) {
-                const starId = data.points[0].customdata;
-                
-                if (distanceMeasurementMode) {
-                    handleDistanceModeClick(starId);
+            try {
+                if (data.points && data.points.length > 0) {
+                    const point = data.points[0];
+                    
+                    // Only process clicks on the main star trace (trace index 0) with valid customdata
+                    if (point.curveNumber === 0 && point.customdata && 
+                        typeof point.customdata === 'number' && point.customdata > 0) {
+                        
+                        const starId = point.customdata;
+                        
+                        if (distanceMeasurementMode) {
+                            handleDistanceModeClick(starId);
+                        } else {
+                            selectStar(starId);
+                        }
+                    } else {
+                        console.debug('Click ignored - not on main star trace or invalid customdata:', {
+                            curveNumber: point.curveNumber,
+                            customdata: point.customdata,
+                            hasValidCustomdata: point.customdata && typeof point.customdata === 'number' && point.customdata > 0
+                        });
+                    }
                 } else {
-                    selectStar(starId);
+                    // Handle empty space clicks - prevent default camera movement
+                    console.debug('Click on empty space - preventing default behavior');
+                    return false;
                 }
+            } catch (error) {
+                console.error('Error handling star click:', error);
+                updateStatus('Error processing star selection');
             }
         });
         
@@ -1090,15 +1275,22 @@ function applyPoliticalOverlay() {
     
     // Update star colors based on nation control
     const updatedColors = currentStars.map(star => {
-        if (star.nation && star.nation.id !== 'neutral_zone') {
-            return star.nation.color;
+        // Check if this star belongs to any nation
+        for (const [nationId, nation] of Object.entries(nationsData)) {
+            if (nationId !== 'neutral_zone' && nation.territories && nation.territories.includes(star.id)) {
+                return nation.color;
+            }
         }
-        return getOriginalStarColor(star.mag); // Default color based on magnitude
+        // For unaligned stars, use original magnitude-based colors
+        return getOriginalStarColor(star.mag);
     });
     
-    // Update the main star trace colors
+    // Update the main star trace colors and disable colorscale when using direct colors
     Plotly.restyle('starmap', {
-        'marker.color': [updatedColors]
+        'marker.color': [updatedColors],
+        'marker.colorscale': null,
+        'marker.cmin': null,
+        'marker.cmax': null
     }, [0]);
     
     updateStatus('Political overlay applied');
@@ -1119,11 +1311,19 @@ function reapplyPoliticalOverlay() {
 function clearPoliticalOverlay() {
     if (!starmapPlot || !currentStars) return;
     
-    // Reset to original magnitude-based colors
+    // Reset to original magnitude-based colors using numeric values and colorscale
     const originalColors = currentStars.map(star => star.mag);
     
     Plotly.restyle('starmap', {
-        'marker.color': [originalColors]
+        'marker.color': [originalColors],
+        'marker.colorscale': [
+            [0, '#ffffff'],      // Bright stars - white
+            [0.3, '#ffff99'],    // Yellow
+            [0.6, '#ff9933'],    // Orange
+            [1, '#ff3333']       // Dim stars - red
+        ],
+        'marker.cmin': undefined,
+        'marker.cmax': undefined
     }, [0]);
     
     // Clear any political traces
@@ -1133,8 +1333,41 @@ function clearPoliticalOverlay() {
 }
 
 function getOriginalStarColor(magnitude) {
-    // Return the original magnitude value for colorscale
-    return magnitude;
+    // Convert magnitude to actual color values based on the colorscale used in the starmap
+    // The colorscale is: [0, '#ffffff'], [0.3, '#ffff99'], [0.6, '#ff9933'], [1, '#ff3333']
+    // We need to normalize the magnitude to 0-1 range and interpolate the colors
+    
+    // Most stars have magnitude between -2 and 8, so we'll normalize to this range
+    const minMag = -2;
+    const maxMag = 8;
+    let normalizedMag = (magnitude - minMag) / (maxMag - minMag);
+    
+    // Clamp to 0-1 range
+    normalizedMag = Math.max(0, Math.min(1, normalizedMag));
+    
+    // Map to color based on the colorscale
+    if (normalizedMag <= 0.3) {
+        // Interpolate between white (#ffffff) and yellow (#ffff99)
+        const ratio = normalizedMag / 0.3;
+        const r = 255;
+        const g = 255;
+        const b = Math.round(255 - (255 - 153) * ratio);
+        return `rgb(${r}, ${g}, ${b})`;
+    } else if (normalizedMag <= 0.6) {
+        // Interpolate between yellow (#ffff99) and orange (#ff9933)
+        const ratio = (normalizedMag - 0.3) / 0.3;
+        const r = 255;
+        const g = Math.round(255 - (255 - 153) * ratio);
+        const b = Math.round(153 - (153 - 51) * ratio);
+        return `rgb(${r}, ${g}, ${b})`;
+    } else {
+        // Interpolate between orange (#ff9933) and red (#ff3333)
+        const ratio = (normalizedMag - 0.6) / 0.4;
+        const r = 255;
+        const g = Math.round(153 - 153 * ratio);
+        const b = Math.round(51 - 51 * ratio);
+        return `rgb(${r}, ${g}, ${b})`;
+    }
 }
 
 function toggleTradeRoutes() {
@@ -1200,7 +1433,7 @@ async function showTradeRoutes() {
                             width: lineWidth,
                             dash: lineStyle
                         },
-                        name: route.name,
+                        name: `Trade Route: ${route.name}`,
                         hovertemplate: `<b>${route.name}</b><br>` +
                                      `${fromStar.name} → ${toStar.name}<br>` +
                                      `Type: ${route.route_type}<br>` +
@@ -1209,7 +1442,8 @@ async function showTradeRoutes() {
                                      `Travel Time: ${route.travel_time_days} days<br>` +
                                      `Security: ${route.security_level}<br>` +
                                      `${route.description}<extra></extra>`,
-                        showlegend: false
+                        showlegend: false,
+                        hoverinfo: 'skip'
                     };
                     
                     Plotly.addTraces('starmap', tradeRouteTrace);
@@ -1253,7 +1487,7 @@ function showTerritoryBorders() {
             
             // Get stars belonging to this nation
             const nationStars = currentStars.filter(star => 
-                star.nation && star.nation.id === nationId
+                nation.territories && nation.territories.includes(star.id)
             );
             
             if (nationStars.length >= 2) {
@@ -1276,7 +1510,14 @@ function createTerritoryBoundary(stars, nation) {
     const radius = calculateBoundingRadius(stars, center);
     
     // Create a larger radius for visual buffer
-    const borderRadius = radius * 1.3;
+    // Apply larger multipliers for Protelani and Dorsai Republics
+    let multiplier = 1.3; // Default multiplier
+    if (nation.name === "Protelani Republic") {
+        multiplier = 2.0; // Larger sphere for Protelani Republic
+    } else if (nation.name === "Dorsai Republic") {
+        multiplier = 2.0; // Larger sphere for Dorsai Republic
+    }
+    const borderRadius = radius * multiplier;
     
     // Create sphere wireframe
     const sphereTrace = createSphereWireframe(center, borderRadius, nation);
@@ -1380,7 +1621,8 @@ function createSphereWireframe(center, radius, nation) {
         name: `${nation.name} Territory`,
         hovertemplate: `<b>${nation.name}</b><br>Territory Boundary<extra></extra>`,
         showlegend: false,
-        opacity: 0.6
+        opacity: 0.6,
+        hoverinfo: 'skip'
     };
 }
 
@@ -1412,7 +1654,8 @@ function createStarConnections(stars, nation) {
         name: `${nation.name} Connections`,
         hovertemplate: `<b>${nation.name}</b><br>Internal Connections<extra></extra>`,
         showlegend: false,
-        opacity: 0.4
+        opacity: 0.4,
+        hoverinfo: 'skip'
     };
 }
 
@@ -1510,7 +1753,7 @@ async function showNationLegend() {
     Object.entries(nationsData).forEach(([nationId, nation]) => {
         // Get stars belonging to this nation
         const nationStars = currentStars.filter(star => 
-            star.nation && star.nation.id === nationId
+            nation.territories && nation.territories.includes(star.id)
         );
         
         // Build star list HTML
@@ -2063,7 +2306,7 @@ function updateStellarRegionsDisplay() {
             j: sphereData.j,
             k: sphereData.k,
             color: region.color,
-            opacity: 0.2,
+            opacity: 0.05,
             name: `Region: ${region.name}`,
             showlegend: true,
             legendgroup: 'stellar_regions',
@@ -2182,11 +2425,12 @@ async function loadRegionBoundaries(regionName) {
                 marker: {
                     size: 3,
                     color: '#ffffff',
-                    opacity: 0.5
+                    opacity: 0.2
                 },
                 name: `${regionName} Boundaries`,
                 showlegend: false,
-                hovertemplate: `${regionName} Boundary<extra></extra>`
+                hovertemplate: `${regionName} Boundary<extra></extra>`,
+                hoverinfo: 'skip'
             };
             
             Plotly.addTraces('starmap', [boundaryTrace]).then(() => {
@@ -2209,6 +2453,31 @@ function reapplyStellarRegionsOverlay() {
         } catch (error) {
             console.error('Error reapplying stellar regions overlay:', error);
             updateStatus('Warning: Stellar regions overlay may need to be refreshed');
+        }
+    }
+}
+
+// Function to fetch habitability explanation for a star
+async function fetchHabitabilityExplanation(starId) {
+    try {
+        const response = await fetch(`/api/star/${starId}/habitability`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch habitability explanation');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data.explanation) {
+            const explanationElement = document.getElementById(`habitability-explanation-${starId}`);
+            if (explanationElement) {
+                explanationElement.textContent = data.data.explanation;
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching habitability explanation:', error);
+        const explanationElement = document.getElementById(`habitability-explanation-${starId}`);
+        if (explanationElement) {
+            explanationElement.textContent = 'Unable to load habitability assessment.';
         }
     }
 }

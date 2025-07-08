@@ -1,5 +1,7 @@
-from flask import render_template, jsonify
+from flask import render_template, jsonify, request
 from .base_view import BaseView
+import gzip
+import json
 
 
 class ApiView(BaseView):
@@ -29,7 +31,7 @@ class ApiView(BaseView):
         """
     
     def format_stars_response(self, stars_data):
-        """Format stars data for API response"""
+        """Format stars data for API response with optional compression"""
         if not stars_data:
             return self.error_response("No star data available")
         
@@ -39,7 +41,11 @@ class ApiView(BaseView):
             if formatted_star:
                 formatted_stars.append(formatted_star)
         
-        return jsonify(formatted_stars)
+        return self._create_response(formatted_stars)
+    
+    def _create_response(self, data):
+        """Create JSON response"""
+        return jsonify(data)
     
     def format_star_details_response(self, star_details):
         """Format detailed star information for API response"""

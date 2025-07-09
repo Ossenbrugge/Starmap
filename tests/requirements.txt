@@ -1,0 +1,38 @@
+# Testing requirements for Starmap
+# Install with: pip install -r tests/requirements.txt
+
+# Core testing frameworks
+pytest>=7.0.0
+pytest-cov>=4.0.0
+unittest-xml-reporting>=3.2.0
+
+# Mocking and fixtures
+pytest-mock>=3.10.0
+factory-boy>=3.2.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+memory-profiler>=0.60.0
+
+# Coverage reporting
+coverage>=7.0.0
+
+# Stress testing utilities
+psutil>=5.9.0
+
+# Async testing (if needed for future features)
+pytest-asyncio>=0.21.0
+
+# Test utilities
+parameterized>=0.8.1
+freezegun>=1.2.0
+
+# Optional: For test data generation
+faker>=18.0.0
+
+# Optional: For parallel test execution
+pytest-xdist>=3.0.0
+
+# Optional: For test reporting
+pytest-html>=3.1.0
+allure-pytest>=2.12.0

@@ -1447,11 +1447,40 @@ async function showTradeRoutes() {
         let processedRoutes = 0;
         let skippedRoutes = 0;
         
+        // Collect all unique star IDs from trade routes
+        const tradeRouteStarIds = new Set();
+        Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
+            routes.forEach(route => {
+                tradeRouteStarIds.add(route.from_star_id);
+                tradeRouteStarIds.add(route.to_star_id);
+            });
+        });
+        
+        // Fetch missing stars that aren't in currentStars
+        const currentStarIds = new Set(currentStars.map(s => s.id));
+        const missingStarIds = Array.from(tradeRouteStarIds).filter(id => !currentStarIds.has(id));
+        
+        let allTradeRouteStars = [...currentStars];
+        
+        if (missingStarIds.length > 0) {
+            updateStatus(`Fetching ${missingStarIds.length} additional stars for trade routes...`, true);
+            try {
+                const starPromises = missingStarIds.map(id => 
+                    fetch(`/api/star/${id}`).then(res => res.ok ? res.json() : null)
+                );
+                const additionalStars = (await Promise.all(starPromises)).filter(star => star !== null);
+                allTradeRouteStars = [...currentStars, ...additionalStars];
+                console.log(`Loaded ${additionalStars.length} additional stars for trade routes`);
+            } catch (error) {
+                console.warn('Failed to fetch some trade route stars:', error);
+            }
+        }
+        
         // Process all route groups
         Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
             routes.forEach((route, index) => {
-                const fromStar = currentStars.find(s => s.id === route.from_star_id);
-                const toStar = currentStars.find(s => s.id === route.to_star_id);
+                const fromStar = allTradeRouteStars.find(s => s.id === route.from_star_id);
+                const toStar = allTradeRouteStars.find(s => s.id === route.to_star_id);
                 
                 if (!fromStar || !toStar) {
                     console.warn(`Trade route "${route.name}" skipped - missing stars:`, {

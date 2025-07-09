@@ -309,7 +309,7 @@
       {
         "name": "Protelan Trade Corridor",
         "from_star_id": 58401,
-        "to_star_id": 200003,
+        "to_star_id": 74766,
         "from_system": "61 Ursae Majoris",
         "to_system": "Gliese 581",
         "route_type": "Multi-Destination Trade",
@@ -338,7 +338,7 @@
     "dorsai_routes": [
       {
         "name": "Dorsai-Felgenland Military Alliance Route",
-        "from_star_id": 200002,
+        "from_star_id": 113008,
         "to_star_id": 48941,
         "from_system": "Fomalhaut",
         "to_system": "Holsten Tor",
@@ -364,7 +364,7 @@
       },
       {
         "name": "Dorsai-Protelan Defense Corridor",
-        "from_star_id": 200002,
+        "from_star_id": 113008,
         "to_star_id": 58401,
         "from_system": "Fomalhaut",
         "to_system": "61 Ursae Majoris",
@@ -384,6 +384,106 @@
         "regions": [
           "Allied Anti-Spinward Quadrant",
           "Allied Spinward Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Dorsai-Pentothian Trade Route",
+        "from_star_id": 113008,
+        "to_star_id": 52409,
+        "from_system": "Fomalhaut",
+        "to_system": "GJ 380",
+        "route_type": "Neutral Trade",
+        "established": 2268,
+        "cargo_types": [
+          "Military Equipment",
+          "Defensive Technology",
+          "Tactical Training Services",
+          "Security Personnel"
+        ],
+        "travel_time_days": 62,
+        "frequency": "Monthly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "High",
+        "description": "Neutral trade route linking Dorsai Republic to Pentothian Trade Conglomerate for military equipment and defensive technology",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Dorsai-Lalande Colony Trade Route",
+        "from_star_id": 113008,
+        "to_star_id": 53879,
+        "from_system": "Fomalhaut",
+        "to_system": "Lalande 21185",
+        "route_type": "Colonial Trade",
+        "established": 2273,
+        "cargo_types": [
+          "Military Training Services",
+          "Defensive Equipment",
+          "Colonial Support",
+          "Security Personnel"
+        ],
+        "travel_time_days": 45,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "Medium",
+        "description": "Trade route linking Dorsai Republic to Terran colonial outpost at Lalande 21185, avoiding direct trade with Sol during wartime",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Dorsai-Brandenburg Trade Route",
+        "from_star_id": 113008,
+        "to_star_id": 46945,
+        "from_system": "Fomalhaut",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Military Supply",
+        "established": 2272,
+        "cargo_types": [
+          "Military Equipment",
+          "Tactical Gear",
+          "Training Personnel",
+          "Defensive Systems"
+        ],
+        "travel_time_days": 68,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "High",
+        "description": "Military supply route linking Dorsai Republic to Brandenburg Tor for expanded Felgenland Union defense cooperation",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Dorsai-Griefen Trade Route",
+        "from_star_id": 113008,
+        "to_star_id": 43464,
+        "from_system": "Fomalhaut",
+        "to_system": "Griefen Tor",
+        "route_type": "Resource Supply",
+        "established": 2274,
+        "cargo_types": [
+          "Military Personnel",
+          "Mining Security",
+          "Resource Extraction Equipment",
+          "Defensive Systems"
+        ],
+        "travel_time_days": 72,
+        "frequency": "Monthly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "Medium",
+        "description": "Resource supply route linking Dorsai Republic to Griefen Tor for mining security and resource extraction support",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Allied Union Core Quadrant"
         ],
         "economic_zone": "Felgenland Free Trade Zone"
       }
@@ -488,7 +588,7 @@
       {
         "name": "Pentothian-Dorsai Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200002,
+        "to_star_id": 113008,
         "from_system": "GJ 380",
         "to_system": "Fomalhaut",
         "route_type": "Neutral Trade",
@@ -514,7 +614,7 @@
       {
         "name": "Pentothian-DeltaPavonis Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200011,
+        "to_star_id": 98924,
         "from_system": "GJ 380",
         "to_system": "Delta Pavonis",
         "route_type": "Frontier Trade",
@@ -538,7 +638,7 @@
       {
         "name": "Pentothian-HD10180 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200012,
+        "to_star_id": 7585,
         "from_system": "GJ 380",
         "to_system": "HD 10180",
         "route_type": "Frontier Trade",
@@ -562,7 +662,7 @@
       {
         "name": "Pentothian-TauCeti Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200005,
+        "to_star_id": 8087,
         "from_system": "GJ 380",
         "to_system": "Tau Ceti",
         "route_type": "Frontier Trade",
@@ -586,7 +686,7 @@
       {
         "name": "Pentothian-EpsilonEridani Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200014,
+        "to_star_id": 16496,
         "from_system": "GJ 380",
         "to_system": "Epsilon Eridani",
         "route_type": "Frontier Trade",
@@ -610,7 +710,7 @@
       {
         "name": "Pentothian-Gliese667 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200007,
+        "to_star_id": 84451,
         "from_system": "GJ 380",
         "to_system": "Gliese 667",
         "route_type": "Frontier Trade",
@@ -634,7 +734,7 @@
       {
         "name": "Pentothian-HD69830 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200008,
+        "to_star_id": 40578,
         "from_system": "GJ 380",
         "to_system": "HD 69830",
         "route_type": "Frontier Trade",
@@ -658,7 +758,7 @@
       {
         "name": "Pentothian-EtaCassiopeiae Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200009,
+        "to_star_id": 3814,
         "from_system": "GJ 380",
         "to_system": "Eta Cassiopeiae",
         "route_type": "Frontier Trade",
@@ -682,7 +782,7 @@
       {
         "name": "Pentothian-82Eridani Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200010,
+        "to_star_id": 15471,
         "from_system": "GJ 380",
         "to_system": "82 G. Eridani",
         "route_type": "Frontier Trade",
@@ -706,7 +806,7 @@
       {
         "name": "Pentothian-Gliese832 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200021,
+        "to_star_id": 106098,
         "from_system": "GJ 380",
         "to_system": "Gliese 832",
         "route_type": "Frontier Trade",
@@ -732,7 +832,7 @@
       {
         "name": "Pentothian-Gliese1061 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200015,
+        "to_star_id": 118236,
         "from_system": "GJ 380",
         "to_system": "Gliese 1061",
         "route_type": "Research Supply",
@@ -755,7 +855,7 @@
       {
         "name": "Pentothian-Ross154 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200016,
+        "to_star_id": 92115,
         "from_system": "GJ 380",
         "to_system": "Ross 154",
         "route_type": "Research Supply",
@@ -778,7 +878,7 @@
       {
         "name": "Pentothian-Barnard Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200018,
+        "to_star_id": 87665,
         "from_system": "GJ 380",
         "to_system": "Barnard's Star",
         "route_type": "Research Supply",
@@ -801,7 +901,7 @@
       {
         "name": "Pentothian-Ross128 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200020,
+        "to_star_id": 57375,
         "from_system": "GJ 380",
         "to_system": "Ross 128",
         "route_type": "Research Supply",
@@ -826,7 +926,7 @@
       {
         "name": "Pentothian-Struve2398 Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200017,
+        "to_star_id": 91484,
         "from_system": "GJ 380",
         "to_system": "Struve 2398",
         "route_type": "Mining Supply",
@@ -849,7 +949,7 @@
       {
         "name": "Pentothian-Lalande Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200019,
+        "to_star_id": 53879,
         "from_system": "GJ 380",
         "to_system": "Lalande 21185",
         "route_type": "Mining Supply",

@@ -42,52 +42,52 @@ fictional_star_names = {
         "source": "Pentothian Trade Conglomerate",
         "description": "Capital of the Pentothian Trade Conglomerate, home to reptilian traders. Real star: Groombridge 1618, a K7.5Ve flare star 15.89 ly away in Ursa Major",
     },
-    200003: {
+    74766: {
         "fictional_name": "Gliese 581 Research Station",
         "source": "Neutral Zone Archives",
         "description": "Neutral research outpost in the Libra constellation, part of the Protelan Trade Corridor",
     },
-    200005: {
+    8087: {
         "fictional_name": "Cetan Confederacy",
         "source": "Neutral Zone Archives",
         "description": "Independent trade hub in the Cetus constellation, hosts Asimov and Heinlein colonies",
     },
-    200007: {
+    84451: {
         "fictional_name": "Gliese 667 Reconnaissance Hub",
         "source": "Neutral Zone Archives",
         "description": "Reconnaissance and research station in Scorpius, monitoring habitable zone planets",
     },
-    200008: {
+    40578: {
         "fictional_name": "HD 69830 Research Colony",
         "source": "Neutral Zone Archives",
         "description": "Research colony with Neptune-mass planets and habitable moons",
     },
-    200009: {
+    3814: {
         "fictional_name": "Eta Cassiopeiae Mining Colony",
         "source": "Neutral Zone Archives",
         "description": "Mining colony in Cassiopeia, supplies metals to the Protelan Trade Corridor",
     },
-    200010: {
+    15471: {
         "fictional_name": "82 Eridani Industrial Hub",
         "source": "Neutral Zone Archives",
         "description": "Industrial colony with super-Earth planets, supports both Union and Directorate trade",
     },
-    200011: {
+    98924: {
         "fictional_name": "Delta Pavonis Industrial Station",
         "source": "Neutral Zone Archives",
         "description": "Industrial metal supply station in the Pavo constellation",
     },
-    200012: {
+    7585: {
         "fictional_name": "HD 10180 Colonial Hub",
         "source": "Neutral Zone Archives",
         "description": "High-habitability colonial trade hub with multiple planets",
     },
-    200014: {
+    16496: {
         "fictional_name": "Eridani Open Democracy",
         "source": "Neutral Zone Archives",
         "description": "Democratic settlement in Eridanus, part of the neutral frontier",
     },
-    200015: {
+    118236: {
         "fictional_name": "Gliese 1061 Research Outpost",
         "source": "Neutral Zone Archives",
         "description": "Research outpost in the Horologium constellation",
@@ -97,7 +97,7 @@ fictional_star_names = {
         "source": "Neutral Zone Archives",
         "description": "Research station in the Sagittarius constellation",
     },
-    200017: {
+    91484: {
         "fictional_name": "Struve 2398 Mining Outpost",
         "source": "Neutral Zone Archives",
         "description": "Mining outpost in the Draco constellation",
@@ -108,16 +108,16 @@ fictional_star_names = {
         "description": "Trade hub and research station near Sol",
     },
     53879: {
-        "fictional_name": "Lalande Mining Station",
-        "source": "Neutral Zone Archives",
-        "description": "Mining and research station in the Ursa Major constellation",
+        "fictional_name": "New Geneva Colonial Outpost",
+        "source": "Terran Directorate Colonial Administration",
+        "description": "Terran colonial outpost and mining facility at Lalande 21185, serving as neutral trading intermediary during Dorsai-Terran conflicts",
     },
     57375: {
         "fictional_name": "Ross 128 Research Colony",
         "source": "Neutral Zone Archives",
         "description": "Research colony with potential habitable planet support",
     },
-    200021: {
+    106098: {
         "fictional_name": "Gliese 832 Research Station",
         "source": "Neutral Zone Archives",
         "description": "Research station in Grus, monitoring habitable zone planets",

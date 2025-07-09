@@ -153,7 +153,7 @@ fictional_planet_systems = {
             "atmosphere": "H2, He, CH4, NH3", "discovery_year": "Future", "confirmed": False
         }
     ],
-    200001: [  # 61 Ursae Majoris - Protelani Republic system
+    58401: [  # 61 Ursae Majoris - Protelani Republic system
         {
             "name": "61 UMa a", "alternate_name": "Chaud", "type": "Hothouse", "distance_au": 0.3, "mass_earth": 1.5,
             "radius_earth": 1.1, "orbital_period_days": 78, "temperature_k": 850,
@@ -236,7 +236,7 @@ fictional_planet_systems = {
             }
         }
     ],
-    200002: [  # Fomalhaut - Dorsai Republic system
+    113008: [  # Fomalhaut - Dorsai Republic system
         {
             "name": "α PsA b", "alternate_name": "Fomalhaut b", "type": "Gas Giant", "distance_au": 177, "mass_earth": 636,
             "radius_earth": 6.5, "orbital_period_years": 1700, "temperature_k": 50,

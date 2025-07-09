@@ -232,7 +232,7 @@
     "protelani_routes": [
       {
         "name": "Protelan-Holsten Commercial Corridor",
-        "from_star_id": 200001,
+        "from_star_id": 58401,
         "to_star_id": 48941,
         "from_system": "61 Ursae Majoris",
         "to_system": "Holsten Tor",
@@ -257,7 +257,7 @@
       },
       {
         "name": "Protelan-Brandenburg Express",
-        "from_star_id": 200001,
+        "from_star_id": 58401,
         "to_star_id": 46945,
         "from_system": "61 Ursae Majoris",
         "to_system": "Brandenburgh Tor",
@@ -282,7 +282,7 @@
       },
       {
         "name": "Protelan-Sol Rim Trade Corridor",
-        "from_star_id": 200001,
+        "from_star_id": 58401,
         "to_star_id": 0,
         "from_system": "61 Ursae Majoris",
         "to_system": "Sol",
@@ -308,7 +308,7 @@
       },
       {
         "name": "Protelan Trade Corridor",
-        "from_star_id": 200001,
+        "from_star_id": 58401,
         "to_star_id": 200003,
         "from_system": "61 Ursae Majoris",
         "to_system": "Gliese 581",
@@ -365,7 +365,7 @@
       {
         "name": "Dorsai-Protelan Defense Corridor",
         "from_star_id": 200002,
-        "to_star_id": 200001,
+        "to_star_id": 58401,
         "from_system": "Fomalhaut",
         "to_system": "61 Ursae Majoris",
         "route_type": "Defense Contract",
@@ -464,7 +464,7 @@
       {
         "name": "Pentothian-Protelan Trade Route",
         "from_star_id": 52409,
-        "to_star_id": 200001,
+        "to_star_id": 58401,
         "from_system": "GJ 380",
         "to_system": "61 Ursae Majoris",
         "route_type": "Neutral Trade",

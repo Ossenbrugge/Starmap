@@ -72,7 +72,7 @@
       "name": "Protelani Republic",
       "full_name": "The Protelani Republic",
       "capital_system": "61 Ursae Majoris",
-      "capital_star_id": 58401,
+      "capital_star_id": 56828,
       "capital_planet": "Protelan (Joi I)",
       "government_type": "Ultra-Capitalist Republic",
       "color": "#00BCD4",
@@ -80,7 +80,7 @@
       "established_year": 2189,
       "description": "Ultra-capitalist republic centered on Protelan moon, with Scandinavian-descended inhabitants averaging 2m tall due to 0.9g gravity. Known for the Joi Veil Festival celebrating eclipses and strong alliance with Felgenland Union.",
       "territories": [
-        58401
+        56828
       ],
       "specialties": [
         "Rimward Trade",

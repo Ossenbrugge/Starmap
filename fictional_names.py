@@ -27,7 +27,7 @@ fictional_star_names = {
         "source": "Felgenland Union Planetary Survey Database",
         "description": "Rimward trading hub in Felgenland Union",
     },
-    58401: {
+    56828: {
         "fictional_name": "Protelan Central",
         "source": "Protelani Republic Archives",
         "description": "Capital system of the ultra-capitalist Protelani Republic, home to Havskrun on moon Protelan",

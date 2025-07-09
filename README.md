@@ -80,7 +80,7 @@ An advanced 3D starmap application for science fiction world-building, featuring
 ### Quick Setup (MontyDB Version)
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
+git clone https://github.com/Ossenbrugge/Starmap
 cd Starmap
 
 # 2. Install MontyDB and migrate data

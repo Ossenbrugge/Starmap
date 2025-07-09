@@ -1,0 +1,874 @@
+{
+  "metadata": {
+    "title": "Comprehensive Trade Routes Database",
+    "description": "Complete interstellar trade routes connecting sectors in the Felgenland Saga universe, post-Treaty of Dual Spheres (2357)",
+    "version": "2.0",
+    "last_updated": "2025-07-08",
+    "coordinate_system": "Galactic coordinates (parsecs from Sol)",
+    "source": "Updated from trade_routes_grok.json with enhanced categorization"
+  },
+  "trade_routes": {
+    "terran_primary_routes": [
+      {
+        "name": "Earth-Centauri Express",
+        "from_star_id": 0,
+        "to_star_id": 71456,
+        "from_system": "Sol",
+        "to_system": "Alpha Centauri A",
+        "route_type": "Administrative",
+        "established": 2159,
+        "cargo_types": [
+          "Personnel",
+          "Administrative Supplies",
+          "High-Tech Components"
+        ],
+        "travel_time_days": 21,
+        "frequency": "Every 3 days",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Maximum",
+        "description": "High-volume trade route between Sol (Earth/Moon, Terminus, Titan) and Alpha Centauri for administrative and economic exchange",
+        "regions": [
+          "Directorate Core Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Sol-Sirius Industrial Corridor",
+        "from_star_id": 0,
+        "to_star_id": 32263,
+        "from_system": "Sol",
+        "to_system": "Sirius",
+        "route_type": "Industrial",
+        "established": 2180,
+        "cargo_types": [
+          "Industrial Materials",
+          "Manufactured Goods",
+          "Raw Materials"
+        ],
+        "travel_time_days": 45,
+        "frequency": "Weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "High",
+        "description": "Industrial trade route linking Sol to Sirius, supporting Directorate's manufacturing hub",
+        "regions": [
+          "Directorate Core Quadrant",
+          "Directorate Rim Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Earth-Proxima Supply Chain",
+        "from_star_id": 0,
+        "to_star_id": 70666,
+        "from_system": "Sol",
+        "to_system": "Proxima Centauri",
+        "route_type": "Colonial Supply",
+        "established": 2195,
+        "cargo_types": [
+          "Colonial Supplies",
+          "Food",
+          "Medical Equipment"
+        ],
+        "travel_time_days": 19,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Medium",
+        "description": "Supply chain linking Sol to Proxima Centauri for frontier colony support",
+        "regions": [
+          "Directorate Core Quadrant",
+          "Directorate Rim Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Earth-Wolf Research Link",
+        "from_star_id": 0,
+        "to_star_id": 118720,
+        "from_system": "Sol",
+        "to_system": "Wolf 359",
+        "route_type": "Research/Military",
+        "established": 2203,
+        "cargo_types": [
+          "Research Materials",
+          "Military Supplies",
+          "Scientific Personnel"
+        ],
+        "travel_time_days": 35,
+        "frequency": "Weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Classified",
+        "description": "Research-focused trade route linking Sol to Wolf 359 for scientific collaboration",
+        "regions": [
+          "Directorate Core Quadrant",
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Sirius-Proxima Trade Link",
+        "from_star_id": 32263,
+        "to_star_id": 70666,
+        "from_system": "Sirius",
+        "to_system": "Proxima Centauri",
+        "route_type": "Internal Trade",
+        "established": 2190,
+        "cargo_types": [
+          "Industrial Goods",
+          "Colonial Supplies",
+          "Personnel"
+        ],
+        "travel_time_days": 28,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "Medium",
+        "description": "Internal trade link between Sirius and Proxima Centauri for Directorate commerce",
+        "regions": [
+          "Directorate Rim Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Centauri-Sirius Trade Route",
+        "from_star_id": 71456,
+        "to_star_id": 32263,
+        "from_system": "Alpha Centauri A",
+        "to_system": "Sirius",
+        "route_type": "Administrative",
+        "established": 2165,
+        "cargo_types": [
+          "Administrative Personnel",
+          "High-Tech Components",
+          "Strategic Materials"
+        ],
+        "travel_time_days": 32,
+        "frequency": "Weekly",
+        "controlling_nation": "terran_directorate",
+        "security_level": "High",
+        "description": "Trade route linking Alpha Centauri's administrative hub to Sirius's industrial hub",
+        "regions": [
+          "Directorate Core Quadrant",
+          "Directorate Rim Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      }
+    ],
+    "felgenland_routes": [
+      {
+        "name": "Holsten-Tiefe Express",
+        "from_star_id": 48941,
+        "to_star_id": 999999,
+        "from_system": "Holsten Tor",
+        "to_system": "Tiefe-Grenze Tor",
+        "route_type": "Administrative",
+        "established": 2225,
+        "cargo_types": [
+          "Administrative Personnel",
+          "Union Directives",
+          "Cultural Exchange",
+          "Food",
+          "Metal Exports"
+        ],
+        "travel_time_days": 58,
+        "frequency": "Bi-monthly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "High",
+        "description": "High-speed trade route connecting Holsten Tor (Stahlburgh) to Tiefe-Grenze Tor (Brandstadt) for food and metal exports",
+        "regions": [
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Holsten-Brandenburg Route",
+        "from_star_id": 48941,
+        "to_star_id": 46945,
+        "from_system": "Holsten Tor",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Internal Trade",
+        "established": 2215,
+        "cargo_types": [
+          "Luxury Goods",
+          "Cultural Artifacts",
+          "Processed Materials",
+          "Manufacturing",
+          "Helium-3"
+        ],
+        "travel_time_days": 45,
+        "frequency": "Weekly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Medium",
+        "description": "Manufacturing and helium-3 supply route between Holsten Tor and Brandenburgh Tor",
+        "regions": [
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Griefen-Tiefe Route",
+        "from_star_id": 43464,
+        "to_star_id": 999999,
+        "from_system": "Griefen Tor",
+        "to_system": "Tiefe-Grenze Tor",
+        "route_type": "Resource Supply",
+        "established": 2239,
+        "cargo_types": [
+          "Rare Earth Elements",
+          "Technical Equipment",
+          "Exploration Supplies",
+          "Titanium",
+          "Lithium"
+        ],
+        "travel_time_days": 67,
+        "frequency": "Monthly",
+        "controlling_nation": "felgenland_union",
+        "security_level": "Low",
+        "description": "Resource trade route linking Griefen Tor (Lochiel) to Tiefe-Grenze Tor (Brandstadt) for titanium and lithium",
+        "regions": [
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      }
+    ],
+    "protelani_routes": [
+      {
+        "name": "Protelan-Holsten Commercial Corridor",
+        "from_star_id": 200001,
+        "to_star_id": 48941,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Holsten Tor",
+        "route_type": "Primary Trade",
+        "established": 2260,
+        "cargo_types": [
+          "Corporate Services",
+          "Luxury Goods",
+          "Cultural Exchange",
+          "Administrative Personnel"
+        ],
+        "travel_time_days": 58,
+        "frequency": "Weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "High",
+        "description": "Major commercial route connecting Protelani Republic's trade hub (Protelan) to Felgenland Union's Holsten Tor",
+        "regions": [
+          "Allied Spinward Quadrant",
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Protelan-Brandenburg Express",
+        "from_star_id": 200001,
+        "to_star_id": 46945,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Brandenburgh Tor",
+        "route_type": "Resource Supply",
+        "established": 2267,
+        "cargo_types": [
+          "Raw Materials",
+          "Mining Equipment",
+          "Corporate Personnel",
+          "Trade Goods"
+        ],
+        "travel_time_days": 35,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "Medium",
+        "description": "Commercial express route connecting Protelan to Brandenburgh Tor for trade and logistics",
+        "regions": [
+          "Allied Spinward Quadrant",
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Protelan-Sol Rim Trade Corridor",
+        "from_star_id": 200001,
+        "to_star_id": 0,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Sol",
+        "route_type": "Inter-Nation Trade",
+        "established": 2245,
+        "cargo_types": [
+          "Rimward Resources",
+          "Corporate Services",
+          "Cultural Goods",
+          "Luxury Items",
+          "Administrative Personnel"
+        ],
+        "travel_time_days": 72,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "High",
+        "description": "Neutral trade corridor linking Protelan to Sol, facilitating commerce through neutral zones",
+        "regions": [
+          "Allied Spinward Quadrant",
+          "Directorate Core Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Protelan Trade Corridor",
+        "from_star_id": 200001,
+        "to_star_id": 200003,
+        "from_system": "61 Ursae Majoris",
+        "to_system": "Gliese 581",
+        "route_type": "Multi-Destination Trade",
+        "established": 2240,
+        "cargo_types": [
+          "Corporate Services",
+          "Trade Hub Supplies",
+          "Frontier Equipment",
+          "Research Materials"
+        ],
+        "travel_time_days": 65,
+        "frequency": "Weekly",
+        "controlling_nation": "protelani_republic",
+        "security_level": "Medium",
+        "description": "Major trade corridor from Protelan to multiple neutral frontier systems (Gliese 581, HD 40307, Gliese 1061, Ross 128, Gliese 832, Gliese 667, HD 69830, Eta Cassiopeiae, 82 G. Eridani)",
+        "regions": [
+          "Allied Spinward Quadrant",
+          "Neutral Spinward Frontier",
+          "Neutral Anti-Spinward Frontier",
+          "Anti-Driftward Frontier",
+          "Trailing Frontier"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      }
+    ],
+    "dorsai_routes": [
+      {
+        "name": "Dorsai-Felgenland Military Alliance Route",
+        "from_star_id": 200002,
+        "to_star_id": 48941,
+        "from_system": "Fomalhaut",
+        "to_system": "Holsten Tor",
+        "route_type": "Military Alliance",
+        "established": 2267,
+        "cargo_types": [
+          "Military Personnel",
+          "Tactical Equipment",
+          "Defense Systems",
+          "Strategic Materials",
+          "Exosuits"
+        ],
+        "travel_time_days": 64,
+        "frequency": "Weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "Maximum",
+        "description": "Military supply route linking Dorsai Republic (Valorgraemo) to Felgenland Union for exosuits and defense",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Dorsai-Protelan Defense Corridor",
+        "from_star_id": 200002,
+        "to_star_id": 200001,
+        "from_system": "Fomalhaut",
+        "to_system": "61 Ursae Majoris",
+        "route_type": "Defense Contract",
+        "established": 2275,
+        "cargo_types": [
+          "Elite Soldiers",
+          "Security Services",
+          "Training Personnel",
+          "Defensive Equipment"
+        ],
+        "travel_time_days": 52,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "dorsai_republic",
+        "security_level": "High",
+        "description": "Defense corridor linking Dorsai Republic to Protelani Republic for military support and trade",
+        "regions": [
+          "Allied Anti-Spinward Quadrant",
+          "Allied Spinward Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      }
+    ],
+    "neutral_routes": [
+      {
+        "name": "Pentothian-Holsten Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 48941,
+        "from_system": "GJ 380",
+        "to_system": "Holsten Tor",
+        "route_type": "Neutral Trade",
+        "established": 2240,
+        "cargo_types": [
+          "Neutral Commerce",
+          "Reptilian Trader Goods",
+          "Cultural Exchange"
+        ],
+        "travel_time_days": 42,
+        "frequency": "Weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Holsten Tor for reptilian trader commerce",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Allied Union Core Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Pentothian-Sol Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 0,
+        "from_system": "GJ 380",
+        "to_system": "Sol",
+        "route_type": "Neutral Trade",
+        "established": 2235,
+        "cargo_types": [
+          "Neutral Commerce",
+          "Reptilian Trader Goods",
+          "Cultural Exchange"
+        ],
+        "travel_time_days": 55,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Sol for reptilian trader commerce",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Directorate Core Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Pentothian-Sirius Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 32263,
+        "from_system": "GJ 380",
+        "to_system": "Sirius",
+        "route_type": "Neutral Trade",
+        "established": 2238,
+        "cargo_types": [
+          "Industrial Commerce",
+          "Reptilian Trader Goods",
+          "Technical Equipment"
+        ],
+        "travel_time_days": 48,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Sirius for industrial commerce",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Directorate Rim Quadrant"
+        ],
+        "economic_zone": "Terran Core Economic Zone"
+      },
+      {
+        "name": "Pentothian-Protelan Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200001,
+        "from_system": "GJ 380",
+        "to_system": "61 Ursae Majoris",
+        "route_type": "Neutral Trade",
+        "established": 2250,
+        "cargo_types": [
+          "Torch Drive Commerce",
+          "Reptilian Trader Goods",
+          "Advanced Technology"
+        ],
+        "travel_time_days": 38,
+        "frequency": "Weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "High",
+        "description": "Neutral trade route linking Pentothia Prime to Protelan for torch drive commerce",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Allied Spinward Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Pentothian-Dorsai Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200002,
+        "from_system": "GJ 380",
+        "to_system": "Fomalhaut",
+        "route_type": "Neutral Trade",
+        "established": 2255,
+        "cargo_types": [
+          "Military Commerce",
+          "Reptilian Trader Goods",
+          "Defense Equipment"
+        ],
+        "travel_time_days": 62,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "High",
+        "description": "Neutral trade route linking Pentothia Prime to Dorsai Republic for military and economic exchange",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Allied Anti-Spinward Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      }
+    ],
+    "frontier_routes": [
+      {
+        "name": "Pentothian-DeltaPavonis Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200011,
+        "from_system": "GJ 380",
+        "to_system": "Delta Pavonis",
+        "route_type": "Frontier Trade",
+        "established": 2260,
+        "cargo_types": [
+          "Industrial Metal Supply",
+          "Frontier Supplies",
+          "Research Materials"
+        ],
+        "travel_time_days": 75,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Delta Pavonis for industrial metal supply",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Allied Union Rim Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Pentothian-HD10180 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200012,
+        "from_system": "GJ 380",
+        "to_system": "HD 10180",
+        "route_type": "Frontier Trade",
+        "established": 2265,
+        "cargo_types": [
+          "Colonial Trade",
+          "Habitability Supplies",
+          "Research Equipment"
+        ],
+        "travel_time_days": 90,
+        "frequency": "Bi-monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to HD 10180 for high-habitability colonial trade",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Allied Union Rim Quadrant"
+        ],
+        "economic_zone": "Felgenland Free Trade Zone"
+      },
+      {
+        "name": "Pentothian-TauCeti Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200005,
+        "from_system": "GJ 380",
+        "to_system": "Tau Ceti",
+        "route_type": "Frontier Trade",
+        "established": 2245,
+        "cargo_types": [
+          "Trade Hub Commerce",
+          "Cetan Goods",
+          "Cultural Exchange"
+        ],
+        "travel_time_days": 58,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Tau Ceti (Cetan Confederacy) for trade hub commerce",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Neutral Anti-Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-EpsilonEridani Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200014,
+        "from_system": "GJ 380",
+        "to_system": "Epsilon Eridani",
+        "route_type": "Frontier Trade",
+        "established": 2248,
+        "cargo_types": [
+          "High-Habitability Trade",
+          "Democratic Goods",
+          "Cultural Exchange"
+        ],
+        "travel_time_days": 52,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Epsilon Eridani (Eridani Open Democracy) for high-habitability trade",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Neutral Anti-Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Gliese667 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200007,
+        "from_system": "GJ 380",
+        "to_system": "Gliese 667",
+        "route_type": "Frontier Trade",
+        "established": 2252,
+        "cargo_types": [
+          "Reconnaissance Equipment",
+          "Habitable Planet Supplies",
+          "Research Materials"
+        ],
+        "travel_time_days": 68,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Gliese 667 for reconnaissance and habitable planet support",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Anti-Driftward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-HD69830 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200008,
+        "from_system": "GJ 380",
+        "to_system": "HD 69830",
+        "route_type": "Frontier Trade",
+        "established": 2256,
+        "cargo_types": [
+          "Research Equipment",
+          "Habitable Moon Supplies",
+          "Scientific Personnel"
+        ],
+        "travel_time_days": 85,
+        "frequency": "Bi-monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to HD 69830 for research and habitable moon support",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Anti-Driftward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-EtaCassiopeiae Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200009,
+        "from_system": "GJ 380",
+        "to_system": "Eta Cassiopeiae",
+        "route_type": "Frontier Trade",
+        "established": 2258,
+        "cargo_types": [
+          "Mining Equipment",
+          "Colony Supplies",
+          "Industrial Materials"
+        ],
+        "travel_time_days": 72,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Eta Cassiopeiae for mining colony support",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Trailing Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-82Eridani Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200010,
+        "from_system": "GJ 380",
+        "to_system": "82 G. Eridani",
+        "route_type": "Frontier Trade",
+        "established": 2262,
+        "cargo_types": [
+          "Industrial Equipment",
+          "Super-Earth Supplies",
+          "Heavy Manufacturing"
+        ],
+        "travel_time_days": 75,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to 82 G. Eridani for industrial and super-Earth support",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Trailing Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Gliese832 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200021,
+        "from_system": "GJ 380",
+        "to_system": "Gliese 832",
+        "route_type": "Frontier Trade",
+        "established": 2264,
+        "cargo_types": [
+          "Research Materials",
+          "Habitable Planet Equipment",
+          "Scientific Personnel"
+        ],
+        "travel_time_days": 78,
+        "frequency": "Bi-monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Gliese 832 for research and habitable planet support",
+        "regions": [
+          "Neutral Spinward Frontier",
+          "Neutral Anti-Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      }
+    ],
+    "research_routes": [
+      {
+        "name": "Pentothian-Gliese1061 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200015,
+        "from_system": "GJ 380",
+        "to_system": "Gliese 1061",
+        "route_type": "Research Supply",
+        "established": 2270,
+        "cargo_types": [
+          "Research Materials",
+          "Scientific Equipment",
+          "Personnel"
+        ],
+        "travel_time_days": 48,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Gliese 1061 for research outpost support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Ross154 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200016,
+        "from_system": "GJ 380",
+        "to_system": "Ross 154",
+        "route_type": "Research Supply",
+        "established": 2272,
+        "cargo_types": [
+          "Research Materials",
+          "Scientific Equipment",
+          "Personnel"
+        ],
+        "travel_time_days": 42,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Ross 154 for research outpost support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Barnard Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200018,
+        "from_system": "GJ 380",
+        "to_system": "Barnard's Star",
+        "route_type": "Research Supply",
+        "established": 2268,
+        "cargo_types": [
+          "Research Materials",
+          "Trade Hub Support",
+          "Scientific Personnel"
+        ],
+        "travel_time_days": 32,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Barnard's Star for research and trade hub support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Ross128 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200020,
+        "from_system": "GJ 380",
+        "to_system": "Ross 128",
+        "route_type": "Research Supply",
+        "established": 2270,
+        "cargo_types": [
+          "Research Materials",
+          "Habitable Planet Equipment",
+          "Scientific Personnel"
+        ],
+        "travel_time_days": 45,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Ross 128 for research and potential habitable planet support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      }
+    ],
+    "mining_routes": [
+      {
+        "name": "Pentothian-Struve2398 Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200017,
+        "from_system": "GJ 380",
+        "to_system": "Struve 2398",
+        "route_type": "Mining Supply",
+        "established": 2275,
+        "cargo_types": [
+          "Mining Equipment",
+          "Industrial Supplies",
+          "Personnel"
+        ],
+        "travel_time_days": 45,
+        "frequency": "Monthly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Low",
+        "description": "Neutral trade route linking Pentothia Prime to Struve 2398 for mining outpost support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      },
+      {
+        "name": "Pentothian-Lalande Trade Route",
+        "from_star_id": 52409,
+        "to_star_id": 200019,
+        "from_system": "GJ 380",
+        "to_system": "Lalande 21185",
+        "route_type": "Mining Supply",
+        "established": 2278,
+        "cargo_types": [
+          "Mining Equipment",
+          "Research Materials",
+          "Personnel"
+        ],
+        "travel_time_days": 38,
+        "frequency": "Bi-weekly",
+        "controlling_nation": "neutral_zone",
+        "security_level": "Medium",
+        "description": "Neutral trade route linking Pentothia Prime to Lalande 21185 for mining and research support",
+        "regions": [
+          "Neutral Spinward Frontier"
+        ],
+        "economic_zone": "Independent"
+      }
+    ]
+  }
+}

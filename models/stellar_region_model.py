@@ -77,11 +77,9 @@ class StellarRegionModel(BaseModel):
             
             viz_region = {
                 'name': region['name'],
+                'short_name': region.get('short_name', region['name']),
                 'description': region.get('description', ''),
                 'center_point': region['center_point'],
-                'ra_range': region.get('ra_range', [0, 360]),
-                'dec_range': region.get('dec_range', [-90, 90]),
-                'distance_range': region['distance_range'],
                 'diameter': region.get('diameter', 50),
                 'color': color_hex,
                 'color_rgb': color_rgb,
@@ -92,6 +90,18 @@ class StellarRegionModel(BaseModel):
                 'economic_zone': region.get('economic_zone', ''),
                 'sectors': region.get('sectors', [])
             }
+            
+            # Handle octant-based regions with x,y,z ranges
+            if 'x_range' in region and 'y_range' in region and 'z_range' in region:
+                viz_region['x_range'] = region['x_range']
+                viz_region['y_range'] = region['y_range']
+                viz_region['z_range'] = region['z_range']
+            # Legacy support for old region format
+            else:
+                viz_region['ra_range'] = region.get('ra_range', [0, 360])
+                viz_region['dec_range'] = region.get('dec_range', [-90, 90])
+                viz_region['distance_range'] = region.get('distance_range', [0, 100])
+            
             visualization_data.append(viz_region)
         
         return visualization_data
@@ -102,43 +112,57 @@ class StellarRegionModel(BaseModel):
         if not region:
             return False
         
-        # Convert Cartesian coordinates to spherical (galactic coordinates)
-        distance = math.sqrt(x*x + y*y + z*z)
+        # Handle octant-based regions with x,y,z ranges
+        if 'x_range' in region and 'y_range' in region and 'z_range' in region:
+            x_min, x_max = region['x_range']
+            y_min, y_max = region['y_range']
+            z_min, z_max = region['z_range']
+            
+            return (x >= x_min and x <= x_max and 
+                    y >= y_min and y <= y_max and 
+                    z >= z_min and z <= z_max)
         
-        # Check distance range
-        dist_min, dist_max = region['distance_range']
-        if distance < dist_min or distance > dist_max:
-            return False
-        
-        # Convert to galactic longitude and latitude
-        if distance == 0:
-            return region_name == "Human Core"  # Sol is always in Human Core
-        
-        # Galactic longitude (0-360 degrees)
-        longitude = math.degrees(math.atan2(y, x))
-        if longitude < 0:
-            longitude += 360
-        
-        # Galactic latitude (-90 to +90 degrees)
-        latitude = math.degrees(math.asin(z / distance))
-        
-        # Check RA range (longitude equivalent)
-        ra_min, ra_max = region.get('ra_range', [0, 360])
-        if ra_min <= ra_max:
-            # Normal range (e.g., 60-120)
-            if longitude < ra_min or longitude > ra_max:
+        # Legacy support for old region format
+        elif 'distance_range' in region:
+            # Convert Cartesian coordinates to spherical (galactic coordinates)
+            distance = math.sqrt(x*x + y*y + z*z)
+            
+            # Check distance range
+            dist_min, dist_max = region['distance_range']
+            if distance < dist_min or distance > dist_max:
                 return False
-        else:
-            # Wrapped range (e.g., 300-60 wraps around 0)
-            if longitude < ra_min and longitude > ra_max:
+            
+            # Convert to galactic longitude and latitude
+            if distance == 0:
+                return region_name == "Human Core"  # Sol is always in Human Core
+            
+            # Galactic longitude (0-360 degrees)
+            longitude = math.degrees(math.atan2(y, x))
+            if longitude < 0:
+                longitude += 360
+            
+            # Galactic latitude (-90 to +90 degrees)
+            latitude = math.degrees(math.asin(z / distance))
+            
+            # Check RA range (longitude equivalent)
+            ra_min, ra_max = region.get('ra_range', [0, 360])
+            if ra_min <= ra_max:
+                # Normal range (e.g., 60-120)
+                if longitude < ra_min or longitude > ra_max:
+                    return False
+            else:
+                # Wrapped range (e.g., 300-60 wraps around 0)
+                if longitude < ra_min and longitude > ra_max:
+                    return False
+            
+            # Check Dec range (latitude equivalent)
+            dec_min, dec_max = region.get('dec_range', [-90, 90])
+            if latitude < dec_min or latitude > dec_max:
                 return False
+            
+            return True
         
-        # Check Dec range (latitude equivalent)
-        dec_min, dec_max = region.get('dec_range', [-90, 90])
-        if latitude < dec_min or latitude > dec_max:
-            return False
-        
-        return True
+        return False
     
     def get_region_for_star(self, x, y, z):
         """Get the region that contains a given star position"""

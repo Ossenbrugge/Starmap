@@ -6,7 +6,6 @@
     "last_updated": "2025-07-03",
     "coordinate_system": "Galactic coordinates (parsecs from Sol)"
   },
-  
   "nations": {
     "terran_directorate": {
       "name": "Terran Directorate",
@@ -17,7 +16,7 @@
       "government_type": "Authoritarian Republic",
       "color": "#1565C0",
       "border_color": "#0D47A1",
-      "established_year": 2157,
+      "established_year": 2091,
       "description": "The central human government based on Earth, maintaining strict control over core systems through economic and military dominance. Known for their efficient bureaucracy and advanced technology.",
       "territories": [
         0,
@@ -27,14 +26,18 @@
         70666,
         118720
       ],
-      "specialties": ["Technology", "Military", "Central Administration", "Space Infrastructure"],
+      "specialties": [
+        "Technology",
+        "Military",
+        "Central Administration",
+        "Space Infrastructure"
+      ],
       "population": "~15.2 billion (Earth: 12.1 billion, colonies: 3.1 billion)",
       "military_strength": "Primary Fleet Command, System Defense Forces, Orbital Stations",
       "economic_focus": "Technology export, raw material import, administrative services",
       "political_alignment": "Centralist, Pro-Human Supremacy",
       "diplomatic_stance": "Hegemonistic, seeks to maintain control over human space"
     },
-    
     "felgenland_union": {
       "name": "Felgenland Union",
       "full_name": "The Felgenland Union",
@@ -53,15 +56,18 @@
         43464,
         999999
       ],
-      "specialties": ["Trade", "Resource Extraction", "Diplomatic Relations", "Cultural Exchange"],
-      "population": "~2.8 billion across all systems",
+      "specialties": [
+        "Trade",
+        "Resource Extraction",
+        "Diplomatic Relations",
+        "Cultural Exchange"
+      ],
+      "population": "630 million across all systems",
       "military_strength": "Defensive Fleet, Trade Protection Squadrons, Merchant Marine",
       "economic_focus": "Interstellar trade, luxury goods, resource processing",
       "political_alignment": "Federalist, Pro-Trade Autonomy",
       "diplomatic_stance": "Hostile to Terran Directorate, seeks independence through economic alliances"
     },
-    
-    
     "protelani_republic": {
       "name": "Protelani Republic",
       "full_name": "The Protelani Republic",
@@ -69,57 +75,100 @@
       "capital_star_id": 200001,
       "capital_planet": "Protelan (Joi I)",
       "government_type": "Ultra-Capitalist Republic",
-      "color": "#9C27B0",
-      "border_color": "#6A1B9A",
-      "established_year": 2226,
+      "color": "#00BCD4",
+      "border_color": "#00838F",
+      "established_year": 2189,
       "description": "Ultra-capitalist republic centered on Protelan moon, with Scandinavian-descended inhabitants averaging 2m tall due to 0.9g gravity. Known for the Joi Veil Festival celebrating eclipses and strong alliance with Felgenland Union.",
       "territories": [
         200001
       ],
-      "specialties": ["Rimward Trade", "Corporate Operations", "Resource Extraction", "Cultural Exchange"],
-      "population": "~850 million (Protelan: 800M, trade stations: 50M)",
+      "specialties": [
+        "Rimward Trade",
+        "Corporate Operations",
+        "Resource Extraction",
+        "Cultural Exchange"
+      ],
+      "population": "35 million (Protelan: 30M, trade stations: 5M)",
       "military_strength": "Corporate Defense Fleet, Trade Protection Squadrons",
       "economic_focus": "Rimward trade hub, resource extraction, corporate services",
       "political_alignment": "Ultra-Capitalist, Pro-Trade",
       "diplomatic_stance": "Allied with Felgenland Union, neutral toward Terran Directorate"
     },
-    
     "dorsai_republic": {
       "name": "Dorsai Republic",
       "full_name": "The Dorsai Republic",
       "capital_system": "Fomalhaut",
       "capital_star_id": 200002,
-      "capital_planet": "Valorgraemo (α PsA c)",
+      "capital_planet": "Valorgraemo (\u03b1 PsA c)",
       "government_type": "Military Republic",
       "color": "#BDBDBD",
       "border_color": "#9E9E9E",
-      "established_year": 2226,
+      "established_year": 2210,
       "description": "Elite military republic based on Fomalhaut system, training the galaxy's finest soldiers at the Citadel of Valoro. Inspired by Dorsai!'s Cletus Grahame and Starship Troopers' Mobile Infantry, they serve as rimward defense specialists.",
       "territories": [
-        200002
+        113008
       ],
-      "specialties": ["Elite Military Training", "Tactical Defense", "Rimward Security", "Naval Operations"],
-      "population": "~1.4 billion (Valorgraemo: 800M, Batalklendo: 350M, Marrikoviro: 250M)",
+      "specialties": [
+        "Elite Military Training",
+        "Tactical Defense",
+        "Rimward Security",
+        "Naval Operations"
+      ],
+      "population": "80 million (Valorgraemo: 60M, Batalklendo: 15M, Marrikoviro: 5M)",
       "military_strength": "Elite Dorsai Corps, Mobile Infantry, Naval Defense Fleet, Orbital Platforms",
       "economic_focus": "Military services export, tactical training, defense contracts",
       "political_alignment": "Militarist, Pro-Alliance Defense",
       "diplomatic_stance": "Allied with Felgenland Union and Protelani Republic, neutral toward Terran Directorate"
+    },
+    "neutral_zone": {
+      "name": "Pentothian Trade Conglomerate",
+      "full_name": "The Pentothian Trade Conglomerate",
+      "capital_system": "Pentothia Prime",
+      "capital_star_id": 52409,
+      "capital_planet": "Pentothia Prime",
+      "government_type": "Trade Conglomerate",
+      "color": "#9C27B0",
+      "border_color": "#7B1FA2",
+      "established_year": 2356,
+      "description": "Powerful trade conglomerate dominated by reptilian traders based on Pentothia Prime. Controls only their home system but operates extensive trade outposts throughout neutral frontier space. Established under the Treaty of Dual Spheres as an independent trading entity.",
+      "territories": [
+        52409
+      ],
+      "specialties": [
+        "Neutral Trade",
+        "Reptilian Commerce",
+        "Frontier Logistics",
+        "Research Support"
+      ],
+      "population": "~50 million (concentrated on Pentothia Prime, with trade personnel at frontier outposts)",
+      "military_strength": "Neutral Defense Force, Trade Protection Fleet, System Security",
+      "economic_focus": "Inter-faction trade, neutral commerce, frontier supply chains",
+      "political_alignment": "Neutral, Pro-Trade",
+      "diplomatic_stance": "Neutral toward all major powers, facilitates trade between Terran Directorate and Allied factions"
     }
   },
-  
   "economic_zones": {
     "terran_core": {
       "name": "Terran Core Economic Zone",
-      "member_systems": [0, 71456, 71453, 70666],
+      "member_systems": [
+        0,
+        71456,
+        71453,
+        70666
+      ],
       "primary_currency": "Terran Credit (TC)",
       "trade_regulations": "Strict Terran Administration oversight",
       "tax_rate": "15% interstellar trade tax",
       "description": "Heavily regulated core economic zone under direct Terran control"
     },
-    
     "felgenland_trade_zone": {
       "name": "Felgenland Free Trade Zone",
-      "member_systems": [48941, 46945, 43464, 999999],
+      "member_systems": [
+        48941,
+        46945,
+        43464,
+        999999
+      ],
       "primary_currency": "Union Trade Unit (UTU)",
       "trade_regulations": "Free trade with minimal oversight",
       "tax_rate": "5% union maintenance fee",

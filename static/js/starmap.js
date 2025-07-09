@@ -1591,14 +1591,17 @@ function createTerritoryBoundary(stars, nation) {
         radius = Math.max(radius, 5.0); // Minimum 5 parsecs radius
     }
     
-    // Create a larger radius for visual buffer
-    // Apply larger multipliers for Protelani and Dorsai Republics
-    let multiplier = 1.3; // Default multiplier
-    if (nation.name === "Protelani Republic") {
-        multiplier = 3.0; // Much larger sphere for Protelani Republic
-    } else if (nation.name === "Dorsai Republic") {
-        multiplier = 3.0; // Much larger sphere for Dorsai Republic
+    // Create a multiplier based on the number of stars in the nation
+    // More stars = larger territory radius to encompass the space
+    const baseMultiplier = 1.2; // Base multiplier for all nations
+    const starCountFactor = Math.log10(stars.length + 1) * 0.5; // Logarithmic scale
+    let multiplier = baseMultiplier + starCountFactor;
+    
+    // Special adjustment for Protelani and Dorsai Republics - scale down by half
+    if (nation.name === "Protelani Republic" || nation.name === "Dorsai Republic") {
+        multiplier = multiplier * 0.5; // Reduce border size by half
     }
+    
     const borderRadius = radius * multiplier;
     
     // Create sphere wireframe
@@ -2282,17 +2285,24 @@ function exportCSV() {
 // ==========================================
 
 async function toggleStellarRegions() {
+    console.log('toggleStellarRegions called');
     const checkbox = document.getElementById('stellarRegions');
     stellarRegionsActive = checkbox.checked;
     
+    console.log('Stellar regions active:', stellarRegionsActive);
+    
     if (stellarRegionsActive) {
-        await loadStellarRegions();
-        showRegionSelectionUI();
-    } else {
-        hideRegionSelectionUI();
-        clearRegionSelection();
+        console.log('Loading stellar regions...');
+        try {
+            await loadStellarRegions();
+            console.log('Stellar regions loaded successfully');
+        } catch (error) {
+            console.error('Failed to load stellar regions:', error);
+            return;
+        }
     }
     
+    console.log('Calling updateStellarRegionsDisplay...');
     updateStellarRegionsDisplay();
 }
 
@@ -2312,13 +2322,65 @@ async function loadStellarRegions() {
         const data = await response.json();
         stellarRegionsData = data;
         
-        updateStatus('Stellar regions data loaded successfully');
+        console.log('Stellar regions loaded:', stellarRegionsData);
+        updateStatus(`Stellar regions data loaded successfully (${data.regions?.length || 0} regions)`);
         
     } catch (error) {
         console.error('Error loading stellar regions:', error);
         updateStatus(`Error loading stellar regions: ${error.message}`);
         throw error;
     }
+}
+
+function generateOctantWireframe(xRange, yRange, zRange) {
+    const [xMin, xMax] = xRange;
+    const [yMin, yMax] = yRange;
+    const [zMin, zMax] = zRange;
+    
+    // Define the 8 vertices of the cube
+    const vertices = [
+        [xMin, yMin, zMin], // 0
+        [xMax, yMin, zMin], // 1
+        [xMax, yMax, zMin], // 2
+        [xMin, yMax, zMin], // 3
+        [xMin, yMin, zMax], // 4
+        [xMax, yMin, zMax], // 5
+        [xMax, yMax, zMax], // 6
+        [xMin, yMax, zMax]  // 7
+    ];
+    
+    // Define the 12 edges of the cube
+    const edges = [
+        [0, 1], [1, 2], [2, 3], [3, 0], // bottom face
+        [4, 5], [5, 6], [6, 7], [7, 4], // top face
+        [0, 4], [1, 5], [2, 6], [3, 7]  // vertical edges
+    ];
+    
+    const x = [], y = [], z = [];
+    
+    // Generate line segments for each edge
+    edges.forEach(edge => {
+        const [start, end] = edge;
+        const startVertex = vertices[start];
+        const endVertex = vertices[end];
+        
+        // Add start point
+        x.push(startVertex[0]);
+        y.push(startVertex[1]);
+        z.push(startVertex[2]);
+        
+        // Add end point
+        x.push(endVertex[0]);
+        y.push(endVertex[1]);
+        z.push(endVertex[2]);
+        
+        // Add NaN to separate line segments
+        x.push(NaN);
+        y.push(NaN);
+        z.push(NaN);
+    });
+    
+    return { x, y, z };
 }
 
 function generateSpherePoints(center, radius, resolution = 16) {
@@ -2362,72 +2424,145 @@ function generateSpherePoints(center, radius, resolution = 16) {
     return { x, y, z, i, j, k };
 }
 
+function getStarsInRegion(region) {
+    const regionStars = [];
+    
+    // For octant-based regions, check all stars against X,Y,Z ranges
+    if (region.x_range && region.y_range && region.z_range) {
+        currentStars.forEach(star => {
+            if (isStarInRegionByLocation(star, region)) {
+                regionStars.push(star);
+            }
+        });
+    }
+    // Legacy support for old region format
+    else if (region.sectors) {
+        region.sectors.forEach(sector => {
+            if (sector.star_id) {
+                const star = currentStars.find(s => s.id === sector.star_id);
+                if (star) {
+                    regionStars.push(star);
+                }
+            }
+        });
+    }
+    
+    return regionStars;
+}
+
+function isStarInRegionByLocation(star, region) {
+    // Check based on X,Y,Z ranges for octant-based regions
+    if (region.x_range && region.y_range && region.z_range) {
+        const x = star.x || 0;
+        const y = star.y || 0;
+        const z = star.z || 0;
+        
+        const [xMin, xMax] = region.x_range;
+        const [yMin, yMax] = region.y_range;
+        const [zMin, zMax] = region.z_range;
+        
+        return (x >= xMin && x <= xMax && 
+                y >= yMin && y <= yMax && 
+                z >= zMin && z <= zMax);
+    }
+    // Legacy support for RA/Dec ranges
+    else if (region.ra_range && region.dec_range && region.distance_range) {
+        const ra = star.ra || 0;
+        const dec = star.dec || 0;
+        const dist = star.dist || 0;
+        
+        const [raMin, raMax] = region.ra_range;
+        const [decMin, decMax] = region.dec_range;
+        const [distMin, distMax] = region.distance_range;
+        
+        return (ra >= raMin && ra <= raMax && 
+                dec >= decMin && dec <= decMax && 
+                dist >= distMin && dist <= distMax);
+    }
+    return false;
+}
+
 function updateStellarRegionsDisplay() {
-    if (!starmapPlot) return;
+    if (!starmapPlot) {
+        console.error('Starmap plot not initialized');
+        return;
+    }
     
     // Remove existing stellar regions traces
     clearStellarRegionsTraces();
     
-    if (!stellarRegionsActive || !stellarRegionsData.regions) return;
+    if (!stellarRegionsActive) {
+        console.log('Stellar regions not active, skipping display');
+        return;
+    }
+    
+    if (!stellarRegionsData || !stellarRegionsData.regions) {
+        console.error('No stellar regions data available');
+        return;
+    }
+    
+    console.log('Updating stellar regions display with', stellarRegionsData.regions.length, 'regions');
     
     const tracesToAdd = [];
     
-    // Add region boundary traces
+    // Add octant boundary traces
     stellarRegionsData.regions.forEach((region, index) => {
-        // Generate 3D sphere mesh that scales with zoom
-        const radius = region.diameter / 2;
-        const center = region.center_point;
-        const resolution = 12; // Reduced for performance
+        console.log(`Processing region: ${region.name}`);
         
-        // Generate sphere points
-        const sphereData = generateSpherePoints(center, radius, resolution);
-        
-        // Create sphere mesh trace
-        const sphereTrace = {
-            type: 'mesh3d',
-            x: sphereData.x,
-            y: sphereData.y,
-            z: sphereData.z,
-            i: sphereData.i,
-            j: sphereData.j,
-            k: sphereData.k,
-            color: region.color,
-            opacity: 0.05,
-            name: `Region: ${region.name}`,
-            showlegend: true,
-            legendgroup: `stellar_region_${region.name.replace(/\s+/g, '_')}`,
-            hovertemplate: 
-                `<b>${region.name}</b><br>` +
-                `${region.description}<br>` +
-                `Population: ${region.population}<br>` +
-                `Established: ${region.established}<br>` +
-                `Diameter: ${region.diameter} parsecs<br>` +
-                `<extra></extra>`
-        };
-        
-        // Create center label marker
-        const labelTrace = {
-            x: [center[0]],
-            y: [center[1]],
-            z: [center[2]],
-            mode: 'text',
-            type: 'scatter3d',
-            text: [region.name],
-            textfont: {
-                size: 12,
-                color: '#ffffff'
-            },
-            name: `${region.name} Label`,
-            showlegend: false,
-            hoverinfo: 'skip'
-        };
-        
-        tracesToAdd.push(sphereTrace);
-        tracesToAdd.push(labelTrace);
+        // Only handle octant-based regions with x,y,z ranges
+        if (region.x_range && region.y_range && region.z_range) {
+            console.log(`Creating wireframe for ${region.name}`);
+            
+            const wireframeData = generateOctantWireframe(region.x_range, region.y_range, region.z_range);
+            
+            const regionTrace = {
+                type: 'scatter3d',
+                mode: 'lines',
+                x: wireframeData.x,
+                y: wireframeData.y,
+                z: wireframeData.z,
+                line: {
+                    color: region.color_rgb ? `rgb(${region.color_rgb.join(',')})` : '#888888',
+                    width: 3
+                },
+                name: `${region.short_name || region.name}`,
+                showlegend: true,
+                legendgroup: `stellar_region_${index}`,
+                hovertemplate: 
+                    `<b>${region.name}</b><br>` +
+                    `${region.description}<br>` +
+                    `X: ${region.x_range[0]} to ${region.x_range[1]} parsecs<br>` +
+                    `Y: ${region.y_range[0]} to ${region.y_range[1]} parsecs<br>` +
+                    `Z: ${region.z_range[0]} to ${region.z_range[1]} parsecs<br>` +
+                    `<extra></extra>`
+            };
+            
+            const labelTrace = {
+                x: [region.center_point[0]],
+                y: [region.center_point[1]],
+                z: [region.center_point[2]],
+                mode: 'text',
+                type: 'scatter3d',
+                text: [region.short_name || region.name],
+                textfont: {
+                    size: 10,
+                    color: region.color_rgb ? `rgb(${region.color_rgb.join(',')})` : '#ffffff'
+                },
+                name: `${region.name} Label`,
+                showlegend: false,
+                hoverinfo: 'skip'
+            };
+            
+            tracesToAdd.push(regionTrace);
+            tracesToAdd.push(labelTrace);
+        } else {
+            console.warn(`Region ${region.name} does not have x_range, y_range, z_range`);
+        }
     });
     
     // Add all traces to the plot
     if (tracesToAdd.length > 0) {
+        console.log('Adding', tracesToAdd.length, 'traces to plot');
         Plotly.addTraces('starmap', tracesToAdd).then(() => {
             // Track trace indices for cleanup
             const currentTraceCount = starmapPlot.data.length;
@@ -2435,8 +2570,15 @@ function updateStellarRegionsDisplay() {
                 stellarRegionsTraces.push(currentTraceCount - tracesToAdd.length + i);
             }
             
-            updateStatus(`Stellar regions overlay applied (${stellarRegionsData.regions.length} regions)`);
+            console.log('Successfully added stellar regions traces');
+            updateStatus(`Stellar regions overlay applied (${stellarRegionsData.regions.length} octants)`);
+        }).catch(error => {
+            console.error('Error adding traces:', error);
+            updateStatus(`Error displaying stellar regions: ${error.message}`);
         });
+    } else {
+        console.warn('No traces to add');
+        updateStatus('No stellar regions to display');
     }
 }
 
@@ -2565,7 +2707,8 @@ function showRegionSelectionUI() {
             });
         }
         
-        // Add event listener for region selection
+        // Remove any existing event listener and add new one
+        regionSelect.removeEventListener('change', handleRegionSelection);
         regionSelect.addEventListener('change', handleRegionSelection);
         
         // Show the region selection UI

@@ -1,405 +1,293 @@
 {
   "metadata": {
-    "title": "Felgenland Saga Stellar Regions",
-    "description": "Diplomatic division of human space post-Union Directorate War (2353-2356), per the Treaty of Dual Spheres (2357) signed on Earth, dividing space between the Terran Directorate and the Allies (Felgenland Union, Protelani Republic, Dorsai Republic), with neutral frontier zones and the Free Democracy of Terminus (Mars).",
-    "version": "1.8",
-    "last_updated": "2025-07-08",
-    "coordinate_system": "Galactic coordinates (ra in degrees, dec in degrees, distance in light-years)"
+    "title": "Galactic Octants from Sol",
+    "description": "Eight octants of galactic space centered on Sol (0,0,0), extending to the edges of known space. Each octant represents one of the eight possible combinations of positive/negative X, Y, Z coordinates.",
+    "version": "3.0",
+    "last_updated": "2025-07-09",
+    "coordinate_system": "Cartesian coordinates (parsecs from Sol)",
+    "origin": "Sol (0, 0, 0)",
+    "max_radius": 130
   },
   "regions": [
     {
-      "name": "Allied Union Core Quadrant",
-      "description": "Core of the Felgenland Union, centered on Holsten Tor (20 LMi A&B, Stahlburgh and Eisenwald), Brandenburgh Tor (Hansaburgh), Greifen Tor (Lochiel), and Tiefe-Grenze Tor (Brandstadt). Hosts MacCarthy Limited shipyards and Campbell Industries exosuits. Part of the Felgenland Free Trade Zone.",
-      "ra_range": [135, 225],
-      "dec_range": [0, 90],
-      "distance_range": [5, 50],
-      "center_point": [-7.5, 0.5, 5.0],
-      "color": [76, 175, 80],
-      "established": 2210,
-      "population": "600 million",
-      "significance": "Union’s capital region, producing Falke-VI interceptors and SternHammer Cannons, linked by Holsten-Brandenburg and Griefen-Tiefe Routes.",
-      "diameter": 30,
-      "trade_routes": ["Holsten-Tiefe Express", "Holsten-Brandenburg Route", "Griefen-Tiefe Route", "Protelan-Holsten Commercial Corridor", "Dorsai-Felgenland Military Alliance Route", "Pentothian-Holsten Trade Route"],
-      "economic_zone": "Felgenland Free Trade Zone",
-      "sectors": [
-        {
-          "name": "Holsten Sector",
-          "center_star": "20 LMi A",
-          "star_id": 48941,
-          "ra": 150.53256,
-          "dec": 31.923672,
-          "distance_from_sol": 9.57,
-          "description": "Capital system with Stahlburgh (20 LMi A) and Eisenwald moon (20 LMi B), relay hub for Quantum Entanglement Communicators, ~200 million."
-        },
-        {
-          "name": "Brandenburg Sector",
-          "center_star": "11 LMi",
-          "star_id": 46945,
-          "ra": 141.165885,
-          "dec": 35.806305,
-          "distance_from_sol": 11.02,
-          "description": "Hansaburgh, helium-3 mining from gas giant, major manufacturing center, ~150 million."
-        },
-        {
-          "name": "Greifen Sector",
-          "center_star": "55 Cancri",
-          "star_id": 43464,
-          "ra": 132.663465,
-          "dec": 28.332901,
-          "distance_from_sol": 12.58,
-          "description": "Lochiel, core Union territory, supplies rare metals (titanium, lithium), ~150 million."
-        },
-        {
-          "name": "Brandstadt Sector",
-          "center_star": "Tiefe-Grenze Tor",
-          "star_id": 999999,
-          "ra": 151.25,
-          "dec": 30.0,
-          "distance_from_sol": 16.86,
-          "description": "Core Union world, Brandstadt, exports food and metals to Protelan Trade Corridor, ~100 million."
-        }
-      ]
+      "name": "Capella Region",
+      "short_name": "Capella",
+      "description": "Galactic region centered on Capella (magnitude 0.08), the brightest star in this octant. Coreward Spinward Above - The first galactic octant extending in positive X, Y, and Z directions from Sol.",
+      "x_range": [
+        0,
+        130
+      ],
+      "y_range": [
+        0,
+        130
+      ],
+      "z_range": [
+        0,
+        130
+      ],
+      "center_point": [
+        65.0,
+        65.0,
+        65.0
+      ],
+      "color": [
+        255,
+        99,
+        132
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 1,
+      "classification": "Galactic Octant",
+      "brightest_star": "Capella",
+      "brightest_star_id": 24549,
+      "brightest_star_magnitude": 0.08,
+      "original_name": "Fomalhaut Region"
     },
     {
-      "name": "Allied Union Rim Quadrant",
-      "description": "Rimward Union territory, including colonial worlds like Heatherly and Gliese 876. Part of the Felgenland Free Trade Zone, supporting logistics and trade.",
-      "ra_range": [135, 225],
-      "dec_range": [-90, 0],
-      "distance_range": [5, 60],
-      "center_point": [-7.0, -1.0, -5.0],
-      "color": [94, 194, 98],
-      "established": 2230,
-      "population": "35 million",
-      "significance": "Frontier expansion with Heatherly and Gliese 876, linked by Protelan-Brandenburg Express and Protelan Trade Corridor.",
-      "diameter": 40,
-      "trade_routes": ["Protelan-Brandenburg Express", "Protelan Trade Corridor"],
-      "economic_zone": "Felgenland Free Trade Zone",
-      "sectors": [
-        {
-          "name": "Heatherly Sector",
-          "center_star": "HD 95128",
-          "star_id": 53601,
-          "ra": 152.091975,
-          "dec": 40.429599,
-          "distance_from_sol": 45.91,
-          "description": "Union colonial world, Heatherly, in Ursa Major, near Holsten Tor, ~30 million."
-        },
-        {
-          "name": "Gliese 876 Sector",
-          "center_star": "Gliese 876",
-          "star_id": 200003,
-          "ra": 200.0,
-          "dec": 22.0,
-          "distance_from_sol": 15.2,
-          "description": "Union logistics hub, Gliese 876 d in habitable zone, supports Protelan Trade Corridor, ~5 million."
-        }
-      ]
+      "name": "Procyon Region",
+      "short_name": "Procyon",
+      "description": "Galactic region centered on Procyon (magnitude 0.40), the brightest star in this octant. Rimward Spinward Above - The second galactic octant extending in negative X, positive Y and Z directions from Sol.",
+      "x_range": [
+        -130,
+        0
+      ],
+      "y_range": [
+        0,
+        130
+      ],
+      "z_range": [
+        0,
+        130
+      ],
+      "center_point": [
+        -65.0,
+        65.0,
+        65.0
+      ],
+      "color": [
+        54,
+        162,
+        235
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 2,
+      "classification": "Galactic Octant",
+      "brightest_star": "Procyon",
+      "brightest_star_id": 37173,
+      "brightest_star_magnitude": 0.4,
+      "original_name": "Procyon Region"
     },
     {
-      "name": "Directorate Core Quadrant",
-      "description": "Core of the Terran Directorate, centered on Sol (Earth) and Alpha Centauri. Treaty of Dual Spheres signed on Earth for Byzantine psychological advantage. Part of the Terran Core Economic Zone.",
-      "ra_range": [0, 90],
-      "dec_range": [0, 90],
-      "distance_range": [0, 15],
-      "center_point": [0.0, 0.0, 5.0],
-      "color": [21, 101, 192],
-      "established": 2157,
-      "population": "50.5 billion",
-      "significance": "Directorate’s political and industrial core, linked by Earth-Centauri Express. Poised for treaty violations targeting neutral frontiers.",
-      "diameter": 15,
-      "trade_routes": ["Earth-Centauri Express", "Protelan-Sol Rim Trade Corridor"],
-      "economic_zone": "Terran Core Economic Zone",
-      "sectors": [
-        {
-          "name": "Sol Sector",
-          "center_star": "Sol",
-          "star_id": 0,
-          "ra": 0.0,
-          "dec": 0.0,
-          "distance_from_sol": 0.0,
-          "description": "Earth, Directorate’s heart and treaty signing site, ~50 billion."
-        },
-        {
-          "name": "Centauri Sector",
-          "center_star": "Alpha Centauri A",
-          "star_id": 71456,
-          "ra": 219.90519,
-          "dec": -60.833976,
-          "distance_from_sol": 4.37,
-          "description": "Oldest Directorate colony, key administrative hub, ~500 million."
-        }
-      ]
+      "name": "Arcturus Region",
+      "short_name": "Arcturus",
+      "description": "Galactic region centered on Arcturus (magnitude -0.05), the brightest star in this octant. Rimward Anti-Spinward Above - The third galactic octant extending in negative X and Y, positive Z directions from Sol.",
+      "x_range": [
+        -130,
+        0
+      ],
+      "y_range": [
+        -130,
+        0
+      ],
+      "z_range": [
+        0,
+        130
+      ],
+      "center_point": [
+        -65.0,
+        -65.0,
+        65.0
+      ],
+      "color": [
+        255,
+        205,
+        86
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 3,
+      "classification": "Galactic Octant",
+      "brightest_star": "Arcturus",
+      "brightest_star_id": 69451,
+      "brightest_star_magnitude": -0.05,
+      "original_name": "Arcturus Region"
     },
     {
-      "name": "Directorate Rim Quadrant",
-      "description": "Rimward Directorate territory, including Sirius and Proxima Centauri, claimed to prevent Allied encirclement. Part of the Terran Core Economic Zone.",
-      "ra_range": [0, 90],
-      "dec_range": [-90, 0],
-      "distance_range": [5, 15],
-      "center_point": [0.0, -0.5, -5.0],
-      "color": [33, 150, 243],
-      "established": 2170,
-      "population": "1.5 billion",
-      "significance": "Strategic systems to maintain open corridors, linked by Earth-Proxima Supply Chain. Flashpoint for expansion into neutral frontiers.",
-      "diameter": 15,
-      "trade_routes": ["Earth-Proxima Supply Chain"],
-      "economic_zone": "Terran Core Economic Zone",
-      "sectors": [
-        {
-          "name": "Sirius Sector",
-          "center_star": "Sirius",
-          "star_id": 32263,
-          "ra": 101.287215,
-          "dec": -16.716116,
-          "distance_from_sol": 8.58,
-          "description": "Key Directorate industrial hub, ~1 billion."
-        },
-        {
-          "name": "Proxima Sector",
-          "center_star": "Proxima Centauri",
-          "star_id": 70666,
-          "ra": 217.439775,
-          "dec": -62.679485,
-          "distance_from_sol": 4.22,
-          "description": "Frontier colony under Directorate control, ~500 million."
-        }
-      ]
+      "name": "Vega Region",
+      "short_name": "Vega",
+      "description": "Galactic region centered on Vega (magnitude 0.03), the brightest star in this octant. Coreward Anti-Spinward Above - The fourth galactic octant extending in positive X, negative Y, positive Z directions from Sol.",
+      "x_range": [
+        0,
+        130
+      ],
+      "y_range": [
+        -130,
+        0
+      ],
+      "z_range": [
+        0,
+        130
+      ],
+      "center_point": [
+        65.0,
+        -65.0,
+        65.0
+      ],
+      "color": [
+        75,
+        192,
+        192
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 4,
+      "classification": "Galactic Octant",
+      "brightest_star": "Vega",
+      "brightest_star_id": 90979,
+      "brightest_star_magnitude": 0.03,
+      "original_name": "Fomalhaut Region"
     },
     {
-      "name": "Neutral Spinward Frontier",
-      "description": "Neutral frontier zone with independent systems like Wolf 359, Pentothia Prime (GJ 380), and Gliese 581. Hosts reptilian traders and research outposts, linked to Protelan Trade Corridor. Vulnerable to Directorate incursions.",
-      "ra_range": [90, 180],
-      "dec_range": [0, 90],
-      "distance_range": [5, 30],
-      "center_point": [5.0, 0.0, 5.0],
-      "color": [156, 39, 176],
-      "established": 2356,
-      "population": "90 million",
-      "significance": "Demilitarized trade and research hub, open to Allies and Directorate, contested by both.",
-      "diameter": 20,
-      "trade_routes": ["Earth-Wolf Research Link", "Pentothian-Holsten Trade Route", "Pentothian-Protelan Trade Route", "Protelan Trade Corridor"],
-      "economic_zone": "None",
-      "sectors": [
-        {
-          "name": "Wolf Sector",
-          "center_star": "Wolf 359",
-          "star_id": 118720,
-          "ra": 164.12226,
-          "dec": 7.01532,
-          "distance_from_sol": 7.78,
-          "description": "Neutral system with research stations and independent settlements, ~30 million."
-        },
-        {
-          "name": "Pentothian Sector",
-          "center_star": "GJ 380",
-          "star_id": 52409,
-          "ra": 176.93499,
-          "dec": 0.804563,
-          "distance_from_sol": 11.01,
-          "description": "Pentothia Prime, capital of the Pentothian Trade Conglomerate, reptilian traders in a temperate Virgo biome, ~50 million."
-        },
-        {
-          "name": "Gliese 581 Sector",
-          "center_star": "Gliese 581",
-          "star_id": 200004,
-          "ra": 78.0,
-          "dec": -23.0,
-          "distance_from_sol": 20.4,
-          "description": "Neutral research colony, hosts Gliese 581 c and d in habitable zone, ~10 million."
-        }
-      ]
+      "name": "Achernar Region",
+      "short_name": "Achernar",
+      "description": "Galactic region centered on Achernar (magnitude 0.45), the brightest star in this octant. Coreward Spinward Below - The fifth galactic octant extending in positive X and Y, negative Z directions from Sol.",
+      "x_range": [
+        0,
+        130
+      ],
+      "y_range": [
+        0,
+        130
+      ],
+      "z_range": [
+        -130,
+        0
+      ],
+      "center_point": [
+        65.0,
+        65.0,
+        -65.0
+      ],
+      "color": [
+        153,
+        102,
+        255
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 5,
+      "classification": "Galactic Octant",
+      "brightest_star": "Achernar",
+      "brightest_star_id": 7574,
+      "brightest_star_magnitude": 0.45,
+      "original_name": "Fomalhaut Region"
     },
     {
-      "name": "Neutral Anti-Spinward Frontier",
-      "description": "Sparse neutral frontier with systems like Ross 248 and Tau Ceti (Cetan Confederacy). Open to Allies and Directorate, but targeted by Directorate ambitions post-2357.",
-      "ra_range": [270, 360],
-      "dec_range": [0, 90],
-      "distance_range": [5, 30],
-      "center_point": [-5.0, 0.0, 5.0],
-      "color": [186, 104, 200],
-      "established": 2356,
-      "population": "55 million",
-      "significance": "Neutral zone with independent systems, contested by Directorate for expansion.",
-      "diameter": 20,
-      "trade_routes": ["Protelan Trade Corridor"],
-      "economic_zone": "None",
-      "sectors": [
-        {
-          "name": "Ross 248 Sector",
-          "center_star": "Ross 248",
-          "star_id": 119585,
-          "ra": 355.475685,
-          "dec": 44.174924,
-          "distance_from_sol": 10.32,
-          "description": "Isolated neutral system with research stations, potential Directorate target, ~20 million."
-        },
-        {
-          "name": "Cetan Sector",
-          "center_star": "Tau Ceti",
-          "star_id": 200005,
-          "ra": 26.017083,
-          "dec": -15.937278,
-          "distance_from_sol": 11.9,
-          "description": "Cetan Confederacy, independent post-2356, hosts Asimov and Heinlein, trade hub, ~35 million."
-        }
-      ]
+      "name": "Sirius Region",
+      "short_name": "Sirius",
+      "description": "Galactic region centered on Sirius (magnitude -1.44), the brightest star in this octant. Rimward Spinward Below - The sixth galactic octant extending in negative X, positive Y, negative Z directions from Sol.",
+      "x_range": [
+        -130,
+        0
+      ],
+      "y_range": [
+        0,
+        130
+      ],
+      "z_range": [
+        -130,
+        0
+      ],
+      "center_point": [
+        -65.0,
+        65.0,
+        -65.0
+      ],
+      "color": [
+        255,
+        159,
+        64
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 6,
+      "classification": "Galactic Octant",
+      "brightest_star": "Sirius",
+      "brightest_star_id": 32263,
+      "brightest_star_magnitude": -1.44,
+      "original_name": "Sirius Region"
     },
     {
-      "name": "Allied Spinward Quadrant",
-      "description": "Allied region led by the Protelani Republic on Protelan (moon orbiting Grandpere, 61 Ursae Majoris), a Dubai-like trade hub for torch drive commerce. Part of the Felgenland Free Trade Zone, linked to neutral frontiers.",
-      "ra_range": [90, 180],
-      "dec_range": [-90, 0],
-      "distance_range": [5, 50],
-      "center_point": [5.0, -0.5, -5.0],
-      "color": [0, 150, 136],
-      "established": 2260,
-      "population": "36 million",
-      "significance": "Protelani Republic’s chic trade hub, linked by Protelan Trade Corridor and Pentothian-Protelan Trade Route.",
-      "diameter": 25,
-      "trade_routes": ["Protelan-Holsten Commercial Corridor", "Protelan-Brandenburg Express", "Protelan-Sol Rim Trade Corridor", "Dorsai-Protelan Defense Corridor", "Pentothian-Protelan Trade Route", "Protelan Trade Corridor"],
-      "economic_zone": "Felgenland Free Trade Zone",
-      "sectors": [
-        {
-          "name": "Protelan Sector",
-          "center_star": "61 Ursae Majoris",
-          "star_id": 200001,
-          "ra": 180.185833,
-          "dec": 34.201639,
-          "distance_from_sol": 9.57,
-          "description": "Protelani Republic’s trade hub, Protelan (moon orbiting Grandpere), allied with the Union, ~36 million."
-        }
-      ]
+      "name": "Rigil Kentaurus Region",
+      "short_name": "Rigil Kentaurus",
+      "description": "Galactic region centered on Rigil Kentaurus (magnitude -0.01), the brightest star in this octant. Rimward Anti-Spinward Below - The seventh galactic octant extending in negative X, Y, and Z directions from Sol.",
+      "x_range": [
+        -130,
+        0
+      ],
+      "y_range": [
+        -130,
+        0
+      ],
+      "z_range": [
+        -130,
+        0
+      ],
+      "center_point": [
+        -65.0,
+        -65.0,
+        -65.0
+      ],
+      "color": [
+        201,
+        203,
+        207
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 7,
+      "classification": "Galactic Octant",
+      "brightest_star": "Rigil Kentaurus",
+      "brightest_star_id": 71456,
+      "brightest_star_magnitude": -0.01,
+      "original_name": "Rigil Kentaurus Region"
     },
     {
-      "name": "Allied Anti-Spinward Quadrant",
-      "description": "Allied frontier region with Dorsai Republic systems on Fomalhaut (Valorgraemo), providing elite military support with Campbell Industries exosuits. Part of the Felgenland Free Trade Zone.",
-      "ra_range": [270, 360],
-      "dec_range": [-90, 0],
-      "distance_range": [5, 50],
-      "center_point": [-5.0, -0.5, -5.0],
-      "color": [244, 67, 54],
-      "established": 2267,
-      "population": "80 million",
-      "significance": "Dorsai Republic’s military stronghold, linked by Dorsai-Felgenland Military Alliance Route, supports neutral frontier defense.",
-      "diameter": 25,
-      "trade_routes": ["Dorsai-Felgenland Military Alliance Route", "Dorsai-Protelan Defense Corridor"],
-      "economic_zone": "Felgenland Free Trade Zone",
-      "sectors": [
-        {
-          "name": "Dorsai Sector",
-          "center_star": "Fomalhaut",
-          "star_id": 200002,
-          "ra": 344.912778,
-          "dec": -29.622236,
-          "distance_from_sol": 7.70,
-          "description": "Dorsai Republic’s Citadel of Valoro, training elite soldiers, ~80 million."
-        }
-      ]
-    },
-    {
-      "name": "Terminus Quadrant",
-      "description": "Independent region centered on Mars, the Free Democracy of Terminus, founded with Elon Musk and Grok’s influence, maintaining autonomy post-war.",
-      "ra_range": [0, 360],
-      "dec_range": [-90, 90],
-      "distance_range": [0, 0.000015],
-      "center_point": [0.0, 0.0, 0.0],
-      "color": [128, 128, 128],
-      "established": 2357,
-      "population": "500 million",
-      "significance": "Neutral, independent Mars, a symbol of autonomy, linked to Protelan Trade Corridor.",
-      "diameter": 0.0001,
-      "trade_routes": ["Protelan-Sol Rim Trade Corridor"],
-      "economic_zone": "None",
-      "sectors": [
-        {
-          "name": "Terminus Sector",
-          "center_star": "Sol (Mars)",
-          "star_id": 0,
-          "ra": 0.0,
-          "dec": 0.0,
-          "distance_from_sol": 0.000015,
-          "description": "Free Democracy of Terminus, independent Mars, founded with Elon Musk and Grok’s vision, ~500 million."
-        }
-      ]
-    },
-    {
-      "name": "Anti-Driftward Frontier",
-      "description": "Neutral frontier zone below the galactic plane, centered on L 98-59, a former Directorate stronghold. Hosts Fortress Echelon, site of the Battle of Foxtrot (2353). Open to Allies and Directorate, contested post-2357.",
-      "ra_range": [90, 180],
-      "dec_range": [-50, -20],
-      "distance_range": [20, 45],
-      "center_point": [5.0, -0.5, -10.0],
-      "color": [150, 150, 150],
-      "established": 2357,
-      "population": "45 million",
-      "significance": "Contested neutral zone with Directorate and Union interests, linked to Protelan Trade Corridor. Vulnerable to Directorate treaty violations.",
-      "diameter": 25,
-      "trade_routes": ["Protelan Trade Corridor"],
-      "economic_zone": "None",
-      "sectors": [
-        {
-          "name": "L 98-59 Sector",
-          "center_star": "L 98-59",
-          "star_id": 200006,
-          "ra": 90.0,
-          "dec": -40.0,
-          "distance_from_sol": 34.6,
-          "description": "Former Directorate stronghold, Fortress Echelon, site of Battle of Foxtrot (2353), now neutral, ~15 million."
-        },
-        {
-          "name": "Gliese 667 Sector",
-          "center_star": "Gliese 667",
-          "star_id": 200007,
-          "ra": 78.0,
-          "dec": -27.0,
-          "distance_from_sol": 23.6,
-          "description": "Neutral outpost, hosts Gliese 667 Cc in habitable zone, reconnaissance hub, ~10 million."
-        },
-        {
-          "name": "HD 69830 Sector",
-          "center_star": "HD 69830",
-          "star_id": 200008,
-          "ra": 105.0,
-          "dec": -35.0,
-          "distance_from_sol": 40.7,
-          "description": "Independent research colony, hosts Neptune-mass planets with habitable moons, ~20 million."
-        }
-      ]
-    },
-    {
-      "name": "Trailing Frontier",
-      "description": "Neutral frontier zone with sparse mining outposts like Eta Cassiopeiae and 82 G. Eridani. Supplies resources to Protelan Trade Corridor, open to both Allies and Directorate, neutral post-2357.",
-      "ra_range": [240, 360],
-      "dec_range": [-20, 20],
-      "distance_range": [20, 45],
-      "center_point": [-5.0, 0.0, 0.0],
-      "color": [160, 160, 160],
-      "established": 2357,
-      "population": "25 million",
-      "significance": "Neutral mining frontier, supports trade routes, contested by both sides but stabilized by Treaty of Dual Spheres.",
-      "diameter": 25,
-      "trade_routes": ["Protelan Trade Corridor"],
-      "economic_zone": "None",
-      "sectors": [
-        {
-          "name": "Eta Cassiopeiae Sector",
-          "center_star": "Eta Cassiopeiae",
-          "star_id": 200009,
-          "ra": 260.0,
-          "dec": 20.0,
-          "distance_from_sol": 19.4,
-          "description": "Neutral mining colony, supplies metals to Protelan Trade Corridor, ~10 million."
-        },
-        {
-          "name": "82 G. Eridani Sector",
-          "center_star": "82 G. Eridani",
-          "star_id": 200010,
-          "ra": 260.0,
-          "dec": -20.0,
-          "distance_from_sol": 19.7,
-          "description": "Neutral industrial colony, hosts super-Earths, supports Union and Directorate trade, ~15 million."
-        }
-      ]
+      "name": "Fomalhaut Region",
+      "short_name": "Fomalhaut",
+      "description": "Galactic region centered on Fomalhaut (magnitude 1.17), the brightest star in this octant. Coreward Anti-Spinward Below - The eighth galactic octant extending in positive X, negative Y and Z directions from Sol.",
+      "x_range": [
+        0,
+        130
+      ],
+      "y_range": [
+        -130,
+        0
+      ],
+      "z_range": [
+        -130,
+        0
+      ],
+      "center_point": [
+        65.0,
+        -65.0,
+        -65.0
+      ],
+      "color": [
+        255,
+        99,
+        255
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 260,
+      "octant_number": 8,
+      "classification": "Galactic Octant",
+      "brightest_star": "Fomalhaut",
+      "brightest_star_id": 113008,
+      "brightest_star_magnitude": 1.17,
+      "original_name": "Fomalhaut Region"
     }
   ]
 }

@@ -103,3 +103,15 @@ felgenland_routes = get_trade_routes_by_nation('felgenland_union')
 
 ## Migration
 The system automatically imports trade routes from the new module. No changes are needed to existing API calls or JavaScript code.
+
+## Related Documentation
+
+- **[📖 Main Documentation](README.md)** - Complete application overview and quick start
+- **[🧭 Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems and navigation overlays
+- **[🪐 Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Detailed planetary systems and world-building
+- **[🌌 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+- **[🔌 API Reference](README.md#-api-reference)** - Backend API for trade route data
+- **[📊 Data Analysis Report](PLANETARY_SYSTEMS_ANALYSIS.md)** - System verification and data quality
+
+---
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

@@ -75,7 +75,10 @@ This ensures the directions accurately represent real galactic orientation for s
 
 - **[📖 Main Documentation](README.md)** - Complete application overview and user interface guide
 - **[🪐 Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Detailed planetary systems and world-building
-- **[🌍 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+- **[🛣️ Trade Routes Guide](TRADE_ROUTES_README.md)** - Trade network structure and economic zones
+- **[🌌 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+- **[🔌 API Reference](README.md#-api-reference)** - Complete backend API documentation
+- **[📊 Data Analysis Report](PLANETARY_SYSTEMS_ANALYSIS.md)** - System verification and data quality
 
 ---
 📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

@@ -9,35 +9,43 @@ The Starmap application includes interactive planetary system visualization for 
 
 ## Current Systems Available
 
-### 1. Sol (Our Solar System)
-- **8 planets**: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune
-- **Status**: All confirmed with precise astronomical data
-- **Features**: Complete orbital data, habitable zone display, logarithmic size scaling
+The Starmap includes 6 detailed planetary systems with comprehensive data. These systems combine real astronomical data with fictional worlds for the Felgenland Saga:
 
-### 2. Proxima Centauri System
-- **3 planets**: Proxima b, c, d  
-- **Status**: All confirmed exoplanets
-- **Features**: Nearest exoplanet system to Earth
+### 1. Holsten Tor System (20 Leonis Minoris)
+- **Real Star**: 20 Leonis Minoris A, 15.05 light years away
+- **Planets**: 5 total (1 confirmed, 4 fictional)
+- **Fictional Worlds**: Capital of Felgenland Union
+- **Features**: Trading hub with industrial worlds
 
-### 3. Epsilon Eridani System  
-- **1 planet**: Epsilon Eridani b
-- **Status**: Confirmed gas giant
-- **Features**: Real exoplanet discovery from 2000
+### 2. Griefen Tor System (55 Cancri) 
+- **Real Star**: 55 Cancri (Copernicus), 12.34 light years away
+- **Planets**: 6 total (5 confirmed, 1 fictional)
+- **Fictional Worlds**: Resource extraction center
+- **Features**: Mining operations and confirmed exoplanets
 
-### 4. Alpha Centauri A System
-- **1 planet**: Alpha Centauri Ab
-- **Status**: Theoretical/candidate
-- **Features**: Potential habitable world
+### 3. Brandenburgh Tor System (11 Leonis Minoris)
+- **Real Star**: 11 Leonis Minoris, 11.37 light years away  
+- **Planets**: 4 fictional worlds
+- **Fictional Worlds**: Border fortress system
+- **Features**: Gateway to outer territories
 
-### 5. Sirius System
-- **1 planet**: Sirius Ab  
-- **Status**: Hypothetical hot Jupiter
-- **Features**: Demonstration of extreme conditions
+### 4. Tiefe-Grenze Tor System (Fictional)
+- **Fictional Star**: Rimward trading hub
+- **Planets**: 4 fictional worlds
+- **Features**: Deep frontier trade center
+- **Status**: Completely fictional system
 
-### 6. Tau Ceti System
-- **2 planets**: Tau Ceti e, f
-- **Status**: Candidate super-Earths
-- **Features**: Potentially habitable candidates
+### 5. Protelan System (61 Ursae Majoris)
+- **Real Star**: 61 UMa, 9.61 light years away
+- **Planets**: 6 fictional worlds including Protelan moon
+- **Fictional Worlds**: Ultra-capitalist republic capital
+- **Features**: Corporate trade hub with unique culture
+
+### 6. Fomalhaut System (α Piscis Austrini)
+- **Real Star**: Fomalhaut, 7.70 light years away
+- **Planets**: 4 total (1 confirmed, 3 fictional)
+- **Fictional Worlds**: Dorsai Republic military center
+- **Features**: Elite military training facility
 
 ## How to Use
 
@@ -102,10 +110,10 @@ fetch('/api/planet/add', {
 });
 ```
 
-### James Webb Telescope Integration
+### Adding New Exoplanet Systems
 When new exoplanets are discovered:
 
-1. **Update** the planet_systems dictionary in `app_simple.py`
+1. **Update** the `fictional_planets.py` file with new systems
 2. **Add** comprehensive data including:
    - Physical characteristics
    - Orbital parameters  
@@ -150,11 +158,11 @@ The mini-map now uses **logarithmic scaling** for large planets to ensure propor
 ## Testing the System
 
 ### Quick Test Steps
-1. Search "Sol" → Click result → Click "🌌 System View"
+1. Search "Holsten Tor" → Click result → Click "🌌 System View"
 2. Click "▶️ Start Animation" to see orbital motion
-3. Click on Earth or Mars to highlight them
-4. Try "Proxima" to see real exoplanet data
-5. Test "Epsilon Eridani" for a gas giant example
+3. Click on planets to highlight them
+4. Try "Griefen Tor" to see real exoplanet data from 55 Cancri
+5. Test "Protelan" to see the ultra-capitalist republic system
 
 ### Expected Behavior
 - ✅ **Labels**: Planet names display properly (not %{text})
@@ -169,7 +177,10 @@ This system provides a foundation for incorporating future exoplanet discoveries
 
 - **[📖 Main Documentation](README.md)** - Complete application overview and quick start
 - **[🧭 Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems and navigation overlays
-- **[🔌 API Reference](README.md#-api-endpoints)** - Backend API for planetary system data
+- **[🛣️ Trade Routes Guide](TRADE_ROUTES_README.md)** - Trade network structure and economic zones
+- **[🌌 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+- **[🔌 API Reference](README.md#-api-reference)** - Backend API for planetary system data
+- **[📊 Data Analysis Report](PLANETARY_SYSTEMS_ANALYSIS.md)** - System verification and data quality
 
 ---
 📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

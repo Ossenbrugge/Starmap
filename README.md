@@ -1,243 +1,402 @@
-# Starmap: A Picture of the Felgenland Saga
+# Starmap: Interactive 3D Stellar Cartography for the Felgenland Saga
 
-An interactive 3D starmap application for science fiction world-building, featuring political overlays, planetary systems, and trade route visualization. Built with Flask and designed specifically for the Felgenland Saga universe.
+An advanced 3D starmap application for science fiction world-building, featuring political overlays, planetary systems, trade route visualization, and galactic navigation tools. Built with Flask (Python) and Plotly.js, designed specifically for the Felgenland Saga universe.
 
-## 🌟 Features
+## 🌟 Features Overview
 
-### Core Functionality
-- **Interactive 3D Visualization**: Navigate through space with a fully interactive 3D starmap using Plotly.js
-- **Political Overlays**: Visualize fictional nations, territories, borders, and trade routes
-- **Planetary Systems**: Detailed planetary data with interactive system minimaps
-- **Distance Measurement**: Measure distances between star systems
-- **Galactic Navigation**: Grid overlays and directional indicators
-- **Multi-format Export**: Export maps as PNG, JPG, or PDF
+### Core Visualization
+- **Interactive 3D Starmap**: Navigate through 24,670+ real stars with smooth rotation, zoom, and pan controls
+- **Real Astronomical Data**: Hipparcos star catalog with accurate positions, magnitudes, and spectral classifications
+- **Multi-layered Overlays**: Political territories, trade routes, galactic directions, and stellar regions
+- **High-Performance Rendering**: Optimized for large datasets with configurable star limits
 
-### Star Information
-- Magnitude, spectral class, distance from Sol
-- Coordinates and proper motion data
-- Constellation information
-- Fictional names and descriptions
-- Nation allegiance and political data
+### Political & Economic Systems
+- **Fictional Nations**: 5 major political entities with territories, capitals, and descriptions
+- **Trade Route Networks**: 28 comprehensive trade routes across 8 categories
+- **Economic Zones**: Terran Core and Felgenland Free Trade zones with regulations
+- **Territory Visualization**: Colored borders and spheres of influence around controlled systems
 
-### User Interface
-- **Single-window Layout**: Floating overlay panels for optimal screen usage
-- **Collapsible Controls**: Magnitude scales, overlays, and tools
-- **Real-time Data**: Live star information and planetary system details
-- **Responsive Design**: Works on desktop and tablet devices
+### Planetary Systems
+- **Interactive System Maps**: Detailed orbital diagrams with animation support
+- **Exoplanet Database**: Real and fictional worlds with comprehensive planetary data
+- **Habitable Zone Display**: Visual indicators for potentially habitable worlds
+- **Moon Systems**: Support for detailed moon data and orbital mechanics
+
+### Advanced Navigation
+- **Galactic Coordinate System**: Cardinal directions (Coreward, Rimward, Spinward, Anti-Spinward)
+- **Stellar Regions**: Galactic octants with color-coded boundaries and star statistics
+- **Distance Measurement**: Precise calculations between any two star systems
+- **Search & Filtering**: Advanced search by name, spectral type, and properties
+
+### Data Export & Integration
+- **Multi-format Export**: PNG, JPG, PDF export with/without UI elements
+- **CSV Data Export**: Complete star data with custom filtering
+- **RESTful API**: Comprehensive endpoints for external integration
+- **Real-time Updates**: Live data synchronization without page refresh
 
 ## 📖 Documentation Hub
 
-### Quick Start Guides
-- **[Installation & Setup](#-quick-start)** - Get started immediately
-- **[User Interface Guide](#-user-interface)** - Navigate the starmap interface
+### Getting Started
+- **[Installation & Setup](#-installation)** - Get up and running quickly
+- **[User Interface Guide](#-user-interface)** - Master the starmap controls
+- **[First Steps](#first-steps)** - Tutorial for new users
 
-### Detailed Documentation
-- **[Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Complete guide to planetary systems, including how to add new worlds and moons
-- **[Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems, galactic grid, and navigation overlays
+### Feature Guides
+- **[🪐 Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Complete guide to planetary systems, adding worlds, and orbital mechanics
+- **[🧭 Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems, navigation overlays, and galactic orientation
+- **[🛣️ Trade Routes Guide](TRADE_ROUTES_README.md)** - Trade network structure, route management, and economic zones
 
-### Technical References
-- **[Application Structure](#-application-structure)** - MVC architecture overview
-- **[Data Files](#-data-files)** - Understanding the data sources
-- **[API Endpoints](#-api-endpoints)** - Backend API reference
+### Technical Documentation
+- **[🏗️ Application Architecture](#-application-architecture)** - MVC structure and component overview
+- **[📊 Data Sources](#-data-sources)** - Understanding the star catalogs and fictional data
+- **[🔌 API Reference](#-api-reference)** - Complete backend API documentation
+- **[🧪 Data Analysis Reports](#-data-analysis-reports)** - System verification and data quality reports
 
-## 🚀 Quick Start
+### Science Fiction Context
+- **[🌌 The Felgenland Saga Universe](#-the-felgenland-saga-universe)** - Political entities, conflicts, and world-building
+- **[📊 Data Analysis Report](PLANETARY_SYSTEMS_ANALYSIS.md)** - Comprehensive analysis of planetary systems and data integrity
+
+## 🚀 Installation
 
 ### Prerequisites
-- Python 3.8 or higher
-- Web browser (Chrome, Firefox, Safari, or Edge)
+- **Python 3.8+** (3.9+ recommended)
+- **Modern web browser** with WebGL support
+- **4GB RAM** (8GB+ recommended for large datasets)
 
-### Installation
+### Quick Setup
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd Starmap
 
-1. **Clone or download this repository**
+# 2. Set up virtual environment
+chmod +x activate_venv.sh
+./activate_venv.sh
 
-2. **Set up the virtual environment**:
-   ```bash
-   # Make the setup script executable and run it
-   chmod +x activate_venv.sh
-   ./activate_venv.sh
-   ```
+# 3. Launch the application
+chmod +x run_starmap.sh
+./run_starmap.sh
+```
 
-3. **Run the application**:
-   ```bash
-   # Using the provided script
-   chmod +x run_starmap.sh
-   ./run_starmap.sh
-   
-   # Or run directly
-   python app.py
-   ```
+### Manual Setup
+```bash
+# Create virtual environment
+python -m venv starmap_venv
+source starmap_venv/bin/activate  # Linux/Mac
+# or
+starmap_venv\Scripts\activate  # Windows
 
-4. **Access the application**:
-   - **Local**: http://localhost:8080
-   - **LAN**: http://[your-ip]:8080
+# Install dependencies
+pip install -r requirements.txt
 
-### First Steps
-1. Click "Update" to load the starmap
-2. Use mouse to rotate, zoom, and pan the 3D view
-3. Click on stars to view detailed information
-4. Try the political overlays to see fictional nations
-5. Enable trade routes to see economic connections
+# Run application
+python app.py
+```
+
+### Access Points
+- **Local**: http://localhost:8080
+- **Network**: http://[your-ip]:8080
+- **Status**: Check console for startup messages
 
 ## 🎮 User Interface
 
-### Main Controls Panel (Left)
-- **Basic Settings**: Magnitude limits, star count, search
-- **Spectral Filtering**: Filter by star type (O, B, A, F, G, K, M)
-- **Tools**: Distance measurement, nation legend
-- **Overlays**: Nations, borders, trade routes, galactic grid
+### Main Control Panel (Left)
+- **Star Filtering**
+  - Magnitude limits (0.0 to 15.0)
+  - Star count limits (100 to 5000)
+  - Spectral type filters (O, B, A, F, G, K, M)
+- **Search Tools**
+  - Star name search with autocomplete
+  - Constellation filtering
+  - Distance-based queries
+- **Measurement Tools**
+  - Distance measurement between stars
+  - Coordinate display and conversion
+  - Stellar region identification
+
+### Overlay Controls
+- **Political Overlays**
+  - Nation territories with colored borders
+  - Capital system highlighting
+  - Government type indicators
+- **Trade Route Networks**
+  - 28 routes across 8 categories
+  - Route frequency and cargo type display
+  - Economic zone boundaries
+- **Galactic Navigation**
+  - Cardinal direction markers
+  - Coordinate grid system
+  - Stellar region boundaries
 
 ### Data Panel (Right)
-- **Star Information**: Complete star data and properties
-- **Planetary Systems**: Planet details with system minimap access
-- **Search Results**: Star search and filtering results
-- **Distance Results**: Measurements between star systems
+- **Star Information**
+  - Comprehensive stellar data
+  - Spectral classification details
+  - Distance and motion data
+  - Fictional names and descriptions
+- **Planetary Systems**
+  - Interactive system maps
+  - Orbital parameters and planet details
+  - Habitable zone information
+  - Moon system data
+- **Political Data**
+  - Nation allegiances
+  - Trade route connections
+  - Economic zone classifications
+  - Historical establishment dates
 
-### Bottom Controls
-- **Panel Toggles**: Show/hide control and data panels
-- **Export Options**: Include/exclude UI in exported images
+### Export & Tools
+- **Export Options**
+  - Image formats: PNG, JPG, PDF
+  - Data export: CSV with filtering
+  - Include/exclude UI elements
+- **View Controls**
+  - Panel visibility toggles
+  - Zoom and orientation reset
+  - Full-screen mode
 
-### Overlays System
-- **Nations**: Show political control of star systems
-- **Borders**: Territory boundaries around controlled systems  
-- **Trade Routes**: Economic connections between systems
-- **Galactic Grid**: Coordinate reference system
-- **Directions**: Galactic navigation indicators
+## 🏗️ Application Architecture
 
-*Note: Trade routes automatically enable the nations overlay as they depend on political data.*
-
-## 🏗️ Application Structure
-
+### MVC Structure
 ```
 Starmap/
-├── app.py                  # Main Flask application (MVC orchestration)
-├── requirements.txt        # Python dependencies
-├── run_starmap.sh         # Application launcher
-├── activate_venv.sh       # Virtual environment setup
+├── app.py                      # Main Flask application
+├── requirements.txt            # Python dependencies
+├── run_starmap.sh             # Launch script
+├── activate_venv.sh           # Environment setup
 │
-├── models/                # Data layer (MVC)
-│   ├── star_model.py     # Star data management
-│   ├── planet_model.py   # Planetary system data
-│   ├── nation_model.py   # Political entity data
-│   └── base_model.py     # Base model class
+├── models/                    # Data Layer
+│   ├── star_model.py         # Star data management (24,670+ stars)
+│   ├── planet_model.py       # Planetary system data
+│   ├── nation_model.py       # Political entities and territories
+│   ├── stellar_region_model.py # Galactic regions and boundaries
+│   └── base_model.py         # Base model with caching
 │
-├── views/                 # Presentation layer (MVC)
-│   └── api_views.py      # JSON API and template rendering
-│
-├── controllers/           # Business logic (MVC)
-│   ├── star_controller.py    # Star operations
+├── controllers/               # Business Logic
+│   ├── star_controller.py    # Star operations and filtering
 │   ├── planet_controller.py  # Planetary system operations
-│   ├── nation_controller.py  # Political data operations
-│   ├── map_controller.py     # Galactic mapping operations
-│   └── base_controller.py    # Base controller class
+│   ├── nation_controller.py  # Political and trade route logic
+│   ├── map_controller.py     # Galactic navigation features
+│   ├── stellar_region_controller.py # Region management
+│   └── base_controller.py    # Base controller functionality
+│
+├── views/                     # Presentation Layer
+│   ├── api_views.py          # JSON API responses
+│   └── base_view.py          # Base view functionality
+│
+├── static/                    # Frontend Assets
+│   ├── css/style.css         # Application styling
+│   └── js/
+│       ├── starmap.js        # Main visualization logic
+│       └── planetary_system.js # System minimap functionality
 │
 ├── templates/
-│   └── starmap.html      # Main application interface
+│   └── starmap.html          # Main application interface
 │
-├── static/
-│   ├── css/style.css     # Application styles
-│   └── js/
-│       ├── starmap.js    # Main application logic
-│       └── planetary_system.js  # System minimap functionality
-│
-└── data files (see below)
+└── data/                     # See Data Sources below
 ```
 
-## 📊 Data Files
+### Key Components
+- **Flask Backend**: RESTful API with comprehensive endpoints
+- **Plotly.js Frontend**: High-performance 3D visualization
+- **Pandas Data Processing**: Efficient star catalog management
+- **Caching System**: Optimized performance for large datasets
+- **MVC Architecture**: Clean separation of concerns
 
-### Core Star Data
-- **`stars_output.csv`** - Real astronomical star catalog (24,670+ stars)
-- **`fictional_stars.csv`** - Fictional star additions for the saga
-- **`star_naming.py`** - Star naming and designation system
+## 📊 Data Sources
 
-### Science Fiction World Data
-- **`nations_data.json`** - Political entities, trade routes, economic zones
-- **`fictional_names.py`** - Fictional star system names and descriptions
-- **`fictional_planets.py`** - Planetary systems with detailed world data
-- **`fictional_nations.py`** - Political entity management functions
+### Astronomical Data
+- **`stars_output.csv`** - 24,670+ stars from Hipparcos catalog
+  - Positions, magnitudes, spectral types
+  - Proper motion and parallax data
+  - Constellation assignments
+- **`fictional_stars.csv`** - 13 additional fictional stars
+  - Custom systems for story requirements
+  - Consistent with astronomical constraints
 
-### Galactic Systems
-- **`galactic_directions.py`** - Coordinate systems and navigation
-- **`GALACTIC_DIRECTIONS.md`** - Documentation for galactic coordinate system
+### Science Fiction Content
+- **`nations_data.json`** - Political entities and territories
+  - 5 major nations with complete profiles
+  - Economic zones and government types
+  - Historical establishment dates
+- **`trade_routes_data.json`** - 28 comprehensive trade routes
+  - 8 categories from major nation routes to frontier exploration
+  - Cargo types, frequencies, and security levels
+  - Economic zone classifications
+- **`fictional_planets.py`** - Planetary systems and worlds
+  - 6 detailed star systems with 29+ planets
+  - Orbital mechanics and atmospheric data
+  - Fictional world descriptions
 
-## 🌍 The Felgenland Saga Universe
+### Navigation & Naming
+- **`stellar_regions.json`** - Galactic octant definitions
+  - Color-coded region boundaries
+  - Star count statistics per region
+- **`fictional_names.py`** - Custom star system names
+  - Fictional designations for story consistency
+  - Source attribution and descriptions
+- **`galactic_directions.py`** - Coordinate system management
+  - Cardinal direction calculations
+  - Grid overlay generation
 
-This starmap visualizes the political landscape of the Felgenland Saga:
+### Supporting Systems
+- **`star_naming.py`** - Designation management system
+- **`habitability.py`** - Planetary habitability assessment
+- **`fictional_nations.py`** - Political entity utilities
 
-### Major Powers
-- **🔵 Terran Directorate** - Earth-based authoritarian republic (Blue)
-- **🟢 Felgenland Union** - Rimward trade federation (Green)  
-- **🟣 Protelani Republic** - Ultra-capitalist corporate state (Purple)
-- **🔴 Dorsai Republic** - Elite military training systems (Red)
+## 🔌 API Reference
 
-### Key Features
-- **Political Borders**: Territorial spheres around controlled systems
-- **Trade Networks**: Economic routes connecting allied systems
-- **Strategic Systems**: Capital worlds and important installations
-- **Fictional Worlds**: Custom planetary systems with detailed descriptions
+### Star Data Endpoints
+```http
+GET /api/stars                         # Get filtered star list
+GET /api/star/{id}                     # Get detailed star info
+GET /api/star/{id}/habitability        # Get habitability assessment
+GET /api/search?q={query}              # Search stars by name
+GET /api/distance?star1={id}&star2={id} # Calculate distances
+GET /api/spectral-types               # Get spectral type list
+GET /export/csv                       # Export star data as CSV
+```
 
-## 🔌 API Endpoints
-
-The application provides a RESTful API for accessing starmap data:
-
-### Star Data
-- `GET /api/stars` - Get filtered star list
-- `GET /api/star/<id>` - Get detailed star information
-- `GET /api/search?q=<query>` - Search stars by name
-- `GET /api/distance?star1=<id>&star2=<id>` - Calculate distances
-
-### Political Data  
-- `GET /api/nations` - Get all political entities
-- `GET /api/nation/<id>` - Get nation details
-- `GET /api/trade-routes` - Get trade route networks
+### Political & Economic Data
+```http
+GET /api/nations                      # Get all political entities
+GET /api/nation/{id}                  # Get nation details
+GET /api/trade-routes                 # Get trade route networks
+```
 
 ### Planetary Systems
-- `GET /api/systems` - Get all planetary systems
-- `GET /api/system/<star_id>` - Get planetary system details
+```http
+GET /api/systems                      # Get all planetary systems
+GET /api/system/{star_id}             # Get planetary system details
+POST /api/planet/add                  # Add new planet (JSON body)
+```
 
 ### Galactic Navigation
-- `GET /api/galactic-directions` - Get galactic coordinate overlays
+```http
+GET /api/galactic-directions          # Get cardinal direction markers
+GET /api/stellar-regions              # Get galactic region data
+GET /api/stellar-regions/summary      # Get region statistics
+GET /api/stellar-region/{name}        # Get region details
+GET /api/stellar-region/{name}/boundaries # Get region boundaries
+```
 
-## 🛠️ Customization
+### Response Formats
+All endpoints return JSON with standardized error handling:
+```json
+{
+  "success": true,
+  "data": { ... },
+  "metadata": {
+    "total_count": 1000,
+    "filters_applied": {...},
+    "processing_time": "0.045s"
+  }
+}
+```
 
-### Adding New Star Systems
-See **[Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** for detailed instructions on:
-- Creating new planetary systems
-- Adding moons to planets
-- Configuring orbital parameters
-- Setting up fictional worlds
+## 🌌 The Felgenland Saga Universe
 
-### Political Modifications
-Edit `nations_data.json` to:
-- Add new political entities
-- Create trade routes
-- Define territorial boundaries
-- Configure economic zones
+### Major Political Entities
 
-### Galactic Features
-Modify `galactic_directions.py` for:
-- Custom coordinate systems
-- Navigation overlays  
-- Galactic grid configurations
+#### 🔵 Terran Directorate
+- **Capital**: Sol (Earth)
+- **Government**: Authoritarian Republic
+- **Territory**: 6 core systems including Alpha Centauri
+- **Specialty**: Technology, military, central administration
+- **Trade Routes**: 6 primary routes connecting core systems
 
-## 📋 System Requirements
+#### 🔴 Felgenland Union
+- **Capital**: Holsten Tor (Stahlburgh)
+- **Government**: Personal Federal Republic
+- **Territory**: 5 rimward systems
+- **Specialty**: Trade, resource extraction, cultural exchange
+- **Trade Routes**: 3 internal routes plus connections to allies
 
-### Server Requirements
-- **Python**: 3.8 or higher
-- **Memory**: 512MB RAM minimum (1GB recommended)
-- **Storage**: 50MB for application + star data
-- **Network**: Port 8080 (configurable)
+#### 🟦 Protelani Republic
+- **Capital**: Protelan (61 Ursae Majoris)
+- **Government**: Ultra-Capitalist Republic
+- **Territory**: 1 system (Protelan)
+- **Specialty**: Rimward trade hub, corporate operations
+- **Trade Routes**: 4 routes connecting to major trade networks
 
-### Client Requirements
-- **Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-- **JavaScript**: Must be enabled
-- **WebGL**: Required for 3D visualization
-- **Memory**: 1GB RAM recommended for large star datasets
+#### 🟫 Dorsai Republic
+- **Capital**: Fomalhaut (Valorgraemo)
+- **Government**: Military Republic
+- **Territory**: 1 system (Fomalhaut)
+- **Specialty**: Elite military training, tactical defense
+- **Trade Routes**: 6 routes focused on military alliance support
 
-## 🔧 Troubleshooting
+#### 🟣 Pentothian Trade Conglomerate
+- **Capital**: Pentothia Prime (GJ 380)
+- **Government**: Trade Conglomerate
+- **Territory**: 1 system but extensive trade network
+- **Specialty**: Neutral trade, inter-faction commerce
+- **Trade Routes**: 15 routes spanning entire galaxy
+
+### Trade Network Analysis
+- **Total Routes**: 28 comprehensive trade routes
+- **Route Categories**: 8 types from administrative to mining
+- **Economic Zones**: 2 major zones with different regulations
+- **Coverage**: Spans 25+ star systems across 200+ light years
+
+### Stellar Geography
+- **Galactic Sectors**: 8 color-coded regions
+- **Core Systems**: High-security Terran space
+- **Rimward Frontier**: Felgenland and allied territories
+- **Neutral Zones**: Independent and contested systems
+- **Frontier Space**: Exploration and mining outposts
+
+## 🧪 Data Analysis Reports
+
+### System Verification
+- **[Planetary Systems Analysis](PLANETARY_SYSTEMS_ANALYSIS.md)** - Comprehensive report on planetary system data integrity, migration status, and system verification
+- **Star Catalog Validation** - All 24,670+ stars verified against astronomical databases
+- **Trade Route Verification** - All 28 routes validated for system connectivity
+
+### Data Quality Metrics
+- **Real Stars**: 24,670+ from Hipparcos catalog (100% verified)
+- **Fictional Stars**: 13 custom additions (consistent with constraints)
+- **Planetary Systems**: 6 detailed systems with 29+ planets
+- **Political Entities**: 5 nations with complete profiles
+- **Trade Routes**: 28 routes with full economic data
+
+## 🔧 Performance & Optimization
+
+### Recommended Settings
+- **Star Limit**: 1000-2000 for optimal performance
+- **Magnitude Limit**: 6.0 or lower for large datasets
+- **Memory**: 4GB+ RAM for smooth operation
+- **Browser**: Chrome or Firefox for best WebGL performance
+
+### Large Dataset Handling
+- **Caching**: Intelligent caching for frequently accessed data
+- **Filtering**: Real-time filtering without full dataset reload
+- **Pagination**: Efficient data loading for large result sets
+- **Compression**: Optimized data transfer for network efficiency
+
+### Network Deployment
+- **Port Configuration**: Default 8080 (configurable)
+- **Firewall**: Ensure port access for network sharing
+- **Performance**: Recommended 1Mbps+ for smooth operation
+
+## 🛠️ Customization Guide
+
+### Adding New Content
+1. **New Star Systems**: Edit `fictional_stars.csv` and restart
+2. **New Planets**: Use `/api/planet/add` endpoint or edit `fictional_planets.py`
+3. **New Nations**: Modify `nations_data.json` with territories and properties
+4. **New Trade Routes**: Add to `trade_routes_data.json` with route details
+
+### Configuration Options
+- **Star Limits**: Adjust in UI controls or API parameters
+- **Political Colors**: Modify nation color codes in `nations_data.json`
+- **Coordinate System**: Customize in `galactic_directions.py`
+- **Region Boundaries**: Edit `stellar_regions.json` for custom galactic sectors
+
+## 🚨 Troubleshooting
 
 ### Common Issues
-
-**1. Application Won't Start**
+**Server Connection Problems**
 ```bash
 # Check Python version
 python --version  # Should be 3.8+
@@ -247,58 +406,61 @@ source starmap_venv/bin/activate
 pip list | grep -E "(Flask|plotly|pandas)"
 ```
 
-**2. Star Data Not Loading**
-- Ensure `stars_output.csv` is in the root directory
-- Check file permissions and encoding (should be UTF-8)
-- Look for error messages in the console
-
-**3. Slow Performance**
+**Performance Issues**
 - Reduce star count in magnitude controls
 - Lower magnitude limit to show fewer stars
-- Close other browser tabs to free memory
+- Close unnecessary browser tabs
+- Use Chrome/Firefox for better WebGL support
 
-**4. Network Access Issues**
+**Data Loading Problems**
+- Ensure all CSV files are in root directory
+- Check file permissions (readable)
+- Verify UTF-8 encoding
+- Look for error messages in browser console
+
+**Network Access Issues**
 ```bash
 # Find your IP address
-# macOS/Linux:
-ifconfig | grep "inet " | grep -v 127.0.0.1
-
-# Windows:  
-ipconfig | findstr "IPv4"
+ifconfig | grep "inet " | grep -v 127.0.0.1  # Mac/Linux
+ipconfig | findstr "IPv4"                     # Windows
 ```
 
-**5. Political Overlays Not Working**
+**Political Overlays Not Working**
 - Check browser console for JavaScript errors
-- Ensure `nations_data.json` is valid JSON
-- Verify Flask app loaded nations data successfully
+- Verify `nations_data.json` is valid JSON
+- Ensure Flask loaded nations data successfully
+- Try refreshing with hard reload (Ctrl+F5)
 
 ### Performance Optimization
+- **Memory**: 8GB+ RAM recommended for large datasets
+- **Network**: 1Mbps+ for smooth real-time updates
+- **Storage**: 100MB+ free space for caching
+- **GPU**: Dedicated graphics card helps with WebGL performance
 
-**For Large Datasets (>10,000 stars):**
-- Set magnitude limit to 6.0 or lower
-- Limit star count to 1000 or fewer
-- Disable overlays when not needed
-- Use Chrome or Firefox for better WebGL performance
+## 📄 License & Usage
 
-**For Network Sharing:**
-- Check firewall settings for port 8080
-- Ensure devices are on the same network
-- Use static IP address if possible
+This project is designed for personal and educational use in science fiction writing and world-building. The astronomical data is from public catalogs. See [LICENSE](LICENSE) for complete terms.
 
-## 📄 License
+## 🤝 Contributing & Adaptation
 
-This project is designed for personal and educational use in science fiction writing and world-building. See [LICENSE](LICENSE) for full terms.
+### For Science Fiction Writers
+1. **Fork** this repository for your own universe
+2. **Modify** `nations_data.json` for your political entities
+3. **Update** `trade_routes_data.json` for your economic systems
+4. **Customize** `fictional_planets.py` for your worlds
+5. **Share** your creation with the community!
 
-## 🤝 Contributing
-
-This is a specialized tool for the Felgenland Saga universe. If you're interested in creating your own science fiction starmap:
-
-1. Fork this repository
-2. Modify the data files for your universe  
-3. Update the political entities and trade routes
-4. Customize the planetary systems
-5. Share your creation!
+### Development Guidelines
+- Follow MVC architecture patterns
+- Add comprehensive API documentation
+- Include data validation and error handling
+- Test with various dataset sizes
+- Maintain backward compatibility
 
 ---
 
-**Ready to explore the galaxy?** Start with the [Quick Start](#-quick-start) guide or dive into the [Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md) to begin building your own worlds.
+**🌟 Ready to explore the galaxy?** Start with the [Installation Guide](#-installation) or dive into the [Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md) to begin building your own worlds!
+
+**📚 Need help?** Check the [Documentation Hub](#-documentation-hub) for comprehensive guides and tutorials.
+
+**🔧 Having issues?** See the [Troubleshooting](#-troubleshooting) section for common solutions.

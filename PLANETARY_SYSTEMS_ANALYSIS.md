@@ -175,3 +175,16 @@ fictional_planet_systems = {
 4. **Documentation**: Update system documentation with new mappings
 
 This analysis shows that while the star ID de-duplication system is working correctly, the migration process is incomplete and needs to be finished for the application to function properly with all fictional content accessible.
+
+## Related Documentation
+
+- **[📖 Main Documentation](README.md)** - Complete application overview and quick start
+- **[🧭 Galactic Directions Guide](GALACTIC_DIRECTIONS.md)** - Coordinate systems and navigation overlays
+- **[🪐 Planetary System Guide](PLANETARY_SYSTEM_GUIDE.md)** - Detailed planetary systems and world-building
+- **[🛣️ Trade Routes Guide](TRADE_ROUTES_README.md)** - Trade network structure and economic zones
+- **[🌌 Universe Overview](README.md#-the-felgenland-saga-universe)** - Political entities and trade networks
+- **[🔌 API Reference](README.md#-api-reference)** - Backend API for system data
+- **[🏗️ Application Architecture](README.md#-application-architecture)** - Technical implementation details
+
+---
+📖 **[← Back to Main Documentation](README.md#-documentation-hub)**

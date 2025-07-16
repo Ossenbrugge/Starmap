@@ -524,8 +524,11 @@ function highlightPlanet(planetIndex) {
 }
 
 function toggleSystemView() {
-    if (currentSystemData && currentSystemData.planets && currentSystemData.planets.length > 0) {
-        openSystemView(currentSystemData);
+    // Use the global currentSystemData if our local one is not set
+    const systemData = currentSystemData || window.currentSystemData;
+    
+    if (systemData && systemData.planets && systemData.planets.length > 0) {
+        openSystemView(systemData);
     } else {
         updateStatus('No planetary system data available');
     }

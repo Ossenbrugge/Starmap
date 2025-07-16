@@ -31,20 +31,16 @@ class StarModelDB(BaseModelDB):
     
     def get_stars_for_display(self, mag_limit=6.0, count_limit=1000, spectral_filter=None):
         """Get stars suitable for display with filtering and sorting"""
-        # Build query
-        query = {}
         
-        # Magnitude filter with special handling for fictional/nation stars
-        if mag_limit is not None:
-            query = {
-                '$or': [
-                    {'physical_properties.magnitude': {'$lte': mag_limit}},
-                    {'names.fictional_name': {'$exists': True, '$ne': None}},
-                    {'political.nation_id': {'$exists': True, '$ne': None}}
-                ]
-            }
+        # First, get all fictional and nation stars (always include these)
+        priority_query = {
+            '$or': [
+                {'names.fictional_name': {'$exists': True, '$ne': None}},
+                {'political.nation_id': {'$exists': True, '$ne': None}}
+            ]
+        }
         
-        # Spectral class filter
+        # Apply spectral filter to priority stars if specified
         if spectral_filter:
             spectral_query = {
                 'physical_properties.spectral_class': {
@@ -52,30 +48,30 @@ class StarModelDB(BaseModelDB):
                     '$options': 'i'
                 }
             }
-            
-            if query:
-                query = {'$and': [query, spectral_query]}
-            else:
-                query = spectral_query
+            priority_query = {'$and': [priority_query, spectral_query]}
         
-        # Sort by priority: nation stars first, then by magnitude
-        pipeline = [
-            {'$match': query},
-            {'$addFields': {
-                'display_priority': {
-                    '$cond': {
-                        'if': {'$ne': ['$political.nation_id', None]},
-                        'then': 0,
-                        'else': 1
-                    }
-                }
-            }},
-            {'$sort': {'display_priority': 1, 'physical_properties.magnitude': 1}},
-            {'$limit': count_limit}
-        ]
+        priority_stars = list(self.find(priority_query, sort=[('physical_properties.magnitude', 1)]))
+        priority_ids = [star['_id'] for star in priority_stars]
         
-        stars = self.aggregate(pipeline)
-        return self._format_stars_for_json(stars)
+        # Then get regular stars within magnitude limit, excluding those already selected
+        regular_query = {
+            'physical_properties.magnitude': {'$lte': mag_limit},
+            '_id': {'$nin': priority_ids}
+        }
+        
+        # Apply spectral filter to regular stars if specified
+        if spectral_filter:
+            regular_query = {'$and': [regular_query, spectral_query]}
+        
+        # Calculate how many regular stars we can include
+        remaining_limit = max(0, count_limit - len(priority_stars))
+        regular_stars = list(self.find(regular_query, limit=remaining_limit, sort=[('physical_properties.magnitude', 1)]))
+        
+        # Combine and sort all stars
+        all_stars = priority_stars + regular_stars
+        all_stars.sort(key=lambda x: x['physical_properties']['magnitude'])
+        
+        return self._format_stars_for_json(all_stars)
     
     def get_star_details(self, star_id):
         """Get detailed information for a specific star"""
@@ -131,7 +127,10 @@ class StarModelDB(BaseModelDB):
             'habitability': star['habitability'],
             'nation': nation_data,
             'planetary_system': planetary_system,
-            'classification': star['classification']
+            'classification': star['classification'],
+            'has_exoplanets': star.get('exoplanets', {}).get('has_planets', False),
+            'exoplanet_count': star.get('exoplanets', {}).get('count', 0),
+            'planets': star.get('exoplanets', {}).get('planets', [])
         }
     
     def search_stars(self, query, spectral_type=None, limit=50):
@@ -314,35 +313,32 @@ class StarModelDB(BaseModelDB):
         """Get database statistics"""
         total_stars = self.count_documents()
         
-        # Get spectral class distribution
-        spectral_pipeline = [
-            {'$group': {
-                '_id': {'$substr': ['$physical_properties.spectral_class', 0, 1]},
-                'count': {'$sum': 1}
-            }},
-            {'$sort': {'_id': 1}}
-        ]
-        spectral_dist = self.aggregate(spectral_pipeline)
+        # Get spectral class distribution (simplified for MontyDB)
+        spectral_dist = {}
+        all_stars = self.find({}, projection={'physical_properties.spectral_class': 1})
+        for star in all_stars:
+            spect_class = star.get('physical_properties', {}).get('spectral_class', '')
+            if spect_class:
+                main_class = spect_class[0].upper()
+                spectral_dist[main_class] = spectral_dist.get(main_class, 0) + 1
         
-        # Get nation distribution
-        nation_pipeline = [
-            {'$group': {
-                '_id': '$political.nation_id',
-                'count': {'$sum': 1}
-            }},
-            {'$sort': {'count': -1}}
-        ]
-        nation_dist = self.aggregate(nation_pipeline)
+        # Convert to list format for consistency
+        spectral_dist = [{'_id': k, 'count': v} for k, v in sorted(spectral_dist.items())]
         
-        # Get habitability distribution
-        habitability_pipeline = [
-            {'$group': {
-                '_id': '$habitability.category',
-                'count': {'$sum': 1}
-            }},
-            {'$sort': {'count': -1}}
+        # Get nation distribution (simplified)
+        nation_count = self.count_documents({'political.nation_id': {'$ne': None}})
+        nation_dist = [{'_id': 'Controlled', 'count': nation_count}, {'_id': 'Independent', 'count': total_stars - nation_count}]
+        
+        # Get habitability distribution (simplified)
+        high_hab = self.count_documents({'habitability.score': {'$gte': 0.7}})
+        med_hab = self.count_documents({'habitability.score': {'$gte': 0.4, '$lt': 0.7}})
+        low_hab = total_stars - high_hab - med_hab
+        
+        habitability_dist = [
+            {'_id': 'High', 'count': high_hab},
+            {'_id': 'Medium', 'count': med_hab},
+            {'_id': 'Low', 'count': low_hab}
         ]
-        habitability_dist = self.aggregate(habitability_pipeline)
         
         return {
             'total_stars': total_stars,
@@ -378,7 +374,9 @@ class StarModelDB(BaseModelDB):
                 'fictional_source': star['names'].get('fictional_source'),
                 'fictional_description': star['names'].get('fictional_description'),
                 'nation': self._get_nation_data(star.get('political', {}).get('nation_id')),
-                'planets': []  # Will be populated separately if needed
+                'has_exoplanets': star.get('exoplanets', {}).get('has_planets', False),
+                'exoplanet_count': star.get('exoplanets', {}).get('count', 0),
+                'planets': star.get('exoplanets', {}).get('planets', [])
             }
             formatted_stars.append(formatted_star)
         

@@ -1,0 +1,82 @@
+Stellar Database Survey Summary
+Generated on: 2025-07-15 11:44:09
+==================================================
+
+Survey Parameters:
+- Maximum distance: 31.0 parsecs
+- Minimum parallax: 32.258 milliarcseconds
+
+Results:
+- Total stars found: 4406
+- Data sources:
+  * Hipparcos: 2406 stars
+  * Gaia DR3: 2000 stars
+- Distance range: 1.29 - 31.00 pc
+- Stars with spectral types from Hipparcos: 2406
+- Stars with mass estimates: 1157
+- Stars with periphery distance calculations: 2039
+
+Column Summary:
+- id: 4406/4406 entries
+- hip: 2406/4406 entries
+- hd: 1513/4406 entries
+- hr: 4406/4406 entries
+- gl: 4406/4406 entries
+- bf: 4406/4406 entries
+- proper: 4406/4406 entries
+- ra: 4406/4406 entries
+- dec: 4406/4406 entries
+- dist: 4406/4406 entries
+- pmra: 4406/4406 entries
+- pmdec: 4406/4406 entries
+- rv: 1415/4406 entries
+- mag: 4400/4406 entries
+- absmag: 4400/4406 entries
+- spect: 4406/4406 entries
+- ci: 2371/4406 entries
+- x: 4406/4406 entries
+- y: 4406/4406 entries
+- z: 4406/4406 entries
+- vx: 1415/4406 entries
+- vy: 1415/4406 entries
+- vz: 1415/4406 entries
+- rarad: 4406/4406 entries
+- decrad: 4406/4406 entries
+- pmrarad: 4406/4406 entries
+- pmdecrad: 4406/4406 entries
+- bayer: 4406/4406 entries
+- flam: 4406/4406 entries
+- con: 4406/4406 entries
+- comp: 4406/4406 entries
+- comp_primary: 4406/4406 entries
+- base: 4406/4406 entries
+- lum: 4400/4406 entries
+- var: 4406/4406 entries
+- var_min: 0/4406 entries
+- var_max: 0/4406 entries
+- UUID: 4406/4406 entries
+- data_source: 4406/4406 entries
+- estimated_mass: 1157/4406 entries
+- spectral_type: 2406/4406 entries
+- teff_gspphot: 902/4406 entries
+- logg_gspphot: 902/4406 entries
+- mh_gspphot: 902/4406 entries
+- derived_spectral_type: 4406/4406 entries
+- mtgr_mass: 902/4406 entries
+- temp_mass: 902/4406 entries
+- temp_based_b_field: 902/4406 entries
+- parameter_source: 4406/4406 entries
+- best_spectral_type: 4406/4406 entries
+- spectral_source: 4406/4406 entries
+- best_mass: 2059/4406 entries
+- mass_source: 4406/4406 entries
+- best_b_field: 2039/4406 entries
+- b_field_source: 4406/4406 entries
+- proper_name: 388/4406 entries
+- flamsteed: 388/4406 entries
+- simbad_main_id: 388/4406 entries
+- simbad_ids: 388/4406 entries
+- CNS3_name: 137/4406 entries
+- gliese: 53/4406 entries
+- ybs_name: 77/4406 entries
+- periphery_distance_au: 2039/4406 entries

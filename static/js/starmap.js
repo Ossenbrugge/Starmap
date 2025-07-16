@@ -125,7 +125,17 @@ async function updateStarmap(retryCount = 0) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        currentStars = await response.json();
+        const responseData = await response.json();
+        
+        // Handle API response format with data field
+        if (responseData.success && responseData.data) {
+            currentStars = responseData.data;
+        } else if (Array.isArray(responseData)) {
+            // Fallback for direct array response
+            currentStars = responseData;
+        } else {
+            throw new Error('Invalid data format received from server');
+        }
         
         if (!Array.isArray(currentStars)) {
             throw new Error('Invalid data format received from server');
@@ -147,8 +157,10 @@ async function updateStarmap(retryCount = 0) {
                 size: filteredStars.map(star => {
                     const baseSize = Math.max(2, 8 - star.mag);
                     // Reduce Sol's (star ID 0) circle radius by half
-                    return star.id === 0 ? baseSize / 2 : baseSize;
-                }), // Brighter stars are bigger
+                    // Increase size slightly for stars with exoplanets to make them more prominent
+                    const sizeMultiplier = star.has_exoplanets ? 1.2 : 1;
+                    return star.id === 0 ? baseSize / 2 : baseSize * sizeMultiplier;
+                }), // Brighter stars are bigger, exoplanet hosts are slightly larger
                 color: filteredStars.map(star => star.mag),
                 colorscale: [
                     [0, '#ffffff'],      // Bright stars - white
@@ -160,15 +172,22 @@ async function updateStarmap(retryCount = 0) {
                     title: 'Magnitude',
                     titleside: 'right'
                 },
-                opacity: 0.8
+                opacity: 0.8,
+                symbol: filteredStars.map(star => star.has_exoplanets ? 'diamond' : 'circle'),
+                line: {
+                    width: filteredStars.map(star => star.has_exoplanets ? 2 : 0),
+                    color: filteredStars.map(star => star.has_exoplanets ? '#00ff88' : 'transparent')
+                }
             },
             text: filteredStars.map(star => 
-                `${star.name}<br>` +
+                `${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}<br>` +
                 `${star.designation_type === 'proper' ? 'Common Name' : 'Designation'}: ${star.designation_type}<br>` +
                 `Constellation: ${star.constellation_full || star.constellation}<br>` +
                 `Magnitude: ${star.mag.toFixed(2)}<br>` +
                 `Distance: ${star.dist.toFixed(2)} pc<br>` +
                 `Spectral Class: ${star.spect}<br>` +
+                (star.fictional_name ? `🌟 Local Name: ${star.fictional_name}<br>` : '') +
+                (star.has_exoplanets ? `🪐 Exoplanets: ${star.exoplanet_count}<br>` : '') +
                 `Coordinates: (${star.x.toFixed(2)}, ${star.y.toFixed(2)}, ${star.z.toFixed(2)})`
             ),
             hovertemplate: '%{text}<extra></extra>',
@@ -316,7 +335,14 @@ async function selectStar(starId) {
         const response = await fetch(`/api/star/${starId}`);
         if (!response.ok) throw new Error('Failed to fetch star details');
         
-        const starData = await response.json();
+        const apiResponse = await response.json();
+        
+        // Extract star data from API response
+        if (!apiResponse.success || !apiResponse.data) {
+            throw new Error('Invalid response format');
+        }
+        
+        const starData = apiResponse.data;
         
         // Show star details
         showStarDetails(starData);
@@ -348,7 +374,7 @@ function showStarInSearch(starData) {
             <div class="fw-bold text-info">${starData.name}</div>
             <small class="text-muted">
                 ${starData.designation_type} • ${starData.constellation_full || starData.constellation}<br>
-                Mag: ${starData.properties.magnitude.toFixed(2)} • Dist: ${starData.properties.distance.toFixed(2)} pc
+                Mag: ${starData.properties.magnitude.toFixed(2)} • Dist: ${starData.coordinates.dist.toFixed(2)} pc
             </small>
             <div class="mt-1">
                 <button class="btn btn-sm btn-outline-light" onclick="clearHighlight()">Clear Selection</button>
@@ -395,7 +421,7 @@ function highlightStarOnMap(starId, starData) {
                 width: 4
             }
         },
-        text: [`SELECTED: ${starData.name}`],
+        text: [`SELECTED: ${starData.fictional_data && starData.fictional_data.name ? `${starData.fictional_data.name} (${starData.name})` : starData.name}`],
         hovertemplate: '%{text}<extra></extra>',
         name: 'Selected Star',
         showlegend: false
@@ -609,12 +635,18 @@ function showStarDetails(starData) {
             </div>
             <div class="star-property">
                 <span><strong>Distance:</strong></span>
-                <span>${starData.properties.distance.toFixed(2)} pc</span>
+                <span>${starData.coordinates.dist.toFixed(2)} pc</span>
             </div>
             <div class="star-property">
                 <span><strong>Spectral Class:</strong></span>
                 <span>${starData.properties.spectral_class}</span>
             </div>
+            ${starData.has_exoplanets ? `
+                <div class="star-property">
+                    <span><strong>🪐 Exoplanets:</strong></span>
+                    <span class="badge bg-success">${starData.exoplanet_count} confirmed planet${starData.exoplanet_count > 1 ? 's' : ''}</span>
+                </div>
+            ` : ''}
             ${getHabitabilityHtml(starData)}
             <div class="star-property">
                 <span><strong>Coordinates:</strong></span>
@@ -641,61 +673,135 @@ function showStarDetails(starData) {
             
             // Show system view button
             systemViewToggle.style.display = 'block';
-            systemViewToggle.onclick = () => PlanetarySystem.openSystemView(starData);
+            systemViewToggle.onclick = () => {
+                // Adapt starData structure for planetary system module
+                const adaptedPlanets = (starData.planets || []).map(planet => {
+                    const massEarth = parseFloat(planet.planet_mass_earth) || null;
+                    const radiusEarth = parseFloat(planet.planet_radius_earth) || null;
+                    const massJupiter = parseFloat(planet.planet_mass_jupiter) || null;
+                    
+                    // Determine planet type if not provided
+                    let planetType = planet.planet_type || 'Unknown';
+                    if (planetType === 'Unknown') {
+                        if (massJupiter && massJupiter > 0.5) {
+                            planetType = 'Gas Giant';
+                        } else if (radiusEarth) {
+                            if (radiusEarth < 1.5) planetType = 'Terrestrial';
+                            else if (radiusEarth < 4) planetType = 'Super-Earth';
+                            else if (radiusEarth < 8) planetType = 'Neptune-like';
+                            else planetType = 'Gas Giant';
+                        } else if (massEarth) {
+                            if (massEarth < 2) planetType = 'Terrestrial';
+                            else if (massEarth < 10) planetType = 'Super-Earth';
+                            else if (massEarth < 50) planetType = 'Neptune-like';
+                            else planetType = 'Gas Giant';
+                        }
+                    }
+                    
+                    return {
+                        name: planet.pl_name || 'Unknown Planet',
+                        type: planetType,
+                        distance_au: parseFloat(planet.semi_major_axis_au) || 0,
+                        mass_earth: massEarth,
+                        radius_earth: radiusEarth,
+                        orbital_period_days: parseFloat(planet.orbital_period_days) || 0,
+                        discovery_year: planet.disc_year || 'Unknown',
+                        discovery_method: planet.discoverymethod || 'Unknown',
+                        equilibrium_temperature_k: parseFloat(planet.equilibrium_temperature_k) || null
+                    };
+                });
+                
+                const adaptedData = {
+                    name: starData.name,
+                    designation_type: starData.designation_type,
+                    constellation: starData.constellation,
+                    constellation_full: starData.constellation_full,
+                    properties: {
+                        distance: starData.coordinates.dist,
+                        spectral_class: starData.properties.spectral_class,
+                        luminosity: starData.properties.luminosity || 1.0,
+                        magnitude: starData.properties.magnitude
+                    },
+                    coordinates: starData.coordinates,
+                    planets: adaptedPlanets
+                };
+                PlanetarySystem.openSystemView(adaptedData);
+            };
             
             let planetsHtml = '';
             starData.planets.forEach(planet => {
-                const confirmStatus = planet.confirmed ? 
-                    '<span class="badge bg-success">Confirmed</span>' : 
-                    '<span class="badge bg-warning">Candidate</span>';
+                // Use the correct field names from our exoplanet data
+                const planetName = planet.pl_name || 'Unknown Planet';
+                const discoveryYear = planet.disc_year || 'Unknown';
+                const discoveryMethod = planet.discoverymethod || 'Unknown';
+                const orbitalPeriod = planet.orbital_period_days ? 
+                    `${parseFloat(planet.orbital_period_days).toFixed(1)} days` : 'Unknown';
+                const massEarth = planet.planet_mass_earth ? 
+                    `${parseFloat(planet.planet_mass_earth).toFixed(2)}× Earth` : 'Unknown';
+                const radiusEarth = planet.planet_radius_earth ? 
+                    `${parseFloat(planet.planet_radius_earth).toFixed(2)}× Earth` : 'Unknown';
+                const semiMajorAxis = planet.semi_major_axis_au ? 
+                    `${parseFloat(planet.semi_major_axis_au).toFixed(3)} AU` : 'Unknown';
+                const eqTemp = planet.equilibrium_temperature_k ? 
+                    `${parseFloat(planet.equilibrium_temperature_k).toFixed(0)} K` : 'Unknown';
                 
-                // Build moons section if planet has moons
-                let moonsHtml = '';
-                if (planet.moons && planet.moons.length > 0) {
-                    moonsHtml = `
-                        <div class="moons-section mt-2">
-                            <div class="text-info small fw-bold">🌙 Moons (${planet.moons.length}):</div>
-                            <div class="ms-2">
-                    `;
-                    
-                    planet.moons.forEach(moon => {
-                        moonsHtml += `
-                            <div class="moon-item mt-1 p-1" style="border-left: 2px solid #17a2b8; padding-left: 8px;">
-                                <div class="text-info small fw-bold">${moon.name}</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">
-                                    <div><strong>Type:</strong> ${moon.type}</div>
-                                    <div><strong>Mass:</strong> ${moon.mass_earth}× Earth</div>
-                                    <div><strong>Radius:</strong> ${moon.radius_earth}× Earth</div>
-                                    <div><strong>Distance:</strong> ${moon.orbital_distance_km.toLocaleString()} km</div>
-                                    <div><strong>Period:</strong> ${moon.orbital_period_days} days</div>
-                                    ${moon.description ? `<div class="text-muted fst-italic">${moon.description}</div>` : ''}
-                                </div>
-                            </div>
-                        `;
-                    });
-                    
-                    moonsHtml += `
-                            </div>
-                        </div>
-                    `;
+                // Determine planet type based on available data
+                let planetType = 'Unknown';
+                if (planet.planet_radius_earth) {
+                    const radius = parseFloat(planet.planet_radius_earth);
+                    if (radius < 1.5) planetType = 'Terrestrial';
+                    else if (radius < 4) planetType = 'Super-Earth';
+                    else if (radius < 8) planetType = 'Neptune-like';
+                    else planetType = 'Gas Giant';
                 }
-
+                
+                // Always show as confirmed since we only have confirmed exoplanets
+                const confirmStatus = '<span class="badge bg-success">Confirmed</span>';
+                
                 planetsHtml += `
-                    <div class="planet-item mb-2">
-                        <div class="planet-name d-flex justify-content-between align-items-center">
-                            <span class="text-success fw-bold">${planet.name}</span>
+                    <div class="planet-item mb-3 p-2" style="border: 1px solid #28a745; border-radius: 6px; background: rgba(40, 167, 69, 0.1);">
+                        <div class="planet-name d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-success fw-bold">🪐 ${planetName}</span>
                             ${confirmStatus}
                         </div>
-                        <div class="planet-details mt-1">
-                            <small>
-                                <div><strong>Type:</strong> ${planet.type}</div>
-                                <div><strong>Distance:</strong> ${planet.distance_au} AU</div>
-                                <div><strong>Mass:</strong> ${planet.mass_earth}× Earth</div>
-                                <div><strong>Radius:</strong> ${planet.radius_earth}× Earth</div>
-                                <div><strong>Orbital Period:</strong> ${planet.orbital_period_days} days</div>
-                                <div><strong>Discovery:</strong> ${planet.discovery_year}</div>
-                            </small>
-                            ${moonsHtml}
+                        <div class="planet-details">
+                            <div class="row g-1">
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Type:</strong> ${planetType}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Distance:</strong> ${semiMajorAxis}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Period:</strong> ${orbitalPeriod}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Temp:</strong> ${eqTemp}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Mass:</strong> ${massEarth}</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="planet-property">
+                                        <small><strong>Radius:</strong> ${radiusEarth}</small>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="planet-property">
+                                        <small><strong>Discovery:</strong> ${discoveryYear} (${discoveryMethod})</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -744,20 +850,28 @@ async function searchStars() {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         if (!response.ok) throw new Error('Search failed');
         
-        const searchData = await response.json();
+        const searchResponse = await response.json();
+        
+        // Extract data from API response
+        if (!searchResponse.success) {
+            throw new Error('Search API returned error');
+        }
+        
+        const searchData = searchResponse.data;
+        const message = searchResponse.message;
         
         // Display search results
         const searchResults = document.getElementById('searchResults');
         const searchResultsList = document.getElementById('searchResultsList');
         
-        if (searchData.results && searchData.results.length > 0) {
-            let resultsHtml = `<p><strong>${searchData.count} results for "${searchData.query}"</strong></p>`;
+        if (searchData && searchData.length > 0) {
+            let resultsHtml = `<p><strong>${message.result_count} results for "${message.query}"</strong></p>`;
             
-            searchData.results.forEach(star => {
+            searchData.forEach(star => {
                 resultsHtml += `
                     <div class="search-result-item mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;" 
                          onclick="selectStar(${star.id})">
-                        <div class="fw-bold text-info">${star.name}</div>
+                        <div class="fw-bold text-info">${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}</div>
                         <small class="text-muted">
                             ${star.designation_type} • ${star.constellation}<br>
                             Mag: ${star.magnitude.toFixed(2)} • Dist: ${star.distance.toFixed(2)} pc
@@ -769,7 +883,7 @@ async function searchStars() {
             searchResultsList.innerHTML = resultsHtml;
             searchResults.style.display = 'block';
             
-            updateStatus(`Found ${searchData.count} stars matching "${query}"`);
+            updateStatus(`Found ${message.result_count} stars matching "${query}"`);
         } else {
             searchResultsList.innerHTML = `<p class="text-muted">No stars found matching "${query}"</p>`;
             searchResults.style.display = 'block';
@@ -868,7 +982,7 @@ async function filterBySpectralType() {
                 resultsHtml += `
                     <div class="search-result-item mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;" 
                          onclick="selectStar(${star.id})">
-                        <div class="fw-bold text-info">${star.name}</div>
+                        <div class="fw-bold text-info">${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}</div>
                         <small class="text-muted">
                             ${star.designation_type} • ${star.constellation}<br>
                             Spectral: ${star.spectral_class} • Mag: ${star.magnitude.toFixed(2)} • Dist: ${star.distance.toFixed(2)} pc
@@ -911,8 +1025,10 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
                 size: filteredStars.map(star => {
                     const baseSize = Math.max(2, 8 - star.magnitude);
                     // Reduce Sol's (star ID 0) circle radius by half
-                    return star.id === 0 ? baseSize / 2 : baseSize;
-                }), // Brighter stars are bigger
+                    // Increase size slightly for stars with exoplanets to make them more prominent
+                    const sizeMultiplier = star.has_exoplanets ? 1.2 : 1;
+                    return star.id === 0 ? baseSize / 2 : baseSize * sizeMultiplier;
+                }), // Brighter stars are bigger, exoplanet hosts are slightly larger
                 color: filteredStars.map(star => star.magnitude),
                 colorscale: [
                     [0, '#ffffff'],      // Bright stars - white
@@ -924,15 +1040,22 @@ async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
                     title: 'Magnitude',
                     titleside: 'right'
                 },
-                opacity: 0.8
+                opacity: 0.8,
+                symbol: filteredStars.map(star => star.has_exoplanets ? 'diamond' : 'circle'),
+                line: {
+                    width: filteredStars.map(star => star.has_exoplanets ? 2 : 0),
+                    color: filteredStars.map(star => star.has_exoplanets ? '#00ff88' : 'transparent')
+                }
             },
             text: filteredStars.map(star => 
-                `${star.name}<br>` +
+                `${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}<br>` +
                 `${star.designation_type === 'proper' ? 'Common Name' : 'Designation'}: ${star.designation_type}<br>` +
                 `Constellation: ${star.constellation}<br>` +
                 `Magnitude: ${star.magnitude.toFixed(2)}<br>` +
                 `Distance: ${star.distance.toFixed(2)} pc<br>` +
                 `Spectral Class: ${star.spectral_class}<br>` +
+                (star.fictional_name ? `🌟 Local Name: ${star.fictional_name}<br>` : '') +
+                (star.has_exoplanets ? `🪐 Exoplanets: ${star.exoplanet_count}<br>` : '') +
                 `Coordinates: (${star.coordinates.x.toFixed(2)}, ${star.coordinates.y.toFixed(2)}, ${star.coordinates.z.toFixed(2)})`
             ),
             hovertemplate: '%{text}<extra></extra>',
@@ -1271,8 +1394,12 @@ async function loadNationsData() {
         const response = await fetch('/api/nations');
         if (!response.ok) throw new Error('Failed to fetch nations data');
         
-        const data = await response.json();
-        nationsData = data.nations;
+        const responseData = await response.json();
+        if (responseData.success) {
+            nationsData = responseData.data || [];
+        } else {
+            throw new Error('Invalid response format from nations API');
+        }
         updateStatus('Nations data loaded successfully');
     } catch (error) {
         console.error('Error loading nations data:', error);
@@ -1293,7 +1420,7 @@ function togglePoliticalOverlay() {
             return;
         }
         
-        if (Object.keys(nationsData).length === 0) {
+        if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
             updateStatus('Loading nations data...');
             loadNationsData().then(() => {
                 applyPoliticalOverlay();
@@ -1317,9 +1444,11 @@ function applyPoliticalOverlay() {
     // Update star colors based on nation control
     const updatedColors = currentStars.map(star => {
         // Check if this star belongs to any nation
-        for (const [nationId, nation] of Object.entries(nationsData)) {
-            if (nationId !== 'neutral_zone' && nation.territories && nation.territories.includes(star.id)) {
-                return nation.color;
+        if (nationsData && !Array.isArray(nationsData)) {
+            for (const [nationId, nation] of Object.entries(nationsData)) {
+                if (nationId !== 'neutral_zone' && nation.territories && nation.territories.includes(star.id)) {
+                    return nation.color;
+                }
             }
         }
         // For unaligned stars, use original magnitude-based colors
@@ -1430,7 +1559,7 @@ async function showTradeRoutes() {
     
     try {
         // Ensure nations data is loaded before showing trade routes
-        if (Object.keys(nationsData).length === 0) {
+        if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
             updateStatus('Loading nations data for trade routes...', true);
             await loadNationsData();
         }
@@ -1440,8 +1569,11 @@ async function showTradeRoutes() {
         const response = await fetch('/api/trade-routes');
         if (!response.ok) throw new Error('Failed to fetch trade routes');
         
-        const tradeData = await response.json();
-        const allRoutes = tradeData.trade_routes;
+        const tradeResponseData = await response.json();
+        if (!tradeResponseData.success) {
+            throw new Error('Invalid response format from trade routes API');
+        }
+        const allRoutes = tradeResponseData.data || [];
         
         updateStatus('Processing trade routes...', true);
         let processedRoutes = 0;
@@ -1581,25 +1713,27 @@ function toggleTerritoryBorders() {
 }
 
 function showTerritoryBorders() {
-    if (!starmapPlot || !currentStars || Object.keys(nationsData).length === 0) return;
+    if (!starmapPlot || !currentStars || !nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) return;
     
     // Clear existing border traces
     hideTerritoryBorders();
     
     try {
         // Create territory borders for each nation
-        Object.entries(nationsData).forEach(([nationId, nation]) => {
-            if (nationId === 'neutral_zone') return;
-            
-            // Get stars belonging to this nation
-            const nationStars = currentStars.filter(star => 
-                nation.territories && nation.territories.includes(star.id)
-            );
-            
-            if (nationStars.length >= 1) {
-                createTerritoryBoundary(nationStars, nation);
-            }
-        });
+        if (nationsData && !Array.isArray(nationsData)) {
+            Object.entries(nationsData).forEach(([nationId, nation]) => {
+                if (nationId === 'neutral_zone') return;
+                
+                // Get stars belonging to this nation
+                const nationStars = currentStars.filter(star => 
+                    nation.territories && nation.territories.includes(star.id)
+                );
+                
+                if (nationStars.length >= 1) {
+                    createTerritoryBoundary(nationStars, nation);
+                }
+            });
+        }
         
         updateStatus('Territory borders displayed');
     } catch (error) {
@@ -1857,61 +1991,63 @@ function clearTerritoryBorderTraces() {
 }
 
 async function showNationLegend() {
-    if (Object.keys(nationsData).length === 0) {
+    if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
         await loadNationsData();
     }
     
     const legendContent = document.getElementById('nationLegendContent');
     let html = '<div class="row">';
     
-    Object.entries(nationsData).forEach(([nationId, nation]) => {
-        // Get stars belonging to this nation
-        const nationStars = currentStars.filter(star => 
-            nation.territories && nation.territories.includes(star.id)
-        );
-        
-        // Build star list HTML
-        let starListHtml = '';
-        if (nationStars.length > 0) {
-            starListHtml = `
-                <div class="mt-2">
-                    <strong class="text-info">Star Systems:</strong>
-                    <ul class="list-unstyled mt-1 ms-2">
-                        ${nationStars.map(star => {
-                            const fictionalName = star.fictional_name ? ` (${star.fictional_name})` : '';
-                            const distance = star.dist ? ` - ${star.dist.toFixed(1)} pc` : '';
-                            return `<li class="small">
-                                <span style="color: ${nation.color};">•</span> 
-                                <strong>${star.name}</strong>${fictionalName}${distance}
-                            </li>`;
-                        }).join('')}
-                    </ul>
+    if (nationsData && !Array.isArray(nationsData)) {
+        Object.entries(nationsData).forEach(([nationId, nation]) => {
+            // Get stars belonging to this nation
+            const nationStars = currentStars.filter(star => 
+                nation.territories && nation.territories.includes(star.id)
+            );
+            
+            // Build star list HTML
+            let starListHtml = '';
+            if (nationStars.length > 0) {
+                starListHtml = `
+                    <div class="mt-2">
+                        <strong class="text-info">Star Systems:</strong>
+                        <ul class="list-unstyled mt-1 ms-2">
+                            ${nationStars.map(star => {
+                                const fictionalName = star.fictional_name ? ` (${star.fictional_name})` : '';
+                                const distance = star.dist ? ` - ${star.dist.toFixed(1)} pc` : '';
+                                return `<li class="small">
+                                    <span style="color: ${nation.color};">•</span> 
+                                    <strong>${star.name}</strong>${fictionalName}${distance}
+                                </li>`;
+                            }).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <div class="col-md-6 mb-3">
+                    <div class="card bg-secondary h-100" onclick="selectNation('${nationId}')">
+                        <div class="card-header d-flex align-items-center">
+                            <div class="nation-color-indicator me-2" 
+                                 style="width: 20px; height: 20px; background-color: ${nation.color}; border-radius: 3px;"></div>
+                            <strong>${nation.name}</strong>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text small">${nation.description}</p>
+                            <div class="text-muted small">
+                                <div><strong>Government:</strong> ${nation.government_type}</div>
+                                <div><strong>Capital:</strong> ${nation.capital_system || 'None'}</div>
+                                <div><strong>Systems:</strong> ${nation.territories.length}</div>
+                                <div><strong>Population:</strong> ${nation.population}</div>
+                            </div>
+                            ${starListHtml}
+                        </div>
+                    </div>
                 </div>
             `;
-        }
-        
-        html += `
-            <div class="col-md-6 mb-3">
-                <div class="card bg-secondary h-100" onclick="selectNation('${nationId}')">
-                    <div class="card-header d-flex align-items-center">
-                        <div class="nation-color-indicator me-2" 
-                             style="width: 20px; height: 20px; background-color: ${nation.color}; border-radius: 3px;"></div>
-                        <strong>${nation.name}</strong>
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text small">${nation.description}</p>
-                        <div class="text-muted small">
-                            <div><strong>Government:</strong> ${nation.government_type}</div>
-                            <div><strong>Capital:</strong> ${nation.capital_system || 'None'}</div>
-                            <div><strong>Systems:</strong> ${nation.territories.length}</div>
-                            <div><strong>Population:</strong> ${nation.population}</div>
-                        </div>
-                        ${starListHtml}
-                    </div>
-                </div>
-            </div>
-        `;
-    });
+        });
+    }
     
     html += '</div>';
     legendContent.innerHTML = html;
@@ -1981,8 +2117,13 @@ async function loadGalacticDirections() {
         const response = await fetch(`/api/galactic-directions?distance=${galacticDistance}&grid=${galacticGridActive}`);
         if (!response.ok) throw new Error('Failed to fetch galactic directions');
         
-        galacticDirectionsData = await response.json();
-        updateStatus(`Loaded ${galacticDirectionsData.total_markers} galactic direction markers`);
+        const responseData = await response.json();
+        if (responseData.success && responseData.data) {
+            galacticDirectionsData = responseData.data;
+            updateStatus(`Loaded ${galacticDirectionsData.directions.length} galactic direction markers`);
+        } else {
+            throw new Error('Invalid response format from galactic directions API');
+        }
     } catch (error) {
         console.error('Error loading galactic directions:', error);
         updateStatus(`Error loading galactic directions: ${error.message}`);
@@ -2034,13 +2175,13 @@ function updateGalacticDirectionsDisplay() {
     });
     galacticTraces = [];
     
-    if (!galacticDirectionsData.markers) return;
+    if (!galacticDirectionsData.directions) return;
     
     const tracesToAdd = [];
     
     // Add cardinal direction markers
     if (galacticDirectionsActive) {
-        const markers = galacticDirectionsData.markers;
+        const markers = galacticDirectionsData.directions;
         
         const cardinalTrace = {
             x: markers.map(m => m.x),
@@ -2058,18 +2199,15 @@ function updateGalacticDirectionsDisplay() {
                     color: '#ffffff'
                 }
             },
-            text: markers.map(m => m.symbol),
+            text: markers.map(m => m.name),
             textposition: 'middle center',
             textfont: {
-                size: 16,
+                size: 12,
                 color: '#ffffff'
             },
             hovertemplate: markers.map(m => 
                 `<b>${m.name}</b><br>` +
-                `${m.description}<br>` +
-                `Galactic L: ${m.galactic_l}°<br>` +
-                `Galactic B: ${m.galactic_b}°<br>` +
-                `Position: (${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)}) pc<br>` +
+                `Position: (${m.x}, ${m.y}, ${m.z}) pc<br>` +
                 `<extra></extra>`
             ),
             name: 'Galactic Directions',
@@ -2348,11 +2486,15 @@ async function loadStellarRegions() {
             throw new Error('Failed to fetch stellar regions data');
         }
         
-        const data = await response.json();
-        stellarRegionsData = data;
+        const responseData = await response.json();
+        if (responseData.success && responseData.data) {
+            stellarRegionsData = { regions: responseData.data };
+        } else {
+            throw new Error('Invalid response format from stellar regions API');
+        }
         
         console.log('Stellar regions loaded:', stellarRegionsData);
-        updateStatus(`Stellar regions data loaded successfully (${data.regions?.length || 0} regions)`);
+        updateStatus(`Stellar regions data loaded successfully (${stellarRegionsData.regions?.length || 0} regions)`);
         
     } catch (error) {
         console.error('Error loading stellar regions:', error);
@@ -2584,6 +2726,7 @@ function updateStellarRegionsDisplay() {
             
             tracesToAdd.push(regionTrace);
             tracesToAdd.push(labelTrace);
+            stellarRegionsTraces.push(regionTrace, labelTrace);
         } else {
             console.warn(`Region ${region.name} does not have x_range, y_range, z_range`);
         }

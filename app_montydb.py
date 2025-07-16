@@ -16,6 +16,7 @@ from database.config import initialize_database, get_database, close_database
 from models.star_model_db import StarModelDB
 from models.nation_model_db import NationModelDB
 from models.trade_route_model_db import TradeRouteModelDB
+from models.exoplanet_model_db import ExoplanetModelDB
 
 # Import existing views (will work with new models)
 from views.api_views import ApiView, TemplateView
@@ -61,6 +62,7 @@ class StarmapMontyDBApplication:
         self.star_model = StarModelDB()
         self.nation_model = NationModelDB()
         self.trade_route_model = TradeRouteModelDB()
+        self.exoplanet_model = ExoplanetModelDB()
         
         print("✅ Models initialized successfully")
     
@@ -317,6 +319,72 @@ class StarmapMontyDBApplication:
             except Exception as e:
                 return self.api_view.error_response(str(e), 500)
         
+        # API Routes - Exoplanets
+        @self.app.route('/api/exoplanets')
+        def get_exoplanets():
+            try:
+                limit = request.args.get('limit', 50, type=int)
+                method = request.args.get('method')
+                habitable_only = request.args.get('habitable', 'false').lower() == 'true'
+                
+                if habitable_only:
+                    exoplanets = self.exoplanet_model.get_habitable_planets(limit=limit)
+                elif method:
+                    exoplanets = self.exoplanet_model.get_planets_by_discovery_method(method, limit=limit)
+                else:
+                    exoplanets = self.exoplanet_model.get_recent_discoveries(limit=limit)
+                
+                return self.api_view.success_response(exoplanets)
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
+        @self.app.route('/api/star/<int:star_id>/exoplanets')
+        def get_star_exoplanets(star_id):
+            try:
+                star = self.star_model.get_star_details(star_id)
+                if not star:
+                    return self.api_view.error_response(f"Star {star_id} not found", 404)
+                
+                # Get exoplanets from star data or by HIP ID lookup
+                planets = star.get('planets', [])
+                if not planets and star.get('catalog_data', {}).get('hip'):
+                    hip_id = star['catalog_data']['hip']
+                    planets = self.exoplanet_model.get_planets_by_hip_id(hip_id)
+                
+                return self.api_view.success_response(planets)
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
+        @self.app.route('/api/exoplanets/stats')
+        def get_exoplanet_stats():
+            try:
+                stats = self.exoplanet_model.get_system_statistics()
+                return self.api_view.success_response(stats)
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
+        @self.app.route('/api/exoplanets/search')
+        def search_exoplanets():
+            try:
+                query = request.args.get('q', '')
+                limit = request.args.get('limit', 50, type=int)
+                
+                if not query:
+                    return self.api_view.error_response("Query parameter required", 400)
+                
+                results = self.exoplanet_model.search_planets(query, limit=limit)
+                
+                return self.api_view.success_response(results, {
+                    'query': query,
+                    'result_count': len(results)
+                })
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
         # Data Management Routes
         @self.app.route('/api/star/add', methods=['POST'])
         def add_star():
@@ -347,6 +415,173 @@ class StarmapMontyDBApplication:
             except Exception as e:
                 return self.api_view.error_response(str(e), 500)
         
+        # API Routes - Overlays and UI Features
+        @self.app.route('/api/galactic-directions')
+        def get_galactic_directions():
+            try:
+                distance = request.args.get('distance', 50, type=int)
+                grid = request.args.get('grid', 'false').lower() == 'true'
+                
+                # Generate galactic directions data
+                directions_data = {
+                    'directions': [
+                        {'name': 'Galactic North', 'x': 0, 'y': 0, 'z': distance, 'color': '#ff6b6b'},
+                        {'name': 'Galactic South', 'x': 0, 'y': 0, 'z': -distance, 'color': '#4ecdc4'},
+                        {'name': 'Galactic Center', 'x': 0, 'y': -distance, 'z': 0, 'color': '#45b7d1'},
+                        {'name': 'Galactic Anticenter', 'x': 0, 'y': distance, 'z': 0, 'color': '#f39c12'}
+                    ],
+                    'grid_enabled': grid,
+                    'distance': distance
+                }
+                
+                return self.api_view.success_response(directions_data)
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
+        @self.app.route('/api/stellar-regions')
+        def get_stellar_regions():
+            try:
+                # Generate octant regions extending from Sol (0,0,0) to map boundaries
+                # Map extends roughly -95 to +95 in each direction
+                map_extent = 95
+                
+                regions_data = [
+                    {
+                        'id': 'octant_ppp',
+                        'name': 'Capella Region',
+                        'short_name': 'Capella',
+                        'description': 'Galactic region centered on Capella (magnitude 0.08), the brightest star in this octant. Coreward Spinward Above - The first galactic octant extending in positive X, Y, and Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [map_extent/2, map_extent/2, map_extent/2],
+                        'x_range': [0, map_extent],
+                        'y_range': [0, map_extent],
+                        'z_range': [0, map_extent],
+                        'color_rgb': [255, 99, 132],
+                        'brightest_star': 'Capella',
+                        'brightest_star_id': 24549,
+                        'brightest_star_magnitude': 0.08,
+                        'octant_number': 1
+                    },
+                    {
+                        'id': 'octant_ppn',
+                        'name': 'Achernar Region',
+                        'short_name': 'Achernar',
+                        'description': 'Galactic region centered on Achernar (magnitude 0.45), the brightest star in this octant. Coreward Spinward Below - The fifth galactic octant extending in positive X and Y, negative Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [map_extent/2, map_extent/2, -map_extent/2],
+                        'x_range': [0, map_extent],
+                        'y_range': [0, map_extent],
+                        'z_range': [-map_extent, 0],
+                        'color_rgb': [153, 102, 255],
+                        'brightest_star': 'Achernar',
+                        'brightest_star_id': 7574,
+                        'brightest_star_magnitude': 0.45,
+                        'octant_number': 5
+                    },
+                    {
+                        'id': 'octant_pnp',
+                        'name': 'Vega Region',
+                        'short_name': 'Vega',
+                        'description': 'Galactic region centered on Vega (magnitude 0.03), the brightest star in this octant. Coreward Anti-Spinward Above - The fourth galactic octant extending in positive X, negative Y, positive Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [map_extent/2, -map_extent/2, map_extent/2],
+                        'x_range': [0, map_extent],
+                        'y_range': [-map_extent, 0],
+                        'z_range': [0, map_extent],
+                        'color_rgb': [75, 192, 192],
+                        'brightest_star': 'Vega',
+                        'brightest_star_id': 90979,
+                        'brightest_star_magnitude': 0.03,
+                        'octant_number': 4
+                    },
+                    {
+                        'id': 'octant_pnn',
+                        'name': 'Fomalhaut Region',
+                        'short_name': 'Fomalhaut',
+                        'description': 'Galactic region centered on Fomalhaut (magnitude 1.17), the brightest star in this octant. Coreward Anti-Spinward Below - The eighth galactic octant extending in positive X, negative Y and Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [map_extent/2, -map_extent/2, -map_extent/2],
+                        'x_range': [0, map_extent],
+                        'y_range': [-map_extent, 0],
+                        'z_range': [-map_extent, 0],
+                        'color_rgb': [255, 99, 255],
+                        'brightest_star': 'Fomalhaut',
+                        'brightest_star_id': 113008,
+                        'brightest_star_magnitude': 1.17,
+                        'octant_number': 8
+                    },
+                    {
+                        'id': 'octant_npp',
+                        'name': 'Procyon Region',
+                        'short_name': 'Procyon',
+                        'description': 'Galactic region centered on Procyon (magnitude 0.40), the brightest star in this octant. Rimward Spinward Above - The second galactic octant extending in negative X, positive Y and Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [-map_extent/2, map_extent/2, map_extent/2],
+                        'x_range': [-map_extent, 0],
+                        'y_range': [0, map_extent],
+                        'z_range': [0, map_extent],
+                        'color_rgb': [54, 162, 235],
+                        'brightest_star': 'Procyon',
+                        'brightest_star_id': 37173,
+                        'brightest_star_magnitude': 0.4,
+                        'octant_number': 2
+                    },
+                    {
+                        'id': 'octant_npn',
+                        'name': 'Sirius Region',
+                        'short_name': 'Sirius',
+                        'description': 'Galactic region centered on Sirius (magnitude -1.44), the brightest star in this octant. Rimward Spinward Below - The sixth galactic octant extending in negative X, positive Y, negative Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [-map_extent/2, map_extent/2, -map_extent/2],
+                        'x_range': [-map_extent, 0],
+                        'y_range': [0, map_extent],
+                        'z_range': [-map_extent, 0],
+                        'color_rgb': [255, 159, 64],
+                        'brightest_star': 'Sirius',
+                        'brightest_star_id': 32263,
+                        'brightest_star_magnitude': -1.44,
+                        'octant_number': 6
+                    },
+                    {
+                        'id': 'octant_nnp',
+                        'name': 'Arcturus Region',
+                        'short_name': 'Arcturus',
+                        'description': 'Galactic region centered on Arcturus (magnitude -0.05), the brightest star in this octant. Rimward Anti-Spinward Above - The third galactic octant extending in negative X and Y, positive Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [-map_extent/2, -map_extent/2, map_extent/2],
+                        'x_range': [-map_extent, 0],
+                        'y_range': [-map_extent, 0],
+                        'z_range': [0, map_extent],
+                        'color_rgb': [255, 205, 86],
+                        'brightest_star': 'Arcturus',
+                        'brightest_star_id': 69451,
+                        'brightest_star_magnitude': -0.05,
+                        'octant_number': 3
+                    },
+                    {
+                        'id': 'octant_nnn',
+                        'name': 'Rigil Kentaurus Region',
+                        'short_name': 'Rigil Kentaurus',
+                        'description': 'Galactic region centered on Rigil Kentaurus (magnitude -0.01), the brightest star in this octant. Rimward Anti-Spinward Below - The seventh galactic octant extending in negative X, Y, and Z directions from Sol.',
+                        'type': 'octant',
+                        'center_point': [-map_extent/2, -map_extent/2, -map_extent/2],
+                        'x_range': [-map_extent, 0],
+                        'y_range': [-map_extent, 0],
+                        'z_range': [-map_extent, 0],
+                        'color_rgb': [201, 203, 207],
+                        'brightest_star': 'Rigil Kentaurus',
+                        'brightest_star_id': 71456,
+                        'brightest_star_magnitude': -0.01,
+                        'octant_number': 7
+                    }
+                ]
+                
+                return self.api_view.success_response(regions_data)
+                
+            except Exception as e:
+                return self.api_view.error_response(str(e), 500)
+        
         print("✅ Routes registered successfully")
     
     def _register_error_handlers(self):
@@ -369,10 +604,12 @@ class StarmapMontyDBApplication:
             star_count = self.star_model.count_documents()
             nation_count = self.nation_model.count_documents()
             route_count = self.trade_route_model.count_documents()
+            exoplanet_count = self.exoplanet_model.count_documents()
             
             print(f"⭐ Stars: {star_count}")
             print(f"🏛️  Nations: {nation_count}")
             print(f"🛣️  Trade routes: {route_count}")
+            print(f"🪐 Exoplanets: {exoplanet_count}")
             print(f"🌐 Access URL: http://{host}:{port}")
             print("="*50)
             
@@ -393,6 +630,7 @@ class StarmapMontyDBApplication:
         self.star_model.clear_cache()
         self.nation_model.clear_cache()
         self.trade_route_model.clear_cache()
+        self.exoplanet_model.clear_cache()
         
         # Close database connection
         close_database()

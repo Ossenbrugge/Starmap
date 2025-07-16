@@ -82,6 +82,11 @@ class StarSchema:
                 'capital_of': None,
                 'strategic_importance': 'normal'
             },
+            'exoplanets': {
+                'count': len(star_data.get('exoplanets', [])),
+                'has_planets': star_data.get('has_exoplanets', False),
+                'planets': star_data.get('exoplanets', [])
+            },
             'metadata': {
                 'created_at': datetime.utcnow(),
                 'updated_at': datetime.utcnow(),
@@ -257,6 +262,83 @@ class PlanetarySystemSchema:
                 'updated_at': datetime.utcnow(),
                 'data_source': 'migration',
                 'version': '1.0'
+            }
+        }
+
+
+class ExoplanetSchema:
+    """Schema for exoplanets collection"""
+    
+    @staticmethod
+    def create_document(planet_data):
+        """Create an exoplanet document from CSV data"""
+        return {
+            '_id': planet_data.get('pl_name', '').replace(' ', '_').lower(),
+            'name': planet_data.get('pl_name', ''),
+            'letter': planet_data.get('pl_letter', ''),
+            'host_star': {
+                'name': planet_data.get('hostname', ''),
+                'hip_id': planet_data.get('host_hip_id'),
+                'hd_id': planet_data.get('host_hd_id'),
+                'gaia_id': planet_data.get('host_gaia_id'),
+                'tic_id': planet_data.get('host_tic_id'),
+                'distance_pc': planet_data.get('host_distance_pc'),
+                'coordinates': {
+                    'ra': planet_data.get('host_ra_deg') or planet_data.get('sky_coord_ra'),
+                    'dec': planet_data.get('host_dec_deg') or planet_data.get('sky_coord_dec')
+                },
+                'properties': {
+                    'v_magnitude': planet_data.get('host_v_magnitude'),
+                    'k_magnitude': planet_data.get('host_k_magnitude'),
+                    'temperature_k': planet_data.get('host_temperature_k'),
+                    'radius_solar': planet_data.get('host_radius_solar'),
+                    'mass_solar': planet_data.get('host_mass_solar'),
+                    'metallicity': planet_data.get('host_metallicity'),
+                    'spectral_type': planet_data.get('host_spectral_type')
+                }
+            },
+            'orbital_properties': {
+                'period_days': planet_data.get('orbital_period_days'),
+                'semi_major_axis_au': planet_data.get('semi_major_axis_au'),
+                'eccentricity': planet_data.get('orbital_eccentricity'),
+                'inclination_deg': planet_data.get('pl_orbincl'),
+                'longitude_periastron_deg': planet_data.get('pl_orblper'),
+                'time_periastron_jd': planet_data.get('pl_orbtper')
+            },
+            'physical_properties': {
+                'radius_earth': planet_data.get('planet_radius_earth'),
+                'radius_jupiter': planet_data.get('planet_radius_jupiter'),
+                'mass_earth': planet_data.get('planet_mass_earth'),
+                'mass_jupiter': planet_data.get('planet_mass_jupiter'),
+                'density_g_cm3': planet_data.get('pl_dens'),
+                'equilibrium_temperature_k': planet_data.get('equilibrium_temperature_k'),
+                'insolation_earth': planet_data.get('insolation_earth')
+            },
+            'discovery': {
+                'year': planet_data.get('discovery_year'),
+                'method': planet_data.get('discovery_method'),
+                'facility': planet_data.get('discovery_facility'),
+                'publication_date': planet_data.get('disc_pubdate'),
+                'reference': planet_data.get('pl_refname')
+            },
+            'habitability': {
+                'potentially_habitable': planet_data.get('potentially_habitable', False),
+                'habitable_zone_au': planet_data.get('habitable_zone_au'),
+                'planet_type': planet_data.get('planet_type', 'Unknown')
+            },
+            'detection_flags': {
+                'transit': planet_data.get('tran_flag', 0) == 1,
+                'radial_velocity': planet_data.get('rv_flag', 0) == 1,
+                'astrometry': planet_data.get('ast_flag', 0) == 1,
+                'imaging': planet_data.get('ima_flag', 0) == 1,
+                'microlensing': planet_data.get('micro_flag', 0) == 1
+            },
+            'metadata': {
+                'created_at': datetime.utcnow(),
+                'updated_at': datetime.utcnow(),
+                'data_source': 'exoplanet_archive',
+                'version': '1.0',
+                'confirmed': planet_data.get('soltype', '') == 'Published Confirmed'
             }
         }
 

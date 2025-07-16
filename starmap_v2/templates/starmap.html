@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starmap V2 - Interactive 3D Universe</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
+</head>
+<body>
+    <div class="container-fluid h-100">
+        <div class="row h-100">
+            <!-- Control Panel -->
+            <div class="col-md-3 col-lg-2 control-panel p-3">
+                <h4 class="text-primary mb-3">🌌 Starmap V2</h4>
+                
+                <!-- Status -->
+                <div id="status" class="alert alert-info small mb-3">
+                    Initializing starmap...
+                </div>
+                
+                <!-- Search -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Search Stars</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Star name...">
+                        <button class="btn btn-outline-primary" onclick="searchStars()">🔍</button>
+                    </div>
+                    <div id="searchResults" class="mt-2"></div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Filters</label>
+                    <div class="mb-2">
+                        <label class="form-label small">Magnitude Limit</label>
+                        <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5">
+                        <small class="text-muted">Max: <span id="magValue">8.0</span></small>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Star Limit</label>
+                        <select id="starLimit" class="form-select form-select-sm">
+                            <option value="500">500 stars</option>
+                            <option value="1000" selected>1000 stars</option>
+                            <option value="2000">2000 stars</option>
+                            <option value="5000">5000 stars</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Spectral Type</label>
+                        <select id="spectralType" class="form-select form-select-sm">
+                            <option value="">All Types</option>
+                            <option value="O">O - Blue Giants</option>
+                            <option value="B">B - Blue</option>
+                            <option value="A">A - White</option>
+                            <option value="F">F - Yellow-White</option>
+                            <option value="G">G - Yellow (Sun-like)</option>
+                            <option value="K">K - Orange</option>
+                            <option value="M">M - Red Dwarfs</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary btn-sm w-100" onclick="applyFilters()">Apply Filters</button>
+                </div>
+                
+                <!-- Overlays -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Overlays</label>
+                    <div class="row g-1">
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="nationsOverlay">
+                                <label class="form-check-label small" for="nationsOverlay">Nations</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="tradeRoutesOverlay">
+                                <label class="form-check-label small" for="tradeRoutesOverlay">Trade Routes</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="stellarRegionsOverlay">
+                                <label class="form-check-label small" for="stellarRegionsOverlay">Regions</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="galacticDirectionsOverlay">
+                                <label class="form-check-label small" for="galacticDirectionsOverlay">Directions</label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-success btn-sm w-100 mt-2" onclick="showNationsLegend()">
+                        🏛️ Nations Legend
+                    </button>
+                </div>
+                
+                <!-- Tools -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Tools</label>
+                    <button class="btn btn-outline-info btn-sm w-100 mb-2" onclick="resetView()">
+                        🎯 Reset View
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm w-100" onclick="exportData()">
+                        💾 Export CSV
+                    </button>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="mt-4">
+                    <label class="form-label small fw-bold">Statistics</label>
+                    <div id="stats" class="small text-muted">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Starmap -->
+            <div class="col-md-9 col-lg-10 p-0">
+                <div id="starmap" class="starmap-container"></div>
+                
+                <!-- Star Details Panel -->
+                <div id="starDetails" class="star-details-panel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">Star Details</h6>
+                            <button class="btn-close btn-close-white" onclick="hideStarDetails()"></button>
+                        </div>
+                        <div class="card-body" id="starDetailsContent">
+                            <p class="text-muted">Click on a star to see details</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Nations Legend Modal -->
+    <div class="modal fade" id="nationsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">🏛️ Fictional Nations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="nationsContent">
+                    Loading nations...
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/starmap.js') }}"></script>
+</body>
+</html>

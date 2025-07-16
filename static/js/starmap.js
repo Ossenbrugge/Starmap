@@ -1226,7 +1226,11 @@ async function measureDistance(starId1, starId2) {
         const response = await fetch(`/api/distance?star1=${starId1}&star2=${starId2}`);
         if (!response.ok) throw new Error('Distance calculation failed');
         
-        const distanceData = await response.json();
+        const responseData = await response.json();
+        if (!responseData.success) {
+            throw new Error('Distance calculation failed');
+        }
+        const distanceData = responseData.data;
         
         // Display distance results
         const searchResults = document.getElementById('searchResults');
@@ -1404,6 +1408,32 @@ async function loadNationsData() {
     } catch (error) {
         console.error('Error loading nations data:', error);
         updateStatus('Error loading nations data');
+    }
+}
+
+// Handle overlay changes from UI controls
+function handleOverlayChange(overlayType) {
+    switch(overlayType) {
+        case 'politicalOverlay':
+            togglePoliticalOverlay();
+            break;
+        case 'tradeRoutes':
+            toggleTradeRoutes();
+            break;
+        case 'territoryBorders':
+            toggleTerritoryBorders();
+            break;
+        case 'galacticDirections':
+            toggleGalacticDirections();
+            break;
+        case 'galacticGrid':
+            toggleGalacticGrid();
+            break;
+        case 'stellarRegions':
+            toggleStellarRegions();
+            break;
+        default:
+            console.warn('Unknown overlay type:', overlayType);
     }
 }
 

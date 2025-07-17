@@ -804,12 +804,11 @@ class StarmapApp {
             
             data.data.forEach(region => {
                 // Create octant boundaries using mesh3d
-                // Transform stellar regions to match actual star field coordinates
-                // Stars range from approximately -100 to +100 parsecs
-                // Regions are defined 0-130, so center them around 0
-                const x_range = region.x_range.map(x => x - 65); // Just center on 0, no scaling
-                const y_range = region.y_range.map(y => y - 65);
-                const z_range = region.z_range.map(z => z - 65);
+                // Stellar regions are already properly centered on Sol (0,0,0)
+                // No coordinate transformation needed - use regions as-is
+                const x_range = region.x_range; // Use coordinates directly
+                const y_range = region.y_range;
+                const z_range = region.z_range;
                 
                 // Define the 8 corners of the octant
                 const vertices = [

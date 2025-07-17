@@ -59,6 +59,14 @@ class Database:
                     reader = csv.DictReader(f)
                     for row in reader:
                         # Convert CSV row to star format
+                        distance = float(row['dist'])
+                        distance_limit = 30.0  # Apply 30 parsec limit
+                        
+                        # Skip fictional stars beyond distance limit
+                        if distance > distance_limit:
+                            print(f"⚠️  Skipping fictional star {row['id']} (distance: {distance} pc > {distance_limit} pc)")
+                            continue
+                        
                         fictional_star = {
                             'id': int(row['id']),
                             'name': row['proper'] if row['proper'] else f"HD {row['hd']}" if row['hd'] else f"Star {row['id']}",
@@ -69,7 +77,7 @@ class Database:
                             'z': float(row['z']),
                             'ra': float(row['ra']),
                             'dec': float(row['dec']),
-                            'distance': float(row['dist']),
+                            'distance': distance,
                             'magnitude': float(row['mag']),
                             'spectral_class': row['spect'] if row['spect'] else 'G5V',
                             'color_index': float(row['ci']) if row['ci'] else 0.0,
@@ -87,36 +95,6 @@ class Database:
                         # Add to cache
                         self._cache['stars'].append(fictional_star)
                         
-            # Add additional fictional stars that don't exist in the database
-            additional_fictional_stars = [
-                {
-                    'id': 52409,
-                    'name': 'Gj 380',
-                    'fictional_name': 'Gj 380',
-                    'fictional_description': 'Pentothia Prime - Neutral trading center controlled by reptilian merchants.',
-                    'x': 15.2,
-                    'y': -8.4,
-                    'z': 12.7,
-                    'ra': 200.5,
-                    'dec': -25.3,
-                    'distance': 22.1,
-                    'magnitude': 8.2,
-                    'spectral_class': 'K2V',
-                    'color_index': 0.9,
-                    'constellation': 'Cen',
-                    'constellation_full': 'Centaurus',
-                    'catalog_ids': [],
-                    'exoplanet_count': 0,
-                    'has_planets': False,
-                    'is_fictional': True
-                }
-            ]
-            
-            for star in additional_fictional_stars:
-                # Add political data from nations
-                self._add_political_data(star)
-                # Add to cache
-                self._cache['stars'].append(star)
                         
             print(f"✅ Loaded {len([s for s in self._cache['stars'] if s.get('is_fictional', False) or s['id'] >= 999999])} fictional stars")
         except Exception as e:
@@ -349,24 +327,10 @@ class Database:
         for star in raw_stars:
             try:
                 # Extract essential data
-                # Add some fictional names for key systems
+                # Add fictional names for the fictional stars
                 fictional_names = {
-                    113008: {'name': 'Valorgram', 'desc': 'Military capital of the Dorsai Republic, home to the legendary Citadel of Valoro.'},
-                    56828: {'name': 'Protelan Hub', 'desc': 'Ultra-capitalist trade hub of the Protelani Republic.'},
-                    52409: {'name': 'Gj 380', 'desc': 'Pentothia Prime - Neutral trading center controlled by reptilian merchants.'},
-                    32263: {'name': 'Sirius Gate', 'desc': 'Major industrial and administrative hub.'},
-                    71456: {'name': 'Centauri Station', 'desc': 'Administrative center of the Terran Directorate.'},
                     999999: {'name': 'Tiefe-Grenze Tor', 'desc': 'Deep frontier gateway system of the Felgenland Union, monitoring the outer boundaries of human space.'},
-                    0: {'name': 'Sol Central', 'desc': 'The heart of human civilization and seat of the Terran Directorate.'},
-                    48941: {'name': 'Holsten Tor', 'desc': 'Capital of the Felgenland Union, known for its Eclipse Festivals.'},
-                    46945: {'name': 'Brandenburgh Tor', 'desc': 'Manufacturing hub of the Felgenland Union.'},
-                    43464: {'name': 'Griefen Tor', 'desc': 'Resource extraction center of the Felgenland Union.'},
-                    115218: {'name': 'Tiefe-Grenze Tor Outpost', 'desc': 'Frontier outpost of the Felgenland Union.'},
-                    74766: {'name': 'Gliese Station', 'desc': 'Remote frontier trading post.'},
-                    53879: {'name': 'Lalande Colony', 'desc': 'Terran colonial outpost.'},
-                    70666: {'name': 'Proxima Base', 'desc': 'Terran frontier military base.'},
-                    71453: {'name': 'Alpha Centauri B Station', 'desc': 'Secondary Terran administrative center.'},
-                    101479: {'name': 'Capricorni Gate', 'desc': 'Strategic trade junction in the Felgenland Union territory.'}
+                    52409: {'name': 'Pentothia Prime', 'desc': 'Capital of the Pentothian Trade Conglomerate, home to reptilian traders. Neutral trading center controlling extensive frontier commerce.'}
                 }
                 
                 # Generate a good name for the star
@@ -475,6 +439,7 @@ class Database:
     def get_stars(self, limit: int = 1000, mag_limit: float = 8.0, spectral_type: str = '') -> List[Dict]:
         """Get filtered star data"""
         stars = self._cache.get('stars', [])
+        distance_limit = 30.0  # Maximum distance in parsecs
         
         # Separate fictional and non-fictional stars
         fictional_stars = []
@@ -482,11 +447,15 @@ class Database:
         
         for star in stars:
             if star.get('is_fictional', False):
+                if star['distance'] > distance_limit:
+                    continue
                 if spectral_type and not star['spectral_class'].startswith(spectral_type):
                     continue
                 fictional_stars.append(star)
             else:
                 if star['magnitude'] > mag_limit:
+                    continue
+                if star['distance'] > distance_limit:
                     continue
                 if spectral_type and not star['spectral_class'].startswith(spectral_type):
                     continue
@@ -563,9 +532,29 @@ class Database:
         }
     
     def get_fictional_exoplanets(self) -> List[Dict]:
-        """Get all fictional exoplanets"""
-        return self._cache.get('fictional_exoplanets', [])
+        """Get all fictional exoplanets within distance limit"""
+        distance_limit = 30.0
+        all_exoplanets = self._cache.get('fictional_exoplanets', [])
+        filtered_exoplanets = []
+        
+        for exoplanet in all_exoplanets:
+            # Check if the host star is within distance limit
+            host_star = self.get_star_by_id(exoplanet.get('star_id'))
+            if host_star and host_star.get('distance', 0) <= distance_limit:
+                filtered_exoplanets.append(exoplanet)
+        
+        return filtered_exoplanets
     
     def get_exoplanets(self) -> List[Dict]:
-        """Get all exoplanets (real catalog data)"""
-        return self._cache.get('exoplanets', [])
+        """Get all exoplanets (real catalog data) within distance limit"""
+        distance_limit = 30.0
+        all_exoplanets = self._cache.get('exoplanets', [])
+        filtered_exoplanets = []
+        
+        for exoplanet in all_exoplanets:
+            # Check distance - use host_distance_pc if available, otherwise check host star
+            exoplanet_distance = exoplanet.get('host_distance_pc', 0)
+            if exoplanet_distance > 0 and exoplanet_distance <= distance_limit:
+                filtered_exoplanets.append(exoplanet)
+        
+        return filtered_exoplanets

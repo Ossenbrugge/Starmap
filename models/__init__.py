@@ -1,1 +1,1 @@
-# Models package for Starmap application
+# Models package for Starmap V2

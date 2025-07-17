@@ -1,3152 +1,1400 @@
-// Starmap JavaScript Functionality
+/**
+ * Starmap V2 - Streamlined JavaScript
+ * Clean, efficient 3D starmap with modern features
+ */
 
-let currentStars = [];
-let starmapPlot = null;
-let highlightedStarId = null;
-let highlightTrace = null;
-let distanceMeasurementMode = false;
-let selectedStarsForDistance = [];
-let distanceTrace = null;
-
-// Political overlay variables
-let politicalOverlayActive = false;
-let tradeRoutesActive = false;
-let territoryBordersActive = false;
-let nationsData = {};
-let selectedNation = null;
-let politicalTraces = [];
-
-// Galactic directions variables
-let galacticDirectionsActive = false;
-let galacticGridActive = false;
-let galacticDirectionsData = {};
-let galacticDistance = 50;
-let galacticTraces = [];
-
-// Stellar regions variables
-let stellarRegionsActive = false;
-let stellarRegionsData = {};
-let stellarRegionsTraces = [];
-let selectedRegion = null;
-
-// Helper function to convert hex color to RGB values
-function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? 
-        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
-        '128, 128, 128'; // fallback gray
-}
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', function() {
-    setupEventListeners();
-    initializeStarmap(); // Initialize with server readiness check
-});
-
-async function initializeStarmap() {
-    updateStatus('Checking server connection...', true);
+class StarmapApp {
+    constructor() {
+        this.currentStars = [];
+        this.nations = [];
+        this.tradeRoutes = [];
+        this.plot = null;
+        this.selectedStar = null;
+        
+        // Configuration
+        this.config = {
+            maxStars: 1000,
+            maxMagnitude: 8.0,
+            spectralType: '',
+            overlays: {
+                nations: false,
+                tradeRoutes: false,
+                stellarRegions: false,
+                galacticDirections: false
+            }
+        };
+        
+        this.init();
+    }
     
-    // Check if server is ready
-    let serverReady = false;
-    let attempts = 0;
-    const maxAttempts = 10;
+    async init() {
+        this.showStatus('Initializing Starmap V2...', 'info');
+        this.setupEventListeners();
+        await this.loadInitialData();
+        this.createStarmap();
+        this.showStatus('Ready! Click on stars to explore the universe.', 'success');
+    }
     
-    while (!serverReady && attempts < maxAttempts) {
+    setupEventListeners() {
+        // Search
+        document.getElementById('searchInput').addEventListener('input', this.debounce(() => {
+            this.performSearch();
+        }, 300));
+        
+        // Filters
+        document.getElementById('magLimit').addEventListener('input', (e) => {
+            document.getElementById('magValue').textContent = e.target.value;
+        });
+        
+        // Overlays
+        document.getElementById('nationsOverlay').addEventListener('change', (e) => {
+            this.config.overlays.nations = e.target.checked;
+            this.updateOverlays();
+        });
+        
+        document.getElementById('tradeRoutesOverlay').addEventListener('change', (e) => {
+            this.config.overlays.tradeRoutes = e.target.checked;
+            this.updateOverlays();
+        });
+        
+        document.getElementById('stellarRegionsOverlay').addEventListener('change', (e) => {
+            this.config.overlays.stellarRegions = e.target.checked;
+            this.updateOverlays();
+        });
+        
+        document.getElementById('galacticDirectionsOverlay').addEventListener('change', (e) => {
+            this.config.overlays.galacticDirections = e.target.checked;
+            this.updateOverlays();
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') this.hideStarDetails();
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('searchInput').focus();
+            }
+        });
+    }
+    
+    async loadInitialData() {
         try {
-            const response = await fetch('/api/stars?limit=1');
-            if (response.ok) {
-                serverReady = true;
+            // Load stats first
+            const statsResponse = await fetch('/api/stats');
+            const statsData = await statsResponse.json();
+            if (statsData.success) {
+                this.updateStats(statsData.data);
+            }
+            
+            // Load nations for overlays
+            const nationsResponse = await fetch('/api/nations');
+            const nationsData = await nationsResponse.json();
+            if (nationsData.success) {
+                this.nations = nationsData.data;
+            }
+            
+            // Load initial star data
+            await this.loadStars();
+            
+        } catch (error) {
+            console.error('Error loading initial data:', error);
+            this.showStatus('Error loading data. Please refresh the page.', 'danger');
+        }
+    }
+    
+    async loadStars() {
+        this.showStatus('Loading stars...', 'info');
+        
+        try {
+            const limit = document.getElementById('starLimit').value;
+            const magLimit = document.getElementById('magLimit').value;
+            const spectralType = document.getElementById('spectralType').value;
+            
+            const url = `/api/stars?limit=${limit}&mag_limit=${magLimit}&spectral_type=${spectralType}`;
+            console.log('Loading stars from:', url);
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            console.log('Stars API response:', data);
+            
+            if (data.success) {
+                this.currentStars = data.data;
+                console.log('Loaded stars:', this.currentStars.length, 'First star:', this.currentStars[0]);
+                this.showStatus(`Loaded ${this.currentStars.length} stars`, 'success');
+                return true;
             } else {
-                throw new Error('Server not ready');
+                throw new Error(data.error || 'Failed to load stars');
             }
         } catch (error) {
-            attempts++;
-            console.log(`Server check attempt ${attempts}/${maxAttempts} failed:`, error.message);
-            if (attempts < maxAttempts) {
-                updateStatus(`Waiting for server... (${attempts}/${maxAttempts})`, true);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+            console.error('Error loading stars:', error);
+            this.showStatus('Error loading stars: ' + error.message, 'danger');
+            return false;
         }
     }
     
-    if (serverReady) {
-        updateStarmap(); // Load initial starmap
-    } else {
-        updateStatus('Failed to connect to server. Please refresh the page.', false);
-    }
-}
-
-function setupEventListeners() {
-    // Range slider updates
-    document.getElementById('magLimit').addEventListener('input', function() {
-        document.getElementById('magValue').textContent = this.value;
-    });
-    
-    document.getElementById('starCount').addEventListener('input', function() {
-        document.getElementById('countValue').textContent = this.value;
-    });
-    
-    // Search on Enter key
-    document.getElementById('starSearch').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchStars();
-        }
-    });
-}
-
-function updateStatus(message, isLoading = false) {
-    const statusBar = document.getElementById('statusBar');
-    if (isLoading) {
-        statusBar.innerHTML = `<div class="loading"></div>${message}`;
-        statusBar.className = 'alert alert-warning';
-    } else {
-        statusBar.innerHTML = message;
-        statusBar.className = 'alert alert-info';
-    }
-}
-
-async function updateStarmap(retryCount = 0) {
-    const magLimit = document.getElementById('magLimit').value;
-    const starCount = document.getElementById('starCount').value;
-    
-    updateStatus('Loading starmap...', true);
-    
-    try {
-        // Fetch star data with timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    createStarmap() {
+        console.log('Creating starmap with', this.currentStars.length, 'stars');
         
-        const response = await fetch('/api/stars', {
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!this.currentStars.length) {
+            this.showStatus('No star data available', 'warning');
+            return;
         }
         
-        const responseData = await response.json();
+        // Filter out stars with invalid coordinates
+        const validStars = this.currentStars.filter(star => 
+            star.x != null && star.y != null && star.z != null &&
+            !isNaN(star.x) && !isNaN(star.y) && !isNaN(star.z)
+        );
         
-        // Handle API response format with data field
-        if (responseData.success && responseData.data) {
-            currentStars = responseData.data;
-        } else if (Array.isArray(responseData)) {
-            // Fallback for direct array response
-            currentStars = responseData;
-        } else {
-            throw new Error('Invalid data format received from server');
+        console.log('Valid stars after filtering:', validStars.length);
+        console.log('Sample valid star:', validStars[0]);
+        
+        if (!validStars.length) {
+            this.showStatus('No stars with valid coordinates', 'warning');
+            return;
         }
         
-        if (!Array.isArray(currentStars)) {
-            throw new Error('Invalid data format received from server');
-        }
+        // Prepare data for Plotly
+        const x = validStars.map(star => star.x);
+        const y = validStars.map(star => star.y);
+        const z = validStars.map(star => star.z);
+        const colors = validStars.map(star => this.getStarColor(star));
+        const sizes = validStars.map(star => this.getStarSize(star));
+        const text = validStars.map(star => this.getStarTooltip(star));
         
-        // Filter stars based on parameters
-        let filteredStars = currentStars
-            .filter(star => star.mag <= parseFloat(magLimit))
-            .slice(0, parseInt(starCount));
-        
-        // Create 3D scatter plot
         const trace = {
-            x: filteredStars.map(star => star.x),
-            y: filteredStars.map(star => star.y),
-            z: filteredStars.map(star => star.z),
+            x: x,
+            y: y,
+            z: z,
             mode: 'markers',
             type: 'scatter3d',
+            name: 'Stars',
             marker: {
-                size: filteredStars.map(star => {
-                    const baseSize = Math.max(2, 8 - star.mag);
-                    // Reduce Sol's (star ID 0) circle radius by half
-                    // Increase size slightly for stars with exoplanets to make them more prominent
-                    const sizeMultiplier = star.has_exoplanets ? 1.2 : 1;
-                    return star.id === 0 ? baseSize / 2 : baseSize * sizeMultiplier;
-                }), // Brighter stars are bigger, exoplanet hosts are slightly larger
-                color: filteredStars.map(star => star.mag),
-                colorscale: [
-                    [0, '#ffffff'],      // Bright stars - white
-                    [0.3, '#ffff99'],    // Yellow
-                    [0.6, '#ff9933'],    // Orange
-                    [1, '#ff3333']       // Dim stars - red
-                ],
-                colorbar: {
-                    title: 'Magnitude',
-                    titleside: 'right'
-                },
+                size: sizes,
+                color: colors,
                 opacity: 0.8,
-                symbol: filteredStars.map(star => star.has_exoplanets ? 'diamond' : 'circle'),
                 line: {
-                    width: filteredStars.map(star => star.has_exoplanets ? 2 : 0),
-                    color: filteredStars.map(star => star.has_exoplanets ? '#00ff88' : 'transparent')
+                    color: 'rgba(255, 255, 255, 0.1)',
+                    width: 0.5
                 }
             },
-            text: filteredStars.map(star => 
-                `${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}<br>` +
-                `${star.designation_type === 'proper' ? 'Common Name' : 'Designation'}: ${star.designation_type}<br>` +
-                `Constellation: ${star.constellation_full || star.constellation}<br>` +
-                `Magnitude: ${star.mag.toFixed(2)}<br>` +
-                `Distance: ${star.dist.toFixed(2)} pc<br>` +
-                `Spectral Class: ${star.spect}<br>` +
-                (star.fictional_name ? `🌟 Local Name: ${star.fictional_name}<br>` : '') +
-                (star.has_exoplanets ? `🪐 Exoplanets: ${star.exoplanet_count}<br>` : '') +
-                `Coordinates: (${star.x.toFixed(2)}, ${star.y.toFixed(2)}, ${star.z.toFixed(2)})`
-            ),
+            text: text,
             hovertemplate: '%{text}<extra></extra>',
-            customdata: filteredStars.map(star => star.id)
+            customdata: validStars.map((star, index) => index)
         };
         
         const layout = {
             title: {
-                text: `3D Starmap - ${filteredStars.length} Stars (Mag ≤ ${magLimit})`,
-                font: { color: 'white', size: 16 }
+                text: 'Interactive 3D Starmap',
+                font: { color: '#ffffff', size: 18 }
             },
             scene: {
                 xaxis: { 
                     title: 'X (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
+                    color: '#ffffff',
+                    gridcolor: 'rgba(255, 255, 255, 0.1)',
+                    showbackground: false,
+                    autorange: true
                 },
                 yaxis: { 
                     title: 'Y (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
+                    color: '#ffffff',
+                    gridcolor: 'rgba(255, 255, 255, 0.1)',
+                    showbackground: false,
+                    autorange: true
                 },
                 zaxis: { 
                     title: 'Z (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
+                    color: '#ffffff',
+                    gridcolor: 'rgba(255, 255, 255, 0.1)',
+                    showbackground: false,
+                    autorange: true
                 },
-                bgcolor: '#000000',
+                bgcolor: 'rgba(0, 0, 0, 0)',
                 camera: {
                     eye: { x: 1.5, y: 1.5, z: 1.5 }
                 }
             },
-            paper_bgcolor: '#000000',
-            plot_bgcolor: '#000000',
-            font: { color: 'white' },
+            paper_bgcolor: 'rgba(0, 0, 0, 0)',
+            plot_bgcolor: 'rgba(0, 0, 0, 0)',
+            font: { color: '#ffffff' },
             margin: { l: 0, r: 0, t: 40, b: 0 }
         };
         
         const config = {
-            displayModeBar: true,
-            displaylogo: false,
-            modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
             responsive: true,
-            doubleClick: 'reset'
+            displayModeBar: true,
+            modeBarButtonsToRemove: ['pan2d', 'select2d', 'lasso2d'],
+            displaylogo: false
         };
         
-        // Create the plot
-        starmapPlot = await Plotly.newPlot('starmap', [trace], layout, config);
-        
-        // Add legend click event listener to prevent default double-click behavior
-        document.getElementById('starmap').on('plotly_legendclick', function(data) {
-            // Allow single clicks on legend items but prevent double-click toggle all
-            return false; // This prevents the default behavior
-        });
-        
-        document.getElementById('starmap').on('plotly_legenddoubleclick', function(data) {
-            // Prevent double-click legend behavior entirely
-            return false;
-        });
-        
-        // Add click event listener
-        document.getElementById('starmap').on('plotly_click', function(data) {
-            try {
+        Plotly.newPlot('starmap', [trace], layout, config).then(() => {
+            // Add click event listener
+            document.getElementById('starmap').on('plotly_click', (data) => {
                 if (data.points && data.points.length > 0) {
-                    const point = data.points[0];
-                    
-                    // Check if this is a stellar region click
-                    if (point.data && point.data.name && point.data.name.startsWith('Region: ')) {
-                        const regionName = point.data.name.replace('Region: ', '');
-                        console.debug('Stellar region clicked:', regionName);
-                        
-                        // Select the region in the dropdown
-                        const regionSelect = document.getElementById('regionSelect');
-                        if (regionSelect) {
-                            regionSelect.value = regionName;
-                            handleRegionSelection();
-                        }
-                        return;
-                    }
-                    
-                    // Only process clicks on the main star trace (trace index 0) with valid customdata
-                    if (point.curveNumber === 0 && point.customdata && 
-                        typeof point.customdata === 'number' && point.customdata > 0) {
-                        
-                        const starId = point.customdata;
-                        
-                        if (distanceMeasurementMode) {
-                            handleDistanceModeClick(starId);
-                        } else {
-                            selectStar(starId);
-                        }
-                    } else {
-                        console.debug('Click ignored - not on main star trace or invalid customdata:', {
-                            curveNumber: point.curveNumber,
-                            customdata: point.customdata,
-                            hasValidCustomdata: point.customdata && typeof point.customdata === 'number' && point.customdata > 0
-                        });
-                    }
-                } else {
-                    // Handle empty space clicks - prevent default camera movement
-                    console.debug('Click on empty space - preventing default behavior');
-                    return false;
+                    const pointIndex = data.points[0].customdata;
+                    this.selectStar(validStars[pointIndex]);
                 }
-            } catch (error) {
-                console.error('Error handling star click:', error);
-                updateStatus('Error processing star selection');
-            }
-        });
-        
-        updateStatus(`Loaded ${filteredStars.length} stars successfully`);
-        
-        // Reapply political overlay if it was active
-        reapplyPoliticalOverlay();
-        
-        // Reapply stellar regions overlay if it was active
-        reapplyStellarRegionsOverlay();
-        
-    } catch (error) {
-        console.error('Error updating starmap:', error);
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
-        });
-        
-        // Retry logic for network errors
-        if ((error.name === 'AbortError' || error.message.includes('fetch')) && retryCount < 3) {
-            console.log(`Retrying starmap load... Attempt ${retryCount + 1}`);
-            updateStatus(`Connection failed, retrying... (${retryCount + 1}/3)`, true);
-            setTimeout(() => updateStarmap(retryCount + 1), 2000);
-            return;
-        }
-        
-        updateStatus(`Error loading starmap: ${error.message}. Check browser console for details.`, false);
-    }
-}
-
-async function selectStar(starId) {
-    try {
-        updateStatus(`Loading details for star ${starId}...`, true);
-        
-        const response = await fetch(`/api/star/${starId}`);
-        if (!response.ok) throw new Error('Failed to fetch star details');
-        
-        const apiResponse = await response.json();
-        
-        // Extract star data from API response
-        if (!apiResponse.success || !apiResponse.data) {
-            throw new Error('Invalid response format');
-        }
-        
-        const starData = apiResponse.data;
-        
-        // Show star details
-        showStarDetails(starData);
-        
-        // Highlight star on map
-        highlightStarOnMap(starId, starData);
-        
-        // Show star in search results
-        showStarInSearch(starData);
-        
-    } catch (error) {
-        console.error('Error selecting star:', error);
-        updateStatus(`Error loading star details: ${error.message}`);
-    }
-}
-
-function showStarInSearch(starData) {
-    const searchResults = document.getElementById('searchResults');
-    const searchResultsList = document.getElementById('searchResultsList');
-    const searchInput = document.getElementById('starSearch');
-    
-    // Update search input with star name
-    searchInput.value = starData.name;
-    
-    // Create search result display for selected star
-    let resultsHtml = `<p><strong>Selected Star</strong></p>`;
-    resultsHtml += `
-        <div class="search-result-item mb-2 p-2 selected-star" style="border: 2px solid #74b9ff; border-radius: 4px; background-color: rgba(116, 185, 255, 0.1);">
-            <div class="fw-bold text-info">${starData.name}</div>
-            <small class="text-muted">
-                ${starData.designation_type} • ${starData.constellation_full || starData.constellation}<br>
-                Mag: ${starData.properties.magnitude.toFixed(2)} • Dist: ${starData.coordinates.dist.toFixed(2)} pc
-            </small>
-            <div class="mt-1">
-                <button class="btn btn-sm btn-outline-light" onclick="clearHighlight()">Clear Selection</button>
-            </div>
-        </div>
-    `;
-    
-    searchResultsList.innerHTML = resultsHtml;
-    searchResults.style.display = 'block';
-}
-
-function highlightStarOnMap(starId, starData) {
-    if (!starmapPlot) return;
-    
-    // Remove previous highlight without clearing panels
-    if (highlightedStarId) {
-        const plotDiv = document.getElementById('starmap');
-        if (plotDiv && plotDiv.data) {
-            const traces = plotDiv.data;
-            const highlightIndex = traces.findIndex(trace => trace.name === 'Selected Star');
+            });
             
-            if (highlightIndex !== -1) {
-                Plotly.deleteTraces('starmap', highlightIndex);
+            this.plot = document.getElementById('starmap');
+            this.updateOverlays();
+            this.showStatus(`Displaying ${validStars.length} stars in 3D space`, 'success');
+        }).catch(error => {
+            console.error('Error creating starmap:', error);
+            this.showStatus('Error creating 3D visualization', 'danger');
+        });
+    }
+    
+    getStarColor(star) {
+        // Color by nation if nations overlay is active
+        if (this.config.overlays.nations && star.nation) {
+            return star.nation.color;
+        }
+        
+        // Fictional stars get a special color
+        if (star.is_fictional) {
+            return '#ff6b6b'; // Bright red for fictional stars
+        }
+        
+        // Stars with exoplanets get a special tint
+        if (star.has_planets || star.exoplanet_count > 0) {
+            return '#4ecdc4'; // Teal for stars with planets
+        }
+        
+        // Default color by spectral type
+        const spectralClass = star.spectral_class || '';
+        const spectral = spectralClass.length > 0 ? spectralClass[0].toUpperCase() : 'G';
+        const colors = {
+            'O': '#9bb0ff', 'B': '#aabfff', 'A': '#cad7ff',
+            'F': '#f8f7ff', 'G': '#fff4ea', 'K': '#ffd2a1', 'M': '#ffad51'
+        };
+        return colors[spectral] || '#fff4ea';
+    }
+    
+    getStarSize(star) {
+        // Special handling for Sol
+        if (star.name === 'Sol' || star.id === 0) {
+            return 15; // Make Sol very prominent
+        }
+        
+        // Special handling for important fictional stars
+        if (star.fictional_name === 'Tiefe-Grenze Tor' || star.id === 999999) {
+            return 12; // Make Tiefe-Grenze Tor prominent
+        }
+        
+        // Make fictional stars more prominent
+        if (star.is_fictional) {
+            return 10; // Make fictional stars prominent
+        }
+        
+        // Stars with exoplanets are slightly larger
+        if (star.has_planets || star.exoplanet_count > 0) {
+            const mag = star.magnitude || 8.0;
+            return Math.max(4, Math.min(12, 17 - mag * 2));
+        }
+        
+        // Convert magnitude to size (brighter stars = larger size)
+        const mag = star.magnitude || 8.0;
+        return Math.max(2, Math.min(12, 15 - mag * 2));
+    }
+    
+    getStarTooltip(star) {
+        let tooltip = `<b>${star.fictional_name || star.name || 'Unknown Star'}</b><br>`;
+        tooltip += `Magnitude: ${(star.magnitude || 0).toFixed(2)}<br>`;
+        tooltip += `Spectral: ${star.spectral_class || 'Unknown'}<br>`;
+        tooltip += `Distance: ${(star.distance || 0).toFixed(1)} pc<br>`;
+        tooltip += `Constellation: ${star.constellation_full || star.constellation || 'Unknown'}`;
+        
+        if (star.nation) {
+            tooltip += `<br><b>Controlled by: ${star.nation.name}</b>`;
+        }
+        
+        if (star.has_planets) {
+            tooltip += `<br>🪐 ${star.exoplanet_count || 0} planet(s)`;
+        }
+        
+        return tooltip;
+    }
+    
+    async selectStar(star) {
+        this.selectedStar = star;
+        this.showStatus(`Loading details for ${star.fictional_name || star.name}...`, 'info');
+        
+        try {
+            const response = await fetch(`/api/star/${star.id}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showStarDetails(data.data);
+                this.showStatus(`Selected: ${star.fictional_name || star.name}`, 'success');
+            } else {
+                throw new Error(data.error || 'Failed to load star details');
             }
+        } catch (error) {
+            console.error('Error loading star details:', error);
+            this.showStatus('Error loading star details', 'danger');
         }
     }
     
-    // Store highlighted star ID
-    highlightedStarId = starId;
-    
-    // Create highlight trace
-    highlightTrace = {
-        x: [starData.coordinates.x],
-        y: [starData.coordinates.y],
-        z: [starData.coordinates.z],
-        mode: 'markers',
-        type: 'scatter3d',
-        marker: {
-            size: starData.id === 0 ? 7.5 : 15, // Reduce Sol's highlight size by half
-            color: '#ff6b6b',
-            symbol: 'circle-open',
-            line: {
-                color: '#ff6b6b',
-                width: 4
-            }
-        },
-        text: [`SELECTED: ${starData.fictional_data && starData.fictional_data.name ? `${starData.fictional_data.name} (${starData.name})` : starData.name}`],
-        hovertemplate: '%{text}<extra></extra>',
-        name: 'Selected Star',
-        showlegend: false
-    };
-    
-    // Add highlight trace to the plot
-    Plotly.addTraces('starmap', highlightTrace);
-}
-
-function clearHighlight() {
-    if (!starmapPlot) return;
-    
-    // Remove highlight trace if it exists
-    const plotDiv = document.getElementById('starmap');
-    if (plotDiv && plotDiv.data) {
-        const traces = plotDiv.data;
-        const highlightIndex = traces.findIndex(trace => trace.name === 'Selected Star');
+    showStarDetails(star) {
+        const panel = document.getElementById('starDetails');
+        const content = document.getElementById('starDetailsContent');
         
-        if (highlightIndex !== -1) {
-            Plotly.deleteTraces('starmap', highlightIndex);
-        }
-    }
-    
-    // Clear state
-    highlightedStarId = null;
-    highlightTrace = null;
-    
-    // Clear search results
-    document.getElementById('searchResults').style.display = 'none';
-    document.getElementById('starSearch').value = '';
-    
-    // Hide star info panels
-    document.getElementById('starInfo').style.display = 'none';
-    document.getElementById('planetInfo').style.display = 'none';
-    
-    updateStatus('Selection cleared');
-}
-
-function getHabitabilityHtml(starData) {
-    // Create habitability section HTML - check both direct properties and nested habitability object
-    let habitabilityData = starData.habitability || {};
-    
-    // Support both formats for backward compatibility
-    const score = habitabilityData.score !== undefined ? habitabilityData.score : starData.habitability_score;
-    const category = habitabilityData.category || starData.habitability_category || 'Unknown';
-    const priority = habitabilityData.exploration_priority || starData.exploration_priority || 'Unknown';
-    
-    // If no habitability data available, return empty
-    if (score === undefined || score === null) {
-        return '';
-    }
-    
-    // Determine color based on habitability category
-    let categoryColor = 'secondary';
-    let priorityColor = 'secondary';
-    
-    switch (category) {
-        case 'Excellent':
-            categoryColor = 'success';
-            break;
-        case 'Good':
-            categoryColor = 'primary';
-            break;
-        case 'Moderate':
-            categoryColor = 'warning';
-            break;
-        case 'Poor':
-            categoryColor = 'danger';
-            break;
-        case 'Unsuitable':
-            categoryColor = 'dark';
-            break;
-    }
-    
-    switch (priority) {
-        case 'High':
-            priorityColor = 'success';
-            break;
-        case 'Medium-High':
-            priorityColor = 'primary';
-            break;
-        case 'Medium':
-            priorityColor = 'warning';
-            break;
-        case 'Low':
-            priorityColor = 'danger';
-            break;
-        case 'None':
-            priorityColor = 'dark';
-            break;
-    }
-    
-    return `
-        <div class="habitability-section mb-3 p-2" style="background-color: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; border-radius: 4px;">
-            <div class="star-property">
-                <span><strong>🌍 Habitability Score:</strong></span>
-                <span class="fw-bold">${(score * 100).toFixed(1)}%</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Category:</strong></span>
-                <span class="badge bg-${categoryColor}">${category}</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Exploration Priority:</strong></span>
-                <span class="badge bg-${priorityColor}">${priority}</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Assessment:</strong></span>
-                <span class="text-muted small" id="habitability-explanation-${starData.id}">Loading...</span>
-            </div>
-        </div>
-    `;
-}
-
-function showStarDetails(starData) {
-    try {
-        updateStatus(`Showing details for ${starData.name}`);
-        
-        // Show star information panel
-        const starInfoPanel = document.getElementById('starInfo');
-        const starDetails = document.getElementById('starDetails');
-        
-        // Display all names and identifiers
-        let allNamesHtml = '';
-        if (starData.all_names && starData.all_names.length > 1) {
-            allNamesHtml = `
-                <div class="star-property">
-                    <span><strong>Other Names:</strong></span>
-                    <span>${starData.all_names.slice(1).join(', ')}</span>
+        let html = `
+            <h6 class="text-primary">${star.fictional_data?.name || star.name}</h6>
+            ${star.fictional_data?.name ? `<p class="small text-muted">${star.name}</p>` : ''}
+            
+            <div class="row">
+                <div class="col-6">
+                    <strong>Magnitude:</strong><br>
+                    <span class="text-info">${(star.magnitude || 0).toFixed(2)}</span>
                 </div>
-            `;
-        }
-        
-        let catalogIdsHtml = '';
-        if (starData.catalog_ids && starData.catalog_ids.length > 0) {
-            catalogIdsHtml = `
-                <div class="star-property">
-                    <span><strong>Catalog IDs:</strong></span>
-                    <span>${starData.catalog_ids.join(', ')}</span>
+                <div class="col-6">
+                    <strong>Distance:</strong><br>
+                    <span class="text-info">${(star.distance || 0).toFixed(1)} pc</span>
                 </div>
-            `;
-        }
-
-        // Build nation data section if available
-        let nationDataHtml = '';
-        if (starData.nation && starData.nation.id !== 'neutral_zone') {
-            nationDataHtml = `
-                <div class="nation-data-section mb-3 p-2" style="background-color: rgba(${hexToRgb(starData.nation.color)}, 0.1); border: 1px solid ${starData.nation.color}; border-radius: 4px;">
-                    <div class="star-property">
-                        <span><strong>🏛️ Political Control:</strong></span>
-                        <span class="fw-bold" style="color: ${starData.nation.color};">${starData.nation.name}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Government:</strong></span>
-                        <span class="text-muted small">${starData.nation.government_type}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Population:</strong></span>
-                        <span class="text-muted small">${starData.nation.population}</span>
-                    </div>
-                    ${starData.nation.capital_system ? `
-                        <div class="star-property">
-                            <span><strong>Capital System:</strong></span>
-                            <span class="text-muted small">${starData.nation.capital_system}</span>
-                        </div>
-                    ` : ''}
+            </div>
+            
+            <div class="row mt-2">
+                <div class="col-6">
+                    <strong>Spectral Class:</strong><br>
+                    <span class="text-warning">${star.spectral_class || 'Unknown'}</span>
                 </div>
-            `;
-        }
-
-        // Build fictional data section if available
-        let fictionalDataHtml = '';
-        if (starData.fictional_data && starData.fictional_data.name) {
-            fictionalDataHtml = `
-                <div class="fictional-data-section mb-3 p-2" style="background-color: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 4px;">
-                    <div class="star-property">
-                        <span><strong>🌟 Local Name:</strong></span>
-                        <span class="text-warning fw-bold">${starData.fictional_data.name}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Source:</strong></span>
-                        <span class="text-muted small">${starData.fictional_data.source}</span>
-                    </div>
-                    ${starData.fictional_data.description ? `
-                        <div class="star-property">
-                            <span><strong>Description:</strong></span>
-                            <span class="text-muted small">${starData.fictional_data.description}</span>
-                        </div>
-                    ` : ''}
+                <div class="col-6">
+                    <strong>Constellation:</strong><br>
+                    <span class="text-success">${star.constellation_full || star.constellation || 'Unknown'}</span>
                 </div>
-            `;
-        }
-
-        starDetails.innerHTML = `
-            <h6 class="text-primary">${starData.name}</h6>
-            ${nationDataHtml}
-            ${fictionalDataHtml}
-            <div class="star-property">
-                <span><strong>Type:</strong></span>
-                <span class="badge bg-info">${starData.designation_type}</span>
             </div>
-            ${allNamesHtml}
-            ${catalogIdsHtml}
-            <div class="star-property">
-                <span><strong>Constellation:</strong></span>
-                <span>${starData.constellation_full || starData.constellation}</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Magnitude:</strong></span>
-                <span>${starData.properties.magnitude.toFixed(2)}</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Distance:</strong></span>
-                <span>${starData.coordinates.dist.toFixed(2)} pc</span>
-            </div>
-            <div class="star-property">
-                <span><strong>Spectral Class:</strong></span>
-                <span>${starData.properties.spectral_class}</span>
-            </div>
-            ${starData.has_exoplanets ? `
-                <div class="star-property">
-                    <span><strong>🪐 Exoplanets:</strong></span>
-                    <span class="badge bg-success">${starData.exoplanet_count} confirmed planet${starData.exoplanet_count > 1 ? 's' : ''}</span>
-                </div>
-            ` : ''}
-            ${getHabitabilityHtml(starData)}
-            <div class="star-property">
-                <span><strong>Coordinates:</strong></span>
-                <span>(${starData.coordinates.x.toFixed(2)}, ${starData.coordinates.y.toFixed(2)}, ${starData.coordinates.z.toFixed(2)})</span>
+            
+            <div class="mt-3">
+                <strong>Coordinates:</strong><br>
+                <small class="text-muted">
+                    RA: ${(star.ra || 0).toFixed(3)}° | Dec: ${(star.dec || 0).toFixed(3)}°<br>
+                    XYZ: (${(star.x || 0).toFixed(1)}, ${(star.y || 0).toFixed(1)}, ${(star.z || 0).toFixed(1)})
+                </small>
             </div>
         `;
         
-        starInfoPanel.style.display = 'block';
-        
-        // Fetch and display habitability explanation if habitability data is available
-        if (starData.habitability_score !== undefined) {
-            fetchHabitabilityExplanation(starData.id);
+        if (star.fictional_data?.description) {
+            html += `
+                <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
+                    <small><strong>Fictional Universe:</strong><br>
+                    ${star.fictional_data.description}</small>
+                </div>
+            `;
         }
         
-        // Show planetary system if available
-        if (starData.planets && starData.planets.length > 0) {
-            const planetInfoPanel = document.getElementById('planetInfo');
-            const planetDetails = document.getElementById('planetDetails');
-            const planetSystemTitle = document.getElementById('planetSystemTitle');
-            const systemViewToggle = document.getElementById('systemViewToggle');
+        if (star.nation) {
+            html += `
+                <div class="mt-3 p-2 rounded" style="background-color: ${star.nation.color}20; border-left: 3px solid ${star.nation.color}">
+                    <strong>Political Control:</strong><br>
+                    <span style="color: ${star.nation.color}">${star.nation.name}</span><br>
+                    <small class="text-muted">Capital: ${star.nation.capital_system}</small>
+                </div>
+            `;
+        }
+        
+        if (star.habitability?.has_planets) {
+            html += `
+                <div class="mt-3 p-2 bg-info bg-opacity-10 rounded">
+                    <strong>Planetary System:</strong><br>
+                    🪐 ${star.habitability.planet_count} confirmed planet(s)
+                </div>
+            `;
+        }
+        
+        content.innerHTML = html;
+        panel.style.display = 'block';
+        
+        // Add minimap for planetary orbits
+        this.createPlanetaryMinimap(star);
+    }
+    
+    async createPlanetaryMinimap(star) {
+        try {
+            // Load both fictional and real exoplanets to see if this star has any
+            const [fictionalResponse, realResponse] = await Promise.all([
+                fetch('/api/fictional-exoplanets'),
+                fetch('/api/exoplanets')
+            ]);
             
-            // Update title
-            planetSystemTitle.textContent = `${starData.name} System (${starData.planets.length} planets)`;
+            const fictionalData = await fictionalResponse.json();
+            const realData = await realResponse.json();
             
-            // Show system view button
-            systemViewToggle.style.display = 'block';
-            systemViewToggle.onclick = () => {
-                // Adapt starData structure for planetary system module
-                const adaptedPlanets = (starData.planets || []).map(planet => {
-                    const massEarth = parseFloat(planet.planet_mass_earth) || null;
-                    const radiusEarth = parseFloat(planet.planet_radius_earth) || null;
-                    const massJupiter = parseFloat(planet.planet_mass_jupiter) || null;
-                    
-                    // Determine planet type if not provided
-                    let planetType = planet.planet_type || 'Unknown';
-                    if (planetType === 'Unknown') {
-                        if (massJupiter && massJupiter > 0.5) {
-                            planetType = 'Gas Giant';
-                        } else if (radiusEarth) {
-                            if (radiusEarth < 1.5) planetType = 'Terrestrial';
-                            else if (radiusEarth < 4) planetType = 'Super-Earth';
-                            else if (radiusEarth < 8) planetType = 'Neptune-like';
-                            else planetType = 'Gas Giant';
-                        } else if (massEarth) {
-                            if (massEarth < 2) planetType = 'Terrestrial';
-                            else if (massEarth < 10) planetType = 'Super-Earth';
-                            else if (massEarth < 50) planetType = 'Neptune-like';
-                            else planetType = 'Gas Giant';
-                        }
-                    }
-                    
-                    return {
-                        name: planet.pl_name || 'Unknown Planet',
-                        type: planetType,
-                        distance_au: parseFloat(planet.semi_major_axis_au) || 0,
-                        mass_earth: massEarth,
-                        radius_earth: radiusEarth,
-                        orbital_period_days: parseFloat(planet.orbital_period_days) || 0,
-                        discovery_year: planet.disc_year || 'Unknown',
-                        discovery_method: planet.discoverymethod || 'Unknown',
-                        equilibrium_temperature_k: parseFloat(planet.equilibrium_temperature_k) || null
-                    };
+            if (!fictionalData.success || !realData.success) return;
+            
+            // Find planets for this star
+            const fictionalPlanets = fictionalData.data.filter(planet => planet.star_id === star.id);
+            const realPlanets = realData.data.filter(planet => {
+                // Try to match by star name or ID
+                return planet.host_star === star.name || 
+                       planet.host_star === star.fictional_name ||
+                       planet.star_id === star.id;
+            });
+            
+            const starPlanets = [...fictionalPlanets, ...realPlanets];
+            
+            // Only show minimap if star has planets
+            if (starPlanets.length === 0 && !star.has_planets) return;
+            
+            // Add minimap section to the star details
+            const content = document.getElementById('starDetailsContent');
+            const minimapHtml = `
+                <div class="mt-3 p-2 bg-secondary bg-opacity-10 rounded">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>System Overview</strong>
+                        <small class="text-muted">${starPlanets.length} planet(s)</small>
+                    </div>
+                    <canvas id="planetaryMinimap" width="250" height="150" style="background: #1a1a1a; border-radius: 4px; width: 100%; height: auto;"></canvas>
+                </div>
+            `;
+            
+            content.innerHTML += minimapHtml;
+            
+            // Draw the minimap
+            const canvas = document.getElementById('planetaryMinimap');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw star at center
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const starRadius = 8;
+            
+            // Draw star
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, starRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = this.getStarColor(star);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // Draw star label
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(star.fictional_name || star.name, centerX, centerY - starRadius - 5);
+            
+            if (starPlanets.length > 0) {
+                // Sort planets by orbital distance
+                const sortedPlanets = starPlanets.sort((a, b) => {
+                    const aDistance = a.semi_major_axis || (a.orbital_period ? Math.pow(a.orbital_period / 365.25, 2/3) : 1);
+                    const bDistance = b.semi_major_axis || (b.orbital_period ? Math.pow(b.orbital_period / 365.25, 2/3) : 1);
+                    return aDistance - bDistance;
                 });
                 
-                const adaptedData = {
-                    name: starData.name,
-                    designation_type: starData.designation_type,
-                    constellation: starData.constellation,
-                    constellation_full: starData.constellation_full,
-                    properties: {
-                        distance: starData.coordinates.dist,
-                        spectral_class: starData.properties.spectral_class,
-                        luminosity: starData.properties.luminosity || 1.0,
-                        magnitude: starData.properties.magnitude
-                    },
-                    coordinates: starData.coordinates,
-                    planets: adaptedPlanets
-                };
-                PlanetarySystem.openSystemView(adaptedData);
-            };
-            
-            let planetsHtml = '';
-            starData.planets.forEach(planet => {
-                // Use the correct field names from our exoplanet data
-                const planetName = planet.pl_name || 'Unknown Planet';
-                const discoveryYear = planet.disc_year || 'Unknown';
-                const discoveryMethod = planet.discoverymethod || 'Unknown';
-                const orbitalPeriod = planet.orbital_period_days ? 
-                    `${parseFloat(planet.orbital_period_days).toFixed(1)} days` : 'Unknown';
-                const massEarth = planet.planet_mass_earth ? 
-                    `${parseFloat(planet.planet_mass_earth).toFixed(2)}× Earth` : 'Unknown';
-                const radiusEarth = planet.planet_radius_earth ? 
-                    `${parseFloat(planet.planet_radius_earth).toFixed(2)}× Earth` : 'Unknown';
-                const semiMajorAxis = planet.semi_major_axis_au ? 
-                    `${parseFloat(planet.semi_major_axis_au).toFixed(3)} AU` : 'Unknown';
-                const eqTemp = planet.equilibrium_temperature_k ? 
-                    `${parseFloat(planet.equilibrium_temperature_k).toFixed(0)} K` : 'Unknown';
-                
-                // Determine planet type based on available data
-                let planetType = 'Unknown';
-                if (planet.planet_radius_earth) {
-                    const radius = parseFloat(planet.planet_radius_earth);
-                    if (radius < 1.5) planetType = 'Terrestrial';
-                    else if (radius < 4) planetType = 'Super-Earth';
-                    else if (radius < 8) planetType = 'Neptune-like';
-                    else planetType = 'Gas Giant';
-                }
-                
-                // Always show as confirmed since we only have confirmed exoplanets
-                const confirmStatus = '<span class="badge bg-success">Confirmed</span>';
-                
-                planetsHtml += `
-                    <div class="planet-item mb-3 p-2" style="border: 1px solid #28a745; border-radius: 6px; background: rgba(40, 167, 69, 0.1);">
-                        <div class="planet-name d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-success fw-bold">🪐 ${planetName}</span>
-                            ${confirmStatus}
-                        </div>
-                        <div class="planet-details">
-                            <div class="row g-1">
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Type:</strong> ${planetType}</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Distance:</strong> ${semiMajorAxis}</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Period:</strong> ${orbitalPeriod}</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Temp:</strong> ${eqTemp}</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Mass:</strong> ${massEarth}</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="planet-property">
-                                        <small><strong>Radius:</strong> ${radiusEarth}</small>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="planet-property">
-                                        <small><strong>Discovery:</strong> ${discoveryYear} (${discoveryMethod})</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            planetDetails.innerHTML = planetsHtml;
-            planetInfoPanel.style.display = 'block';
-            
-            // Store current system data globally for the planetary system viewer
-            window.currentSystemData = starData;
-        } else {
-            document.getElementById('planetInfo').style.display = 'none';
-            document.getElementById('systemViewToggle').style.display = 'none';
-        }
-        
-    } catch (error) {
-        console.error('Error showing star details:', error);
-        updateStatus(`Error showing star details: ${error.message}`);
-    }
-}
-
-function resetView() {
-    if (starmapPlot) {
-        const update = {
-            'scene.camera': {
-                eye: { x: 1.5, y: 1.5, z: 1.5 }
-            }
-        };
-        Plotly.relayout('starmap', update);
-        updateStatus('View reset to default position');
-    }
-}
-
-async function searchStars() {
-    const searchInput = document.getElementById('starSearch');
-    const query = searchInput.value.trim();
-    
-    if (!query) {
-        document.getElementById('searchResults').style.display = 'none';
-        return;
-    }
-    
-    try {
-        updateStatus(`Searching for "${query}"...`, true);
-        
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Search failed');
-        
-        const searchResponse = await response.json();
-        
-        // Extract data from API response
-        if (!searchResponse.success) {
-            throw new Error('Search API returned error');
-        }
-        
-        const searchData = searchResponse.data;
-        const message = searchResponse.message;
-        
-        // Display search results
-        const searchResults = document.getElementById('searchResults');
-        const searchResultsList = document.getElementById('searchResultsList');
-        
-        if (searchData && searchData.length > 0) {
-            let resultsHtml = `<p><strong>${message.result_count} results for "${message.query}"</strong></p>`;
-            
-            searchData.forEach(star => {
-                resultsHtml += `
-                    <div class="search-result-item mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;" 
-                         onclick="selectStar(${star.id})">
-                        <div class="fw-bold text-info">${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}</div>
-                        <small class="text-muted">
-                            ${star.designation_type} • ${star.constellation}<br>
-                            Mag: ${star.magnitude.toFixed(2)} • Dist: ${star.distance.toFixed(2)} pc
-                        </small>
-                    </div>
-                `;
-            });
-            
-            searchResultsList.innerHTML = resultsHtml;
-            searchResults.style.display = 'block';
-            
-            updateStatus(`Found ${message.result_count} stars matching "${query}"`);
-        } else {
-            searchResultsList.innerHTML = `<p class="text-muted">No stars found matching "${query}"</p>`;
-            searchResults.style.display = 'block';
-            updateStatus(`No results found for "${query}"`);
-        }
-        
-    } catch (error) {
-        console.error('Error searching stars:', error);
-        updateStatus(`Search error: ${error.message}`);
-    }
-}
-
-async function exportCSV() {
-    try {
-        updateStatus('Generating CSV export...', true);
-        
-        const response = await fetch('/export/csv');
-        if (!response.ok) throw new Error('Failed to generate CSV');
-        
-        // Download the CSV
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'starmap_export.csv';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        updateStatus('CSV exported successfully');
-        
-    } catch (error) {
-        console.error('Error exporting CSV:', error);
-        updateStatus(`Error exporting CSV: ${error.message}`);
-    }
-}
-
-// Utility function to format numbers
-function formatNumber(num, decimals = 2) {
-    return Number(num).toFixed(decimals);
-}
-
-// Global function for template access
-function toggleSystemView() {
-    if (window.currentSystemData && window.currentSystemData.planets && window.currentSystemData.planets.length > 0) {
-        PlanetarySystem.openSystemView(window.currentSystemData);
-    } else {
-        updateStatus('No planetary system data available');
-    }
-}
-
-function toggleSystemAnimation() {
-    if (window.PlanetarySystem) {
-        PlanetarySystem.toggleSystemAnimation();
-    }
-}
-
-// Spectral type filtering function
-async function filterBySpectralType() {
-    const spectralSelect = document.getElementById('spectralType');
-    const selectedType = spectralSelect.value;
-    const searchInput = document.getElementById('starSearch');
-    
-    if (!selectedType) {
-        // If no type selected, reload all stars
-        updateStarmap();
-        updateStatus('Filter cleared - showing all stars');
-        return;
-    }
-    
-    try {
-        updateStatus(`Filtering starmap by spectral type ${selectedType}...`, true);
-        
-        const response = await fetch(`/api/search?spectral=${encodeURIComponent(selectedType)}`);
-        if (!response.ok) throw new Error('Spectral type filtering failed');
-        
-        const searchData = await response.json();
-        
-        if (searchData.results && searchData.results.length > 0) {
-            // Update the starmap to show only filtered stars
-            await updateStarmapWithFilteredStars(searchData.results, selectedType);
-            
-            // Also display search results panel
-            const searchResults = document.getElementById('searchResults');
-            const searchResultsList = document.getElementById('searchResultsList');
-            
-            let resultsHtml = `<p><strong>${searchData.count} ${selectedType}-type stars on map</strong></p>`;
-            if (searchData.total_matching > searchData.count) {
-                resultsHtml += `<p class="text-muted">Showing first ${searchData.count} of ${searchData.total_matching} total matches</p>`;
-            }
-            
-            // Show first few results in the panel
-            searchData.results.slice(0, 10).forEach(star => {
-                resultsHtml += `
-                    <div class="search-result-item mb-2 p-2" style="border: 1px solid #444; border-radius: 4px; cursor: pointer;" 
-                         onclick="selectStar(${star.id})">
-                        <div class="fw-bold text-info">${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}</div>
-                        <small class="text-muted">
-                            ${star.designation_type} • ${star.constellation}<br>
-                            Spectral: ${star.spectral_class} • Mag: ${star.magnitude.toFixed(2)} • Dist: ${star.distance.toFixed(2)} pc
-                        </small>
-                    </div>
-                `;
-            });
-            
-            if (searchData.results.length > 10) {
-                resultsHtml += `<p class="text-muted">...and ${searchData.results.length - 10} more on the map</p>`;
-            }
-            
-            resultsHtml += `<div class="mt-2"><button class="btn btn-sm btn-outline-light" onclick="clearSpectralFilter()">Show All Stars</button></div>`;
-            
-            searchResultsList.innerHTML = resultsHtml;
-            searchResults.style.display = 'block';
-            searchInput.value = `Spectral filter: ${selectedType}`;
-            
-            updateStatus(`Starmap filtered to ${searchData.results.length} ${selectedType}-type stars`);
-        } else {
-            updateStatus(`No ${selectedType}-type stars found`);
-        }
-        
-    } catch (error) {
-        console.error('Error filtering by spectral type:', error);
-        updateStatus(`Spectral filter error: ${error.message}`);
-    }
-}
-
-async function updateStarmapWithFilteredStars(filteredStars, spectralType) {
-    try {
-        // Create 3D scatter plot with filtered stars
-        const trace = {
-            x: filteredStars.map(star => star.coordinates.x),
-            y: filteredStars.map(star => star.coordinates.y),
-            z: filteredStars.map(star => star.coordinates.z),
-            mode: 'markers',
-            type: 'scatter3d',
-            marker: {
-                size: filteredStars.map(star => {
-                    const baseSize = Math.max(2, 8 - star.magnitude);
-                    // Reduce Sol's (star ID 0) circle radius by half
-                    // Increase size slightly for stars with exoplanets to make them more prominent
-                    const sizeMultiplier = star.has_exoplanets ? 1.2 : 1;
-                    return star.id === 0 ? baseSize / 2 : baseSize * sizeMultiplier;
-                }), // Brighter stars are bigger, exoplanet hosts are slightly larger
-                color: filteredStars.map(star => star.magnitude),
-                colorscale: [
-                    [0, '#ffffff'],      // Bright stars - white
-                    [0.3, '#ffff99'],    // Yellow
-                    [0.6, '#ff9933'],    // Orange
-                    [1, '#ff3333']       // Dim stars - red
-                ],
-                colorbar: {
-                    title: 'Magnitude',
-                    titleside: 'right'
-                },
-                opacity: 0.8,
-                symbol: filteredStars.map(star => star.has_exoplanets ? 'diamond' : 'circle'),
-                line: {
-                    width: filteredStars.map(star => star.has_exoplanets ? 2 : 0),
-                    color: filteredStars.map(star => star.has_exoplanets ? '#00ff88' : 'transparent')
-                }
-            },
-            text: filteredStars.map(star => 
-                `${star.fictional_name ? `${star.fictional_name} (${star.name})` : star.name}<br>` +
-                `${star.designation_type === 'proper' ? 'Common Name' : 'Designation'}: ${star.designation_type}<br>` +
-                `Constellation: ${star.constellation}<br>` +
-                `Magnitude: ${star.magnitude.toFixed(2)}<br>` +
-                `Distance: ${star.distance.toFixed(2)} pc<br>` +
-                `Spectral Class: ${star.spectral_class}<br>` +
-                (star.fictional_name ? `🌟 Local Name: ${star.fictional_name}<br>` : '') +
-                (star.has_exoplanets ? `🪐 Exoplanets: ${star.exoplanet_count}<br>` : '') +
-                `Coordinates: (${star.coordinates.x.toFixed(2)}, ${star.coordinates.y.toFixed(2)}, ${star.coordinates.z.toFixed(2)})`
-            ),
-            hovertemplate: '%{text}<extra></extra>',
-            customdata: filteredStars.map(star => star.id)
-        };
-        
-        const layout = {
-            title: {
-                text: `3D Starmap - ${filteredStars.length} ${spectralType}-type Stars`,
-                font: { color: 'white', size: 16 }
-            },
-            scene: {
-                xaxis: { 
-                    title: 'X (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
-                },
-                yaxis: { 
-                    title: 'Y (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
-                },
-                zaxis: { 
-                    title: 'Z (parsecs)', 
-                    gridcolor: '#444',
-                    zerolinecolor: '#666',
-                    backgroundcolor: '#000'
-                },
-                bgcolor: '#000000',
-                camera: {
-                    eye: { x: 1.5, y: 1.5, z: 1.5 }
-                }
-            },
-            paper_bgcolor: '#000000',
-            plot_bgcolor: '#000000',
-            font: { color: 'white' },
-            margin: { l: 0, r: 0, t: 40, b: 0 }
-        };
-        
-        const config = {
-            displayModeBar: true,
-            displaylogo: false,
-            modeBarButtonsToRemove: ['pan2d', 'lasso2d'],
-            responsive: true,
-            doubleClick: 'reset'
-        };
-        
-        // Update the plot with filtered data
-        await Plotly.newPlot('starmap', [trace], layout, config);
-        
-        // Re-add click event listener
-        document.getElementById('starmap').on('plotly_click', function(data) {
-            try {
-                if (data.points && data.points.length > 0) {
-                    const point = data.points[0];
+                // Draw orbital rings and planets
+                sortedPlanets.forEach((planet, index) => {
+                    const orbitRadius = 20 + (index * 15); // Scale orbit radii
                     
-                    // Check if this is a stellar region click
-                    if (point.data && point.data.name && point.data.name.startsWith('Region: ')) {
-                        const regionName = point.data.name.replace('Region: ', '');
-                        console.debug('Stellar region clicked:', regionName);
-                        
-                        // Select the region in the dropdown
-                        const regionSelect = document.getElementById('regionSelect');
-                        if (regionSelect) {
-                            regionSelect.value = regionName;
-                            handleRegionSelection();
-                        }
-                        return;
+                    // Draw orbital ring
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, orbitRadius, 0, 2 * Math.PI);
+                    ctx.strokeStyle = '#444444';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Planet position (simplified - just place at right side of orbit)
+                    const planetX = centerX + orbitRadius;
+                    const planetY = centerY;
+                    
+                    // Planet size based on radius
+                    const planetRadius = planet.planet_radius_earth 
+                        ? Math.max(2, Math.min(5, planet.planet_radius_earth * 1.5))
+                        : 3;
+                    
+                    // Planet color
+                    let planetColor = '#4CAF50'; // Default green
+                    if (planet.potentially_habitable) {
+                        planetColor = '#2196F3'; // Blue for habitable
+                    } else if (planet.equilibrium_temperature > 373) {
+                        planetColor = '#FF5722'; // Red for hot
+                    } else if (planet.equilibrium_temperature < 273) {
+                        planetColor = '#9C27B0'; // Purple for cold
                     }
                     
-                    // Only process clicks on the main star trace (trace index 0) with valid customdata
-                    if (point.curveNumber === 0 && point.customdata && 
-                        typeof point.customdata === 'number' && point.customdata > 0) {
-                        
-                        const starId = point.customdata;
-                        
-                        if (distanceMeasurementMode) {
-                            handleDistanceModeClick(starId);
-                        } else {
-                            selectStar(starId);
-                        }
-                    } else {
-                        console.debug('Click ignored - not on main star trace or invalid customdata:', {
-                            curveNumber: point.curveNumber,
-                            customdata: point.customdata,
-                            hasValidCustomdata: point.customdata && typeof point.customdata === 'number' && point.customdata > 0
-                        });
-                    }
-                } else {
-                    // Handle empty space clicks - prevent default camera movement
-                    console.debug('Click on empty space - preventing default behavior');
-                    return false;
-                }
-            } catch (error) {
-                console.error('Error handling star click:', error);
-                updateStatus('Error processing star selection');
+                    // Draw planet
+                    ctx.beginPath();
+                    ctx.arc(planetX, planetY, planetRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = planetColor;
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                    
+                    // Planet label
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '8px Arial';
+                    ctx.textAlign = 'left';
+                    ctx.fillText(planet.name, planetX + planetRadius + 3, planetY + 2);
+                    
+                    // Distance label
+                    ctx.fillStyle = '#999999';
+                    ctx.font = '6px Arial';
+                    ctx.textAlign = 'left';
+                    const distance = planet.semi_major_axis || 'Unknown';
+                    ctx.fillText(distance !== 'Unknown' ? `${distance.toFixed(2)} AU` : 'Unknown AU', planetX + planetRadius + 3, planetY + 10);
+                });
+            } else {
+                // No detailed planet data, just show generic info
+                ctx.fillStyle = '#999999';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No detailed orbital data available', centerX, centerY + 30);
             }
-        });
-        
-        // Update currentStars with filtered data for distance measurements
-        currentStars = filteredStars.map(star => ({
-            id: star.id,
-            name: star.name,
-            x: star.coordinates.x,
-            y: star.coordinates.y,
-            z: star.coordinates.z,
-            mag: star.magnitude,
-            spect: star.spectral_class,
-            dist: star.distance
-        }));
-        
-    } catch (error) {
-        console.error('Error updating starmap with filtered stars:', error);
-        updateStatus(`Error updating starmap: ${error.message}`);
-    }
-}
-
-function clearSpectralFilter() {
-    // Reset the spectral type dropdown
-    document.getElementById('spectralType').value = '';
-    
-    // Hide search results
-    document.getElementById('searchResults').style.display = 'none';
-    document.getElementById('starSearch').value = '';
-    
-    // Reload the full starmap
-    updateStarmap();
-    
-    updateStatus('Spectral filter cleared - showing all stars');
-}
-
-// Distance measurement functions
-function toggleDistanceMeasurement() {
-    const toggleButton = document.getElementById('distanceToggle');
-    const indicator = document.getElementById('distanceModeIndicator');
-    
-    if (!distanceMeasurementMode) {
-        // Start distance measurement mode
-        distanceMeasurementMode = true;
-        selectedStarsForDistance = [];
-        toggleButton.textContent = '❌ Cancel Distance Mode';
-        toggleButton.classList.remove('btn-outline-primary');
-        toggleButton.classList.add('btn-outline-warning');
-        if (indicator) indicator.style.display = 'block';
-        updateStatus('🎯 Distance measurement mode ON - Click two stars to measure distance');
-    } else {
-        // Cancel distance measurement mode
-        distanceMeasurementMode = false;
-        selectedStarsForDistance = [];
-        toggleButton.textContent = '📏 Start Distance Mode';
-        toggleButton.classList.remove('btn-outline-warning');
-        toggleButton.classList.add('btn-outline-primary');
-        if (indicator) indicator.style.display = 'none';
-        
-        // Remove distance visualization
-        clearDistanceVisualization();
-        clearHighlight(); // Clear any selected stars
-        updateStatus('Distance measurement mode OFF');
-    }
-}
-
-async function measureDistance(starId1, starId2) {
-    try {
-        updateStatus(`Calculating distance between stars...`, true);
-        
-        const response = await fetch(`/api/distance?star1=${starId1}&star2=${starId2}`);
-        if (!response.ok) throw new Error('Distance calculation failed');
-        
-        const responseData = await response.json();
-        if (!responseData.success) {
-            throw new Error('Distance calculation failed');
-        }
-        const distanceData = responseData.data;
-        
-        // Display distance results
-        const searchResults = document.getElementById('searchResults');
-        const searchResultsList = document.getElementById('searchResultsList');
-        
-        let resultsHtml = `
-            <div class="distance-results">
-                <h6 class="text-primary mb-3">🚀 Distance Measurement</h6>
-                
-                <div class="mb-3">
-                    <strong>Between:</strong><br>
-                    <div class="ms-2">
-                        <div class="text-info">${distanceData.star1.name}</div>
-                        <small class="text-muted">Distance from Sol: ${distanceData.star1.distance_from_sol_ly.toFixed(2)} ly</small>
-                    </div>
-                    <div class="ms-2 mt-1">
-                        <div class="text-info">${distanceData.star2.name}</div>
-                        <small class="text-muted">Distance from Sol: ${distanceData.star2.distance_from_sol_ly.toFixed(2)} ly</small>
-                    </div>
-                </div>
-                
-                <div class="distance-results-box p-3" style="background-color: rgba(116, 185, 255, 0.1); border: 1px solid #74b9ff; border-radius: 4px;">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="fw-bold text-success">${distanceData.distance_between.light_years}</div>
-                            <small class="text-muted">Light Years</small>
-                        </div>
-                        <div class="col-6">
-                            <div class="fw-bold text-warning">${distanceData.distance_between.parsecs}</div>
-                            <small class="text-muted">Parsecs</small>
-                        </div>
-                    </div>
-                    <hr class="my-2">
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="small">${distanceData.distance_between.astronomical_units.toLocaleString()}</div>
-                            <small class="text-muted">AU</small>
-                        </div>
-                        <div class="col-6">
-                            <div class="small">${distanceData.distance_between.kilometers.toExponential(2)}</div>
-                            <small class="text-muted">km</small>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <button class="btn btn-sm btn-outline-light" onclick="clearDistanceMeasurement()">Clear Measurement</button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="toggleDistanceMeasurement()">New Measurement</button>
-                </div>
-            </div>
-        `;
-        
-        searchResultsList.innerHTML = resultsHtml;
-        searchResults.style.display = 'block';
-        
-        // Add visualization line between stars
-        addDistanceVisualization(distanceData);
-        
-        updateStatus(`Distance: ${distanceData.distance_between.light_years} ly / ${distanceData.distance_between.parsecs} pc`);
-        
-    } catch (error) {
-        console.error('Error measuring distance:', error);
-        updateStatus(`Distance measurement error: ${error.message}`);
-    }
-}
-
-function addDistanceVisualization(distanceData) {
-    if (!starmapPlot) return;
-    
-    // Remove previous distance line
-    clearDistanceVisualization();
-    
-    // We need to get the actual 3D coordinates from the star data
-    // Find the stars in currentStars array to get their coordinates
-    const star1 = currentStars.find(s => s.id === distanceData.star1.id);
-    const star2 = currentStars.find(s => s.id === distanceData.star2.id);
-    
-    if (!star1 || !star2) {
-        updateStatus('Could not find star coordinates for visualization');
-        return;
-    }
-    
-    // Add line connecting the two stars using their actual 3D coordinates
-    distanceTrace = {
-        x: [star1.x, star2.x],
-        y: [star1.y, star2.y],
-        z: [star1.z, star2.z],
-        mode: 'lines',
-        type: 'scatter3d',
-        line: {
-            color: '#00ff00',
-            width: 6
-        },
-        name: 'Distance Measurement',
-        showlegend: false,
-        hoverinfo: 'skip'
-    };
-    
-    Plotly.addTraces('starmap', distanceTrace);
-}
-
-function clearDistanceVisualization() {
-    if (!starmapPlot || !distanceTrace) return;
-    
-    const plotDiv = document.getElementById('starmap');
-    if (plotDiv && plotDiv.data) {
-        const traces = plotDiv.data;
-        const distanceIndex = traces.findIndex(trace => trace.name === 'Distance Measurement');
-        
-        if (distanceIndex !== -1) {
-            Plotly.deleteTraces('starmap', distanceIndex);
+            
+        } catch (error) {
+            console.error('Error creating planetary minimap:', error);
         }
     }
     
-    distanceTrace = null;
-}
-
-function clearDistanceMeasurement() {
-    selectedStarsForDistance = [];
-    clearDistanceVisualization();
-    document.getElementById('searchResults').style.display = 'none';
-    updateStatus('Distance measurement cleared');
-}
-
-function handleDistanceModeClick(starId) {
-    
-    if (selectedStarsForDistance.includes(starId)) {
-        updateStatus('Star already selected for distance measurement');
-        return;
+    hideStarDetails() {
+        document.getElementById('starDetails').style.display = 'none';
+        this.selectedStar = null;
     }
     
-    selectedStarsForDistance.push(starId);
-    
-    // Find star name for better feedback
-    const star = currentStars.find(s => s.id === starId);
-    const starName = star ? star.name : `Star ${starId}`;
-    
-    if (selectedStarsForDistance.length === 1) {
-        updateStatus(`First star selected: ${starName}. Click another star to measure distance.`);
+    async performSearch() {
+        const query = document.getElementById('searchInput').value.trim();
+        const resultsDiv = document.getElementById('searchResults');
         
-        // Highlight the first selected star
-        if (star) {
-            highlightStarOnMap(starId, {
-                coordinates: { x: star.x, y: star.y, z: star.z },
-                name: starName
-            });
-        }
-    } else if (selectedStarsForDistance.length === 2) {
-        const star2 = currentStars.find(s => s.id === selectedStarsForDistance[1]);
-        const star2Name = star2 ? star2.name : `Star ${selectedStarsForDistance[1]}`;
-        
-        updateStatus(`Measuring distance between ${starName} and ${star2Name}...`, true);
-        
-        // Measure distance between the two selected stars
-        measureDistance(selectedStarsForDistance[0], selectedStarsForDistance[1]);
-        
-        // Reset distance mode but don't exit automatically
-        selectedStarsForDistance = [];
-    }
-}
-
-// Political Overlay Functions
-async function loadNationsData() {
-    try {
-        const response = await fetch('/api/nations');
-        if (!response.ok) throw new Error('Failed to fetch nations data');
-        
-        const responseData = await response.json();
-        if (responseData.success) {
-            nationsData = responseData.data || [];
-        } else {
-            throw new Error('Invalid response format from nations API');
-        }
-        updateStatus('Nations data loaded successfully');
-    } catch (error) {
-        console.error('Error loading nations data:', error);
-        updateStatus('Error loading nations data');
-    }
-}
-
-// Handle overlay changes from UI controls
-function handleOverlayChange(overlayType) {
-    switch(overlayType) {
-        case 'politicalOverlay':
-            togglePoliticalOverlay();
-            break;
-        case 'tradeRoutes':
-            toggleTradeRoutes();
-            break;
-        case 'territoryBorders':
-            toggleTerritoryBorders();
-            break;
-        case 'galacticDirections':
-            toggleGalacticDirections();
-            break;
-        case 'galacticGrid':
-            toggleGalacticGrid();
-            break;
-        case 'stellarRegions':
-            toggleStellarRegions();
-            break;
-        default:
-            console.warn('Unknown overlay type:', overlayType);
-    }
-}
-
-function togglePoliticalOverlay() {
-    const checkbox = document.getElementById('politicalOverlay');
-    politicalOverlayActive = checkbox.checked;
-    
-    if (politicalOverlayActive) {
-        // Ensure we have current star data
-        if (!currentStars || currentStars.length === 0) {
-            updateStatus('Loading star data for political overlay...');
-            // Reload starmap which will trigger reapplyPoliticalOverlay
-            updateStarmap();
+        if (!query) {
+            resultsDiv.innerHTML = '';
             return;
         }
         
-        if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
-            updateStatus('Loading nations data...');
-            loadNationsData().then(() => {
-                applyPoliticalOverlay();
-            }).catch(error => {
-                console.error('Error loading nations data:', error);
-                updateStatus('Error loading nations data');
-                checkbox.checked = false;
-                politicalOverlayActive = false;
-            });
-        } else {
-            applyPoliticalOverlay();
+        if (query.length < 2) return;
+        
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
+            const data = await response.json();
+            
+            if (data.success && data.data.length > 0) {
+                let html = '';
+                data.data.forEach(star => {
+                    html += `
+                        <div class="search-result-item" onclick="app.selectStarFromSearch(${star.id})">
+                            <div class="fw-bold">${star.fictional_name || star.name}</div>
+                            <small class="text-muted">${star.constellation_full} | ${star.spectral_class}</small>
+                        </div>
+                    `;
+                });
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = '<div class="p-2 text-muted">No results found</div>';
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            resultsDiv.innerHTML = '<div class="p-2 text-danger">Search error</div>';
         }
-    } else {
-        clearPoliticalOverlay();
     }
-}
-
-function applyPoliticalOverlay() {
-    if (!starmapPlot || !currentStars) return;
     
-    // Update star colors based on nation control
-    const updatedColors = currentStars.map(star => {
-        // Check if this star belongs to any nation
-        if (nationsData && !Array.isArray(nationsData)) {
-            for (const [nationId, nation] of Object.entries(nationsData)) {
-                if (nationId !== 'neutral_zone' && nation.territories && nation.territories.includes(star.id)) {
-                    return nation.color;
+    async selectStarFromSearch(starId) {
+        const star = this.currentStars.find(s => s.id === starId);
+        if (star) {
+            this.selectStar(star);
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchInput').value = '';
+            
+            // Highlight the selected star on the main starmap
+            this.highlightStarOnMap(star);
+        }
+    }
+    
+    highlightStarOnMap(star) {
+        if (!this.plot) return;
+        
+        // Create a temporary highlight marker
+        const highlightTrace = {
+            x: [star.x],
+            y: [star.y],
+            z: [star.z],
+            mode: 'markers',
+            type: 'scatter3d',
+            name: 'Selected Star',
+            marker: {
+                size: 20,
+                color: '#FFD700', // Gold color
+                opacity: 0.8,
+                symbol: 'circle-open',
+                line: {
+                    color: '#FFD700',
+                    width: 3
+                }
+            },
+            showlegend: false,
+            hovertemplate: `<b>Selected: ${star.fictional_name || star.name}</b><extra></extra>`
+        };
+        
+        // Remove any existing highlight
+        this.removeHighlight();
+        
+        // Add the highlight marker
+        Plotly.addTraces(this.plot, [highlightTrace]);
+        
+        // Store reference to highlight for cleanup
+        this.highlightTraceIndex = this.plot.data.length - 1;
+        
+        // Center the view on the selected star (more gently)
+        Plotly.relayout(this.plot, {
+            'scene.camera': {
+                eye: { 
+                    x: star.x / 100 + 1.5, 
+                    y: star.y / 100 + 1.5, 
+                    z: star.z / 100 + 1.5 
                 }
             }
-        }
-        // For unaligned stars, use original magnitude-based colors
-        return getOriginalStarColor(star.mag);
-    });
-    
-    // Update the main star trace colors and disable colorscale when using direct colors
-    Plotly.restyle('starmap', {
-        'marker.color': [updatedColors],
-        'marker.colorscale': null,
-        'marker.cmin': null,
-        'marker.cmax': null
-    }, [0]);
-    
-    updateStatus('Political overlay applied');
-}
-
-function reapplyPoliticalOverlay() {
-    // Reapply political overlay if it's currently active
-    if (politicalOverlayActive && currentStars && starmapPlot) {
-        try {
-            applyPoliticalOverlay();
-        } catch (error) {
-            console.error('Error reapplying political overlay:', error);
-            updateStatus('Warning: Political overlay may need to be refreshed');
-        }
-    }
-}
-
-function clearPoliticalOverlay() {
-    if (!starmapPlot || !currentStars) return;
-    
-    // Reset to original magnitude-based colors using numeric values and colorscale
-    const originalColors = currentStars.map(star => star.mag);
-    
-    Plotly.restyle('starmap', {
-        'marker.color': [originalColors],
-        'marker.colorscale': [
-            [0, '#ffffff'],      // Bright stars - white
-            [0.3, '#ffff99'],    // Yellow
-            [0.6, '#ff9933'],    // Orange
-            [1, '#ff3333']       // Dim stars - red
-        ],
-        'marker.cmin': undefined,
-        'marker.cmax': undefined
-    }, [0]);
-    
-    // Clear any political traces
-    clearPoliticalTraces();
-    
-    updateStatus('Political overlay cleared');
-}
-
-function getOriginalStarColor(magnitude) {
-    // Convert magnitude to actual color values based on the colorscale used in the starmap
-    // The colorscale is: [0, '#ffffff'], [0.3, '#ffff99'], [0.6, '#ff9933'], [1, '#ff3333']
-    // We need to normalize the magnitude to 0-1 range and interpolate the colors
-    
-    // Most stars have magnitude between -2 and 8, so we'll normalize to this range
-    const minMag = -2;
-    const maxMag = 8;
-    let normalizedMag = (magnitude - minMag) / (maxMag - minMag);
-    
-    // Clamp to 0-1 range
-    normalizedMag = Math.max(0, Math.min(1, normalizedMag));
-    
-    // Map to color based on the colorscale
-    if (normalizedMag <= 0.3) {
-        // Interpolate between white (#ffffff) and yellow (#ffff99)
-        const ratio = normalizedMag / 0.3;
-        const r = 255;
-        const g = 255;
-        const b = Math.round(255 - (255 - 153) * ratio);
-        return `rgb(${r}, ${g}, ${b})`;
-    } else if (normalizedMag <= 0.6) {
-        // Interpolate between yellow (#ffff99) and orange (#ff9933)
-        const ratio = (normalizedMag - 0.3) / 0.3;
-        const r = 255;
-        const g = Math.round(255 - (255 - 153) * ratio);
-        const b = Math.round(153 - (153 - 51) * ratio);
-        return `rgb(${r}, ${g}, ${b})`;
-    } else {
-        // Interpolate between orange (#ff9933) and red (#ff3333)
-        const ratio = (normalizedMag - 0.6) / 0.4;
-        const r = 255;
-        const g = Math.round(153 - 153 * ratio);
-        const b = Math.round(51 - 51 * ratio);
-        return `rgb(${r}, ${g}, ${b})`;
-    }
-}
-
-function toggleTradeRoutes() {
-    const checkbox = document.getElementById('tradeRoutes');
-    tradeRoutesActive = checkbox.checked;
-    
-    if (tradeRoutesActive) {
-        showTradeRoutes();
-    } else {
-        hideTradeRoutes();
-    }
-}
-
-async function showTradeRoutes() {
-    if (!starmapPlot) return;
-    
-    // Clear existing trade route traces
-    hideTradeRoutes();
-    
-    try {
-        // Ensure nations data is loaded before showing trade routes
-        if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
-            updateStatus('Loading nations data for trade routes...', true);
-            await loadNationsData();
-        }
-        
-        // Load trade routes data
-        updateStatus('Loading trade routes data...', true);
-        const response = await fetch('/api/trade-routes');
-        if (!response.ok) throw new Error('Failed to fetch trade routes');
-        
-        const tradeResponseData = await response.json();
-        if (!tradeResponseData.success) {
-            throw new Error('Invalid response format from trade routes API');
-        }
-        const allRoutes = tradeResponseData.data || [];
-        
-        updateStatus('Processing trade routes...', true);
-        let processedRoutes = 0;
-        let skippedRoutes = 0;
-        
-        // Collect all unique star IDs from trade routes
-        const tradeRouteStarIds = new Set();
-        Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
-            routes.forEach(route => {
-                tradeRouteStarIds.add(route.from_star_id);
-                tradeRouteStarIds.add(route.to_star_id);
-            });
         });
         
-        // Fetch missing stars that aren't in currentStars
-        const currentStarIds = new Set(currentStars.map(s => s.id));
-        const missingStarIds = Array.from(tradeRouteStarIds).filter(id => !currentStarIds.has(id));
-        
-        let allTradeRouteStars = [...currentStars];
-        
-        if (missingStarIds.length > 0) {
-            updateStatus(`Fetching ${missingStarIds.length} additional stars for trade routes...`, true);
+        // Auto-remove highlight after 5 seconds
+        setTimeout(() => {
+            this.removeHighlight();
+        }, 5000);
+    }
+    
+    removeHighlight() {
+        if (this.plot && this.highlightTraceIndex !== undefined) {
             try {
-                const starPromises = missingStarIds.map(id => 
-                    fetch(`/api/star/${id}`).then(res => res.ok ? res.json() : null)
-                );
-                const additionalStars = (await Promise.all(starPromises)).filter(star => star !== null);
-                allTradeRouteStars = [...currentStars, ...additionalStars];
-                console.log(`Loaded ${additionalStars.length} additional stars for trade routes`);
+                Plotly.deleteTraces(this.plot, [this.highlightTraceIndex]);
+                this.highlightTraceIndex = undefined;
             } catch (error) {
-                console.warn('Failed to fetch some trade route stars:', error);
+                // Trace might already be removed
+            }
+        }
+    }
+    
+    async applyFilters() {
+        this.showStatus('Applying filters...', 'info');
+        
+        if (await this.loadStars()) {
+            this.createStarmap();
+        }
+    }
+    
+    updateOverlays() {
+        if (!this.plot) return;
+        
+        // First clear all overlay traces
+        this.hideOverlayTraces();
+        
+        // Update star colors based on overlay settings
+        this.updateStarColors();
+        
+        // Show active overlays
+        if (this.config.overlays.tradeRoutes) {
+            this.showTradeRoutes();
+        }
+        
+        if (this.config.overlays.stellarRegions) {
+            this.showStellarRegions();
+        }
+        
+        if (this.config.overlays.galacticDirections) {
+            this.showGalacticDirections();
+        }
+        
+        // Handle nations overlay with spheres
+        if (this.config.overlays.nations) {
+            this.showNationSpheres();
+        }
+        
+        // Show fictional exoplanets if they exist
+        this.showFictionalExoplanets();
+    }
+    
+    updateStarColors() {
+        if (!this.plot || !this.currentStars.length) return;
+        
+        // Filter valid stars again
+        const validStars = this.currentStars.filter(star => 
+            star.x != null && star.y != null && star.z != null &&
+            !isNaN(star.x) && !isNaN(star.y) && !isNaN(star.z)
+        );
+        
+        const colors = validStars.map(star => this.getStarColor(star));
+        
+        // Update the plot colors
+        Plotly.restyle(this.plot, {
+            'marker.color': [colors]
+        }, [0]);
+    }
+    
+    async showTradeRoutes() {
+        if (!this.plot || this.tradeRoutes.length === 0) {
+            try {
+                const response = await fetch('/api/trade-routes');
+                const data = await response.json();
+                if (data.success) {
+                    this.tradeRoutes = data.data;
+                }
+            } catch (error) {
+                console.error('Error loading trade routes:', error);
+                return;
             }
         }
         
-        // Process all route groups
-        Object.entries(allRoutes).forEach(([routeGroup, routes]) => {
-            routes.forEach((route, index) => {
-                const fromStar = allTradeRouteStars.find(s => s.id === route.from_star_id);
-                const toStar = allTradeRouteStars.find(s => s.id === route.to_star_id);
+        // Create trade route traces
+        const traceUpdates = [];
+        
+        this.tradeRoutes.forEach(route => {
+            const fromStar = this.currentStars.find(s => s.id === route.endpoints.from.star_id);
+            const toStar = this.currentStars.find(s => s.id === route.endpoints.to.star_id);
+            
+            if (fromStar && toStar) {
+                // Color code routes by nation/category
+                let routeColor = '#00ff88'; // Default green
+                let routeWidth = 3;
                 
-                if (!fromStar || !toStar) {
-                    console.warn(`Trade route "${route.name}" skipped - missing stars:`, {
-                        from_star_id: route.from_star_id,
-                        to_star_id: route.to_star_id,
-                        fromStar: fromStar ? 'found' : 'not found',
-                        toStar: toStar ? 'found' : 'not found'
-                    });
-                    skippedRoutes++;
-                    return;
+                if (route.category === 'terran_primary_routes') {
+                    routeColor = '#1565C0'; // Terran blue
+                } else if (route.category === 'felgenland_routes') {
+                    routeColor = '#F44336'; // Felgenland red
+                } else if (route.category === 'protelani_routes') {
+                    routeColor = '#00BCD4'; // Protelani cyan
+                } else if (route.category === 'dorsai_routes') {
+                    routeColor = '#BDBDBD'; // Dorsai gray
+                } else if (route.category === 'pentothian_routes') {
+                    routeColor = '#9C27B0'; // Pentothian purple
                 }
                 
-                // Get nation color for the route
-                let routeColor = '#FFFFFF'; // Default white
-                if (route.controlling_nation && nationsData[route.controlling_nation]) {
-                    routeColor = nationsData[route.controlling_nation].color;
-                } else if (route.controlling_nation) {
-                    console.warn(`Nation "${route.controlling_nation}" not found for route "${route.name}"`);
+                // Special routes get thicker lines
+                if (route.route_type === 'Primary Trade' || route.route_type === 'Military Alliance') {
+                    routeWidth = 4;
                 }
                 
-                // Determine line style based on route type
-                let lineStyle = 'dash';
-                let lineWidth = 3;
-                if (route.route_type === 'Primary Trade') {
-                    lineStyle = 'solid';
-                    lineWidth = 5;
-                } else if (route.route_type === 'Administrative') {
-                    lineStyle = 'dot';
-                    lineWidth = 4;
-                } else if (route.route_type === 'Research/Military') {
-                    lineStyle = 'dashdot';
-                    lineWidth = 3;
-                } else if (route.route_type === 'Military Alliance') {
-                    lineStyle = 'solid';
-                    lineWidth = 4;
-                } else if (route.route_type === 'Neutral Trade') {
-                    lineStyle = 'longdash';
-                    lineWidth = 2;
-                }
-                
-                const tradeRouteTrace = {
+                const trace = {
                     x: [fromStar.x, toStar.x],
                     y: [fromStar.y, toStar.y],
                     z: [fromStar.z, toStar.z],
                     mode: 'lines',
                     type: 'scatter3d',
+                    name: route.name,
                     line: {
                         color: routeColor,
-                        width: lineWidth,
-                        dash: lineStyle
+                        width: routeWidth
                     },
-                    name: `Trade Route: ${route.name}`,
-                    hovertemplate: `<b>${route.name}</b><br>` +
-                                 `${fromStar.name} → ${toStar.name}<br>` +
-                                 `Type: ${route.route_type}<br>` +
-                                 `Est. ${route.established}<br>` +
-                                 `Frequency: ${route.frequency}<br>` +
-                                 `Travel Time: ${route.travel_time_days} days<br>` +
-                                 `Security: ${route.security_level}<br>` +
-                                 `Controlling Nation: ${route.controlling_nation}<br>` +
-                                 `${route.description}<extra></extra>`,
-                    showlegend: false,
-                    hoverinfo: 'skip'
+                    hovertemplate: `<b>${route.name}</b><br>From: ${route.endpoints.from.system}<br>To: ${route.endpoints.to.system}<br>Type: ${route.route_type}<extra></extra>`
                 };
-                
-                Plotly.addTraces('starmap', tradeRouteTrace);
-                politicalTraces.push(tradeRouteTrace);
-                processedRoutes++;
-            });
+                traceUpdates.push(trace);
+            }
         });
         
-        const totalRoutes = Object.values(allRoutes).flat().length;
-        updateStatus(`Trade routes displayed (${processedRoutes}/${totalRoutes} routes${skippedRoutes > 0 ? `, ${skippedRoutes} skipped` : ''})`);
-        
-        if (skippedRoutes > 0) {
-            console.warn(`${skippedRoutes} trade routes were skipped due to missing star data`);
+        if (traceUpdates.length > 0) {
+            Plotly.addTraces(this.plot, traceUpdates);
         }
+    }
+    
+    async showStellarRegions() {
+        if (!this.plot) return;
         
-    } catch (error) {
-        console.error('Error loading trade routes:', error);
-        updateStatus('Error loading trade routes');
-    }
-}
-
-function hideTradeRoutes() {
-    clearTradeRouteTraces();
-}
-
-function toggleTerritoryBorders() {
-    const checkbox = document.getElementById('territoryBorders');
-    territoryBordersActive = checkbox.checked;
-    
-    if (territoryBordersActive) {
-        showTerritoryBorders();
-    } else {
-        hideTerritoryBorders();
-    }
-}
-
-function showTerritoryBorders() {
-    if (!starmapPlot || !currentStars || !nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) return;
-    
-    // Clear existing border traces
-    hideTerritoryBorders();
-    
-    try {
-        // Create territory borders for each nation
-        if (nationsData && !Array.isArray(nationsData)) {
-            Object.entries(nationsData).forEach(([nationId, nation]) => {
-                if (nationId === 'neutral_zone') return;
+        try {
+            const response = await fetch('/api/stellar-regions');
+            const data = await response.json();
+            if (!data.success) {
+                console.error('Error loading stellar regions:', data.error);
+                return;
+            }
+            
+            // Create stellar region octants
+            const regionTraces = [];
+            
+            data.data.forEach(region => {
+                // Create octant boundaries using mesh3d
+                // Stellar regions are already properly centered on Sol (0,0,0)
+                // No coordinate transformation needed - use regions as-is
+                const x_range = region.x_range; // Use coordinates directly
+                const y_range = region.y_range;
+                const z_range = region.z_range;
                 
-                // Get stars belonging to this nation
-                const nationStars = currentStars.filter(star => 
-                    nation.territories && nation.territories.includes(star.id)
+                // Define the 8 corners of the octant
+                const vertices = [
+                    [x_range[0], y_range[0], z_range[0]], // 0
+                    [x_range[1], y_range[0], z_range[0]], // 1
+                    [x_range[1], y_range[1], z_range[0]], // 2
+                    [x_range[0], y_range[1], z_range[0]], // 3
+                    [x_range[0], y_range[0], z_range[1]], // 4
+                    [x_range[1], y_range[0], z_range[1]], // 5
+                    [x_range[1], y_range[1], z_range[1]], // 6
+                    [x_range[0], y_range[1], z_range[1]]  // 7
+                ];
+                
+                // Create wireframe edges for the octant
+                const edges = [
+                    [0, 1], [1, 2], [2, 3], [3, 0], // bottom face
+                    [4, 5], [5, 6], [6, 7], [7, 4], // top face
+                    [0, 4], [1, 5], [2, 6], [3, 7]  // vertical edges
+                ];
+                
+                // Create lines for each edge
+                edges.forEach((edge, index) => {
+                    const start = vertices[edge[0]];
+                    const end = vertices[edge[1]];
+                    
+                    const trace = {
+                        x: [start[0], end[0], null],
+                        y: [start[1], end[1], null],
+                        z: [start[2], end[2], null],
+                        mode: 'lines',
+                        type: 'scatter3d',
+                        name: index === 0 ? region.short_name : '', // Only show name for first edge
+                        showlegend: index === 0,
+                        line: {
+                            color: region.color,
+                            width: 2
+                        },
+                        hovertemplate: `<b>${region.name}</b><br>${region.description}<br>Octant ${region.octant_number}<extra></extra>`
+                    };
+                    regionTraces.push(trace);
+                });
+                
+                // Add center point marker
+                const centerTrace = {
+                    x: [region.center[0]],
+                    y: [region.center[1]],
+                    z: [region.center[2]],
+                    mode: 'markers+text',
+                    type: 'scatter3d',
+                    name: `${region.short_name} Center`,
+                    showlegend: false,
+                    marker: {
+                        size: 6,
+                        color: region.color,
+                        opacity: 0.8,
+                        symbol: 'diamond'
+                    },
+                    text: region.short_name,
+                    textposition: 'middle center',
+                    textfont: {
+                        size: 10,
+                        color: region.color
+                    },
+                    hovertemplate: `<b>${region.name}</b><br>Center: (${region.center[0]}, ${region.center[1]}, ${region.center[2]})<br>Brightest: ${region.brightest_star}<extra></extra>`
+                };
+                regionTraces.push(centerTrace);
+            });
+            
+            if (regionTraces.length > 0) {
+                Plotly.addTraces(this.plot, regionTraces);
+            }
+        } catch (error) {
+            console.error('Error loading stellar regions:', error);
+        }
+    }
+    
+    async showGalacticDirections() {
+        if (!this.plot) return;
+        
+        try {
+            const response = await fetch('/api/galactic-directions');
+            const data = await response.json();
+            if (!data.success) {
+                console.error('Error loading galactic directions:', data.error);
+                return;
+            }
+            
+            // Create directional markers
+            const directionTraces = [];
+            
+            data.data.forEach(direction => {
+                const trace = {
+                    x: [direction.position[0]],
+                    y: [direction.position[1]],
+                    z: [direction.position[2]],
+                    mode: 'markers+text',
+                    type: 'scatter3d',
+                    name: direction.name,
+                    marker: {
+                        size: 12,
+                        color: direction.color,
+                        opacity: 0.8,
+                        symbol: 'diamond',
+                        line: {
+                            color: '#ffffff',
+                            width: 2
+                        }
+                    },
+                    text: direction.name,
+                    textposition: 'middle center',
+                    textfont: {
+                        size: 12,
+                        color: '#ffffff'
+                    },
+                    showlegend: true,
+                    hovertemplate: `<b>${direction.name}</b><br>Galactic Direction<extra></extra>`
+                };
+                directionTraces.push(trace);
+            });
+            
+            if (directionTraces.length > 0) {
+                Plotly.addTraces(this.plot, directionTraces);
+            }
+        } catch (error) {
+            console.error('Error loading galactic directions:', error);
+        }
+    }
+    
+    async showNationSpheres() {
+        if (!this.plot || !this.nations.length) return;
+        
+        try {
+            // Create spheres for each nation's territory
+            const sphereTraces = [];
+            
+            this.nations.forEach(nation => {
+                // Find all stars belonging to this nation
+                const nationStars = this.currentStars.filter(star => 
+                    star.nation && star.nation.id === nation.id
                 );
                 
-                if (nationStars.length >= 1) {
-                    createTerritoryBoundary(nationStars, nation);
+                if (nationStars.length === 0) return;
+                
+                // Calculate the centroid and average distance for the sphere
+                let centerX = 0, centerY = 0, centerZ = 0;
+                let maxDistance = 0;
+                
+                nationStars.forEach(star => {
+                    centerX += star.x;
+                    centerY += star.y;
+                    centerZ += star.z;
+                });
+                
+                centerX /= nationStars.length;
+                centerY /= nationStars.length;
+                centerZ /= nationStars.length;
+                
+                // Calculate radius as the maximum distance from center to any star
+                nationStars.forEach(star => {
+                    const distance = Math.sqrt(
+                        Math.pow(star.x - centerX, 2) + 
+                        Math.pow(star.y - centerY, 2) + 
+                        Math.pow(star.z - centerZ, 2)
+                    );
+                    maxDistance = Math.max(maxDistance, distance);
+                });
+                
+                // Add some padding to the radius
+                const radius = Math.max(maxDistance * 1.2, 5);
+                
+                // Create sphere surface points
+                const spherePoints = [];
+                const density = 15; // Lower density for better performance
+                
+                for (let i = 0; i < density; i++) {
+                    for (let j = 0; j < density; j++) {
+                        const theta = (i / density) * Math.PI;
+                        const phi = (j / density) * 2 * Math.PI;
+                        
+                        const x = centerX + radius * Math.sin(theta) * Math.cos(phi);
+                        const y = centerY + radius * Math.sin(theta) * Math.sin(phi);
+                        const z = centerZ + radius * Math.cos(theta);
+                        
+                        spherePoints.push({x, y, z});
+                    }
                 }
+                
+                // Create the sphere trace
+                const trace = {
+                    x: spherePoints.map(p => p.x),
+                    y: spherePoints.map(p => p.y),
+                    z: spherePoints.map(p => p.z),
+                    mode: 'markers',
+                    type: 'scatter3d',
+                    name: `${nation.name} Territory`,
+                    marker: {
+                        size: 1,
+                        color: nation.color,
+                        opacity: 0.1,
+                        line: {
+                            color: nation.color,
+                            width: 0
+                        }
+                    },
+                    showlegend: false,
+                    hovertemplate: `<b>${nation.name}</b><br>Territory Boundary<extra></extra>`
+                };
+                
+                sphereTraces.push(trace);
             });
-        }
-        
-        updateStatus('Territory borders displayed');
-    } catch (error) {
-        console.error('Error showing territory borders:', error);
-        updateStatus('Error displaying territory borders');
-    }
-}
-
-function createTerritoryBoundary(stars, nation) {
-    if (stars.length < 1) return;
-    
-    // Calculate bounding sphere center and radius
-    const center = calculateCentroid(stars);
-    let radius = calculateBoundingRadius(stars, center);
-    
-    // For single-star nations, set a minimum radius
-    if (stars.length === 1) {
-        radius = Math.max(radius, 5.0); // Minimum 5 parsecs radius
-    }
-    
-    // Create a multiplier based on the number of stars in the nation
-    // More stars = larger territory radius to encompass the space
-    const baseMultiplier = 1.2; // Base multiplier for all nations
-    const starCountFactor = Math.log10(stars.length + 1) * 0.5; // Logarithmic scale
-    let multiplier = baseMultiplier + starCountFactor;
-    
-    // Special adjustment for Protelani and Dorsai Republics - scale down by half
-    if (nation.name === "Protelani Republic" || nation.name === "Dorsai Republic") {
-        multiplier = multiplier * 0.5; // Reduce border size by half
-    }
-    
-    const borderRadius = radius * multiplier;
-    
-    // Create sphere wireframe
-    const sphereTrace = createSphereWireframe(center, borderRadius, nation);
-    
-    // Add connecting lines between all stars in the nation
-    const connectionTrace = createStarConnections(stars, nation);
-    
-    // Add traces to the plot
-    Plotly.addTraces('starmap', [sphereTrace, connectionTrace]);
-    politicalTraces.push(sphereTrace, connectionTrace);
-}
-
-function calculateCentroid(stars) {
-    const sum = stars.reduce((acc, star) => ({
-        x: acc.x + star.x,
-        y: acc.y + star.y,
-        z: acc.z + star.z
-    }), { x: 0, y: 0, z: 0 });
-    
-    return {
-        x: sum.x / stars.length,
-        y: sum.y / stars.length,
-        z: sum.z / stars.length
-    };
-}
-
-function calculateBoundingRadius(stars, center) {
-    return Math.max(...stars.map(star => 
-        Math.sqrt(
-            Math.pow(star.x - center.x, 2) + 
-            Math.pow(star.y - center.y, 2) + 
-            Math.pow(star.z - center.z, 2)
-        )
-    ));
-}
-
-function createSphereWireframe(center, radius, nation) {
-    const points = [];
-    const lines = [];
-    
-    // Create latitude/longitude grid on sphere
-    const latSteps = 8; // Number of latitude lines
-    const lonSteps = 12; // Number of longitude lines
-    
-    // Generate sphere points
-    for (let lat = 0; lat <= latSteps; lat++) {
-        const theta = (lat * Math.PI) / latSteps; // 0 to π
-        for (let lon = 0; lon <= lonSteps; lon++) {
-            const phi = (lon * 2 * Math.PI) / lonSteps; // 0 to 2π
             
-            const x = center.x + radius * Math.sin(theta) * Math.cos(phi);
-            const y = center.y + radius * Math.sin(theta) * Math.sin(phi);
-            const z = center.z + radius * Math.cos(theta);
-            
-            points.push({ x, y, z });
-        }
-    }
-    
-    // Create wireframe lines
-    const x_coords = [];
-    const y_coords = [];
-    const z_coords = [];
-    
-    // Latitude lines
-    for (let lat = 0; lat <= latSteps; lat++) {
-        for (let lon = 0; lon < lonSteps; lon++) {
-            const idx1 = lat * (lonSteps + 1) + lon;
-            const idx2 = lat * (lonSteps + 1) + (lon + 1);
-            
-            if (lat > 0 && lat < latSteps) { // Skip poles for cleaner look
-                x_coords.push(points[idx1].x, points[idx2].x, null);
-                y_coords.push(points[idx1].y, points[idx2].y, null);
-                z_coords.push(points[idx1].z, points[idx2].z, null);
+            if (sphereTraces.length > 0) {
+                Plotly.addTraces(this.plot, sphereTraces);
             }
+        } catch (error) {
+            console.error('Error loading nation spheres:', error);
         }
     }
     
-    // Longitude lines
-    for (let lon = 0; lon <= lonSteps; lon += 2) { // Skip some for cleaner look
-        for (let lat = 0; lat < latSteps; lat++) {
-            const idx1 = lat * (lonSteps + 1) + lon;
-            const idx2 = (lat + 1) * (lonSteps + 1) + lon;
-            
-            x_coords.push(points[idx1].x, points[idx2].x, null);
-            y_coords.push(points[idx1].y, points[idx2].y, null);
-            z_coords.push(points[idx1].z, points[idx2].z, null);
-        }
-    }
-    
-    return {
-        x: x_coords,
-        y: y_coords,
-        z: z_coords,
-        mode: 'lines',
-        type: 'scatter3d',
-        line: {
-            color: nation.border_color || nation.color,
-            width: 2,
-            dash: 'dot'
-        },
-        name: `${nation.name} Territory`,
-        hovertemplate: `<b>${nation.name}</b><br>Territory Boundary<extra></extra>`,
-        showlegend: false,
-        opacity: 0.6,
-        hoverinfo: 'skip'
-    };
-}
-
-function createStarConnections(stars, nation) {
-    const x_coords = [];
-    const y_coords = [];
-    const z_coords = [];
-    
-    // Create lines connecting all stars to the centroid for a "web" effect
-    const center = calculateCentroid(stars);
-    
-    stars.forEach(star => {
-        x_coords.push(center.x, star.x, null);
-        y_coords.push(center.y, star.y, null);
-        z_coords.push(center.z, star.z, null);
-    });
-    
-    return {
-        x: x_coords,
-        y: y_coords,
-        z: z_coords,
-        mode: 'lines',
-        type: 'scatter3d',
-        line: {
-            color: nation.color,
-            width: 1,
-            dash: 'dash'
-        },
-        name: `${nation.name} Connections`,
-        hovertemplate: `<b>${nation.name}</b><br>Internal Connections<extra></extra>`,
-        showlegend: false,
-        opacity: 0.4,
-        hoverinfo: 'skip'
-    };
-}
-
-function hideTerritoryBorders() {
-    // Clear territory border traces
-    clearTerritoryBorderTraces();
-    updateStatus('Territory borders hidden');
-}
-
-function clearPoliticalTraces() {
-    if (!starmapPlot) return;
-    
-    // Remove all political traces from the plot
-    const currentData = starmapPlot.data;
-    const nonPoliticalTraces = currentData.filter((trace, index) => {
-        return index === 0 || trace.name === 'Highlighted Star' || trace.name === 'Distance Line';
-    });
-    
-    if (nonPoliticalTraces.length !== currentData.length) {
-        Plotly.deleteTraces('starmap', Array.from({length: currentData.length - nonPoliticalTraces.length}, (_, i) => nonPoliticalTraces.length + i));
-    }
-    
-    politicalTraces = [];
-}
-
-function clearTradeRouteTraces() {
-    if (!starmapPlot) return;
-    
-    try {
-        // Remove only trade route traces from the plot
-        const currentData = starmapPlot.data;
-        const traceIndicesToRemove = [];
+    async showFictionalExoplanets() {
+        if (!this.plot) return;
         
-        currentData.forEach((trace, index) => {
-            if (trace.name && trace.name.includes('Trade Route')) {
-                traceIndicesToRemove.push(index);
+        try {
+            // Load both fictional and real exoplanets
+            const [fictionalResponse, realResponse] = await Promise.all([
+                fetch('/api/fictional-exoplanets'),
+                fetch('/api/exoplanets')
+            ]);
+            
+            const fictionalData = await fictionalResponse.json();
+            const realData = await realResponse.json();
+            
+            if (!fictionalData.success || !realData.success) {
+                console.error('Error loading exoplanets');
+                return;
+            }
+            
+            const fictionalExoplanets = fictionalData.data;
+            const realExoplanets = realData.data;
+            
+            // Create exoplanet traces for both types
+            const exoplanetTraces = [];
+            
+            // Process fictional exoplanets
+            if (fictionalExoplanets.length > 0) {
+                const fictionalTraces = this.createExoplanetTraces(fictionalExoplanets, 'fictional');
+                exoplanetTraces.push(...fictionalTraces);
+            }
+            
+            // Process real exoplanets
+            if (realExoplanets.length > 0) {
+                const realTraces = this.createExoplanetTraces(realExoplanets, 'real');
+                exoplanetTraces.push(...realTraces);
+            }
+            
+            if (exoplanetTraces.length > 0) {
+                Plotly.addTraces(this.plot, exoplanetTraces);
+                console.log(`Added ${exoplanetTraces.length / 2} exoplanets to the visualization`);
+            }
+        } catch (error) {
+            console.error('Error loading exoplanets:', error);
+        }
+    }
+    
+    createExoplanetTraces(exoplanets, type) {
+        const traces = [];
+        
+        // Group exoplanets by their host star
+        const exoplanetsByHost = {};
+        exoplanets.forEach(planet => {
+            let hostId;
+            if (type === 'fictional') {
+                hostId = planet.star_id;
+            } else {
+                // For real exoplanets, match by star name
+                hostId = this.findStarIdByName(planet.host_star.name);
+            }
+            
+            if (hostId) {
+                if (!exoplanetsByHost[hostId]) {
+                    exoplanetsByHost[hostId] = [];
+                }
+                exoplanetsByHost[hostId].push(planet);
             }
         });
         
-        if (traceIndicesToRemove.length > 0) {
-            // Remove traces in reverse order to maintain indices
-            traceIndicesToRemove.reverse().forEach(index => {
-                try {
-                    Plotly.deleteTraces('starmap', index);
-                } catch (traceError) {
-                    console.error('Failed to delete trace at index', index, traceError);
+        Object.keys(exoplanetsByHost).forEach(hostId => {
+            const hostStar = this.currentStars.find(star => star.id === parseInt(hostId));
+            if (!hostStar) return;
+            
+            const planets = exoplanetsByHost[hostId];
+            
+            planets.forEach((planet, index) => {
+                // Get orbital distance
+                let orbitDistance;
+                if (type === 'fictional') {
+                    orbitDistance = planet.semi_major_axis || (planet.orbital_period ? Math.pow(planet.orbital_period / 365.25, 2/3) : 1);
+                } else {
+                    orbitDistance = planet.orbital_properties.semi_major_axis_au || 1;
                 }
+                
+                // Scale orbit radius for visualization - much smaller scale to not interfere with star positions
+                // Use logarithmic scaling to handle large orbital distances
+                const orbitRadius = 0.1 + (Math.log(orbitDistance + 1) * 0.05); // Much smaller scale
+                const orbitPoints = [];
+                
+                // Create circular orbit points
+                for (let i = 0; i < 24; i++) {
+                    const angle = (i / 24) * 2 * Math.PI;
+                    const x = hostStar.x + orbitRadius * Math.cos(angle);
+                    const y = hostStar.y + orbitRadius * Math.sin(angle);
+                    const z = hostStar.z + orbitRadius * Math.sin(angle) * 0.1; // Slight z variation
+                    
+                    orbitPoints.push({x, y, z});
+                }
+                
+                // Determine planet color based on properties
+                let planetColor = '#4CAF50'; // Default green
+                let planetName, planetRadius, planetMass, planetPeriod, isHabitable;
+                
+                if (type === 'fictional') {
+                    planetName = planet.name;
+                    planetRadius = planet.planet_radius_earth;
+                    planetMass = planet.planet_mass_earth;
+                    planetPeriod = planet.orbital_period;
+                    isHabitable = planet.potentially_habitable;
+                    
+                    if (isHabitable) {
+                        planetColor = '#2196F3'; // Blue for habitable
+                    } else if (planet.equilibrium_temperature > 373) {
+                        planetColor = '#FF5722'; // Red for hot
+                    } else if (planet.equilibrium_temperature < 273) {
+                        planetColor = '#9C27B0'; // Purple for cold
+                    }
+                } else {
+                    planetName = planet.name;
+                    planetRadius = planet.physical_properties.radius_earth;
+                    planetMass = planet.physical_properties.mass_earth;
+                    planetPeriod = planet.orbital_properties.period_days;
+                    isHabitable = planet.habitability.potentially_habitable === 'True';
+                    
+                    if (isHabitable) {
+                        planetColor = '#2196F3'; // Blue for habitable
+                    } else if (planet.physical_properties.equilibrium_temperature_k > 373) {
+                        planetColor = '#FF5722'; // Red for hot
+                    } else if (planet.physical_properties.equilibrium_temperature_k < 273) {
+                        planetColor = '#9C27B0'; // Purple for cold
+                    } else {
+                        planetColor = '#FFC107'; // Yellow for real exoplanets
+                    }
+                }
+                
+                // Create orbit trace
+                const orbitTrace = {
+                    x: orbitPoints.map(p => p.x),
+                    y: orbitPoints.map(p => p.y),
+                    z: orbitPoints.map(p => p.z),
+                    mode: 'lines',
+                    type: 'scatter3d',
+                    name: `${planetName} Orbit`,
+                    line: {
+                        color: planetColor,
+                        width: 1
+                    },
+                    showlegend: false,
+                    hovertemplate: `<b>${planetName}</b><br>Host: ${hostStar.fictional_name || hostStar.name}<br>Orbital Period: ${planetPeriod ? planetPeriod.toFixed(1) + ' days' : 'Unknown'}<br>Type: ${type}<br>Habitable: ${isHabitable ? 'Yes' : 'No'}<extra></extra>`
+                };
+                
+                // Create planet marker
+                const planetTrace = {
+                    x: [orbitPoints[0].x], // Position at first orbit point
+                    y: [orbitPoints[0].y],
+                    z: [orbitPoints[0].z],
+                    mode: 'markers',
+                    type: 'scatter3d',
+                    name: planetName,
+                    marker: {
+                        size: planetRadius ? Math.max(2, Math.min(6, planetRadius * 2)) : 3,
+                        color: planetColor,
+                        opacity: 0.8,
+                        line: {
+                            color: '#ffffff',
+                            width: 1
+                        }
+                    },
+                    showlegend: false,
+                    hovertemplate: `<b>${planetName}</b><br>Host: ${hostStar.fictional_name || hostStar.name}<br>Radius: ${planetRadius ? planetRadius.toFixed(2) + ' Earth radii' : 'Unknown'}<br>Mass: ${planetMass ? planetMass.toFixed(2) + ' Earth masses' : 'Unknown'}<br>Period: ${planetPeriod ? planetPeriod.toFixed(1) + ' days' : 'Unknown'}<br>Type: ${type}<extra></extra>`
+                };
+                
+                traces.push(orbitTrace);
+                traces.push(planetTrace);
             });
-        }
-        
-        // Reapply political overlay if it was active
-        reapplyPoliticalOverlay();
-        
-        updateStatus('Trade routes cleared');
-    } catch (error) {
-        console.error('Error clearing trade route traces:', error);
-        updateStatus('Error clearing trade routes');
-    }
-}
-
-function clearTerritoryBorderTraces() {
-    if (!starmapPlot) return;
-    
-    // Remove only territory border traces from the plot
-    const currentData = starmapPlot.data;
-    const traceIndicesToRemove = [];
-    
-    currentData.forEach((trace, index) => {
-        if (trace.name && (trace.name.includes('Territory') || trace.name.includes('Border'))) {
-            traceIndicesToRemove.push(index);
-        }
-    });
-    
-    if (traceIndicesToRemove.length > 0) {
-        // Remove traces in reverse order to maintain indices
-        traceIndicesToRemove.reverse().forEach(index => {
-            Plotly.deleteTraces('starmap', index);
         });
+        
+        return traces;
     }
     
-    // Reapply political overlay if it was active
-    reapplyPoliticalOverlay();
-    
-    updateStatus('Territory borders cleared');
-}
-
-async function showNationLegend() {
-    if (!nationsData || (Array.isArray(nationsData) ? nationsData.length === 0 : Object.keys(nationsData).length === 0)) {
-        await loadNationsData();
-    }
-    
-    const legendContent = document.getElementById('nationLegendContent');
-    let html = '<div class="row">';
-    
-    if (nationsData && !Array.isArray(nationsData)) {
-        Object.entries(nationsData).forEach(([nationId, nation]) => {
-            // Get stars belonging to this nation
-            const nationStars = currentStars.filter(star => 
-                nation.territories && nation.territories.includes(star.id)
-            );
+    findStarIdByName(starName) {
+        // Try to find star by various name matches
+        const star = this.currentStars.find(s => {
+            if (s.name === starName || s.fictional_name === starName) return true;
+            if (s.catalog_ids && s.catalog_ids.includes(starName)) return true;
             
-            // Build star list HTML
-            let starListHtml = '';
-            if (nationStars.length > 0) {
-                starListHtml = `
-                    <div class="mt-2">
-                        <strong class="text-info">Star Systems:</strong>
-                        <ul class="list-unstyled mt-1 ms-2">
-                            ${nationStars.map(star => {
-                                const fictionalName = star.fictional_name ? ` (${star.fictional_name})` : '';
-                                const distance = star.dist ? ` - ${star.dist.toFixed(1)} pc` : '';
-                                return `<li class="small">
-                                    <span style="color: ${nation.color};">•</span> 
-                                    <strong>${star.name}</strong>${fictionalName}${distance}
-                                </li>`;
-                            }).join('')}
-                        </ul>
-                    </div>
-                `;
+            // Try partial matches for known systems
+            if (starName.includes('Proxima') && s.name.includes('Proxima')) return true;
+            if (starName.includes('20 LMi') && s.name.includes('20 LMi')) return true;
+            if (starName.includes('Sol') && s.name === 'Sol') return true;
+            
+            return false;
+        });
+        
+        return star ? star.id : null;
+    }
+    
+    hideTradeRoutes() {
+        if (!this.plot) return;
+        
+        // Remove all trade route traces (keep only the first trace which is stars)
+        const currentTraces = this.plot.data.length;
+        if (currentTraces > 1) {
+            const indicesToRemove = [];
+            for (let i = 1; i < currentTraces; i++) {
+                indicesToRemove.push(i);
             }
-            
+            Plotly.deleteTraces(this.plot, indicesToRemove);
+        }
+    }
+    
+    hideOverlayTraces() {
+        if (!this.plot) return;
+        
+        // Remove all overlay traces except the first one (stars)
+        const currentTraces = this.plot.data.length;
+        if (currentTraces > 1) {
+            const indicesToRemove = [];
+            for (let i = 1; i < currentTraces; i++) {
+                indicesToRemove.push(i);
+            }
+            Plotly.deleteTraces(this.plot, indicesToRemove);
+        }
+    }
+    
+    async showNationsLegend() {
+        const modal = new bootstrap.Modal(document.getElementById('nationsModal'));
+        const content = document.getElementById('nationsContent');
+        
+        if (this.nations.length === 0) {
+            content.innerHTML = '<p>Loading nations...</p>';
+            modal.show();
+            return;
+        }
+        
+        let html = '<div class="row">';
+        this.nations.forEach(nation => {
             html += `
                 <div class="col-md-6 mb-3">
-                    <div class="card bg-secondary h-100" onclick="selectNation('${nationId}')">
-                        <div class="card-header d-flex align-items-center">
-                            <div class="nation-color-indicator me-2" 
-                                 style="width: 20px; height: 20px; background-color: ${nation.color}; border-radius: 3px;"></div>
-                            <strong>${nation.name}</strong>
-                        </div>
-                        <div class="card-body">
-                            <p class="card-text small">${nation.description}</p>
-                            <div class="text-muted small">
-                                <div><strong>Government:</strong> ${nation.government_type}</div>
-                                <div><strong>Capital:</strong> ${nation.capital_system || 'None'}</div>
-                                <div><strong>Systems:</strong> ${nation.territories.length}</div>
-                                <div><strong>Population:</strong> ${nation.population}</div>
-                            </div>
-                            ${starListHtml}
+                    <div class="nation-item" style="border-left-color: ${nation.color}">
+                        <h6 class="fw-bold" style="color: ${nation.color}">${nation.name}</h6>
+                        <p class="small mb-2">${nation.description}</p>
+                        <div class="small text-muted">
+                            <strong>Government:</strong> ${nation.government_type}<br>
+                            <strong>Capital:</strong> ${nation.capital_system}<br>
+                            <strong>Population:</strong> ${nation.population}
                         </div>
                     </div>
                 </div>
             `;
         });
-    }
-    
-    html += '</div>';
-    legendContent.innerHTML = html;
-    
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('nationModal'));
-    modal.show();
-}
-
-function selectNation(nationId) {
-    selectedNation = nationId;
-    
-    // Update visual indication of selection
-    document.querySelectorAll('#nationLegendContent .card').forEach(card => {
-        card.classList.remove('border-success');
-    });
-    
-    event.currentTarget.classList.add('border-success');
-}
-
-function focusOnNation() {
-    if (!selectedNation || !nationsData[selectedNation]) {
-        updateStatus('Please select a nation first');
-        return;
-    }
-    
-    const nation = nationsData[selectedNation];
-    const nationStars = currentStars.filter(star => 
-        nation.territories.includes(star.id)
-    );
-    
-    if (nationStars.length === 0) {
-        updateStatus('No stars found for selected nation');
-        return;
-    }
-    
-    // Calculate bounding box for nation's territory
-    const xCoords = nationStars.map(s => s.x);
-    const yCoords = nationStars.map(s => s.y);
-    const zCoords = nationStars.map(s => s.z);
-    
-    const xRange = [Math.min(...xCoords) - 5, Math.max(...xCoords) + 5];
-    const yRange = [Math.min(...yCoords) - 5, Math.max(...yCoords) + 5];
-    const zRange = [Math.min(...zCoords) - 5, Math.max(...zCoords) + 5];
-    
-    // Update the camera view to focus on the nation
-    Plotly.relayout('starmap', {
-        'scene.camera': {
-            center: {
-                x: (xRange[0] + xRange[1]) / 2 / 100,
-                y: (yRange[0] + yRange[1]) / 2 / 100,
-                z: (zRange[0] + zRange[1]) / 2 / 100
-            },
-            eye: { x: 1.5, y: 1.5, z: 1.5 }
-        }
-    });
-    
-    // Close the modal
-    bootstrap.Modal.getInstance(document.getElementById('nationModal')).hide();
-    
-    updateStatus(`Focused on ${nation.name} territory`);
-}
-
-// Galactic Directions Functions
-async function loadGalacticDirections() {
-    try {
-        const response = await fetch(`/api/galactic-directions?distance=${galacticDistance}&grid=${galacticGridActive}`);
-        if (!response.ok) throw new Error('Failed to fetch galactic directions');
+        html += '</div>';
         
-        const responseData = await response.json();
-        if (responseData.success && responseData.data) {
-            galacticDirectionsData = responseData.data;
-            updateStatus(`Loaded ${galacticDirectionsData.directions.length} galactic direction markers`);
-        } else {
-            throw new Error('Invalid response format from galactic directions API');
-        }
-    } catch (error) {
-        console.error('Error loading galactic directions:', error);
-        updateStatus(`Error loading galactic directions: ${error.message}`);
-    }
-}
-
-async function toggleGalacticDirections() {
-    const checkbox = document.getElementById('galacticDirections');
-    galacticDirectionsActive = checkbox.checked;
-    
-    if (galacticDirectionsActive) {
-        await loadGalacticDirections();
+        content.innerHTML = html;
+        modal.show();
     }
     
-    updateGalacticDirectionsDisplay();
-}
-
-async function toggleGalacticGrid() {
-    const checkbox = document.getElementById('galacticGrid');
-    galacticGridActive = checkbox.checked;
-    
-    if (galacticDirectionsActive || galacticGridActive) {
-        await loadGalacticDirections();
-    }
-    
-    updateGalacticDirectionsDisplay();
-}
-
-function updateGalacticDistance() {
-    const distanceSlider = document.getElementById('galacticDistance');
-    const distanceValue = document.getElementById('galacticDistanceValue');
-    
-    galacticDistance = parseInt(distanceSlider.value);
-    distanceValue.textContent = galacticDistance;
-    
-    if (galacticDirectionsActive || galacticGridActive) {
-        loadGalacticDirections().then(() => {
-            updateGalacticDirectionsDisplay();
-        });
-    }
-}
-
-function updateGalacticDirectionsDisplay() {
-    if (!starmapPlot) return;
-    
-    // Remove existing galactic traces
-    galacticTraces.forEach(traceIndex => {
-        Plotly.deleteTraces('starmap', traceIndex);
-    });
-    galacticTraces = [];
-    
-    if (!galacticDirectionsData.directions) return;
-    
-    const tracesToAdd = [];
-    
-    // Add cardinal direction markers
-    if (galacticDirectionsActive) {
-        const markers = galacticDirectionsData.directions;
-        
-        const cardinalTrace = {
-            x: markers.map(m => m.x),
-            y: markers.map(m => m.y),
-            z: markers.map(m => m.z),
-            mode: 'markers+text',
-            type: 'scatter3d',
-            marker: {
-                size: 12,
-                color: markers.map(m => m.color),
-                symbol: 'diamond',
-                opacity: 0.9,
-                line: {
-                    width: 2,
-                    color: '#ffffff'
+    resetView() {
+        if (this.plot) {
+            Plotly.relayout(this.plot, {
+                'scene.camera': {
+                    eye: { x: 1.5, y: 1.5, z: 1.5 }
                 }
-            },
-            text: markers.map(m => m.name),
-            textposition: 'middle center',
-            textfont: {
-                size: 12,
-                color: '#ffffff'
-            },
-            hovertemplate: markers.map(m => 
-                `<b>${m.name}</b><br>` +
-                `Position: (${m.x}, ${m.y}, ${m.z}) pc<br>` +
-                `<extra></extra>`
-            ),
-            name: 'Galactic Directions',
-            showlegend: true,
-            legendgroup: 'galactic'
-        };
-        
-        tracesToAdd.push(cardinalTrace);
-    }
-    
-    // Add galactic grid lines
-    if (galacticGridActive && galacticDirectionsData.grid) {
-        galacticDirectionsData.grid.forEach(gridLine => {
-            const points = gridLine.points;
-            if (points && points.length > 0) {
-                const gridTrace = {
-                    x: points.map(p => p[0]),
-                    y: points.map(p => p[1]),
-                    z: points.map(p => p[2]),
-                    mode: 'lines',
-                    type: 'scatter3d',
-                    line: {
-                        color: gridLine.color,
-                        width: 2,
-                        dash: gridLine.type === 'galactic_equator' ? 'solid' : 'dash'
-                    },
-                    hoverinfo: 'skip',
-                    showlegend: false,
-                    name: `Grid ${gridLine.type}`,
-                    legendgroup: 'galactic'
-                };
-                
-                tracesToAdd.push(gridTrace);
-            }
-        });
-    }
-    
-    // Add all traces at once
-    if (tracesToAdd.length > 0) {
-        Plotly.addTraces('starmap', tracesToAdd).then(() => {
-            // Store trace indices for removal later
-            const plotData = starmapPlot.data;
-            galacticTraces = tracesToAdd.map((_, index) => plotData.length - tracesToAdd.length + index);
-        });
-    }
-}
-
-// Image Export Functionality
-function exportImage(format) {
-    if (!starmapPlot) {
-        alert('Please update the starmap first before exporting.');
-        return;
-    }
-
-    // Get the current timestamp for filename
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const filename = `starmap-felgenland-${timestamp}`;
-    
-    // Check if we should include UI elements
-    const includeUI = document.getElementById('includeUI').checked;
-    
-    // Export configuration
-    const config = {
-        filename: filename,
-        format: format,
-        width: includeUI ? 1920 : 1600,
-        height: includeUI ? 1080 : 1200,
-        scale: 2 // Higher resolution
-    };
-
-    // Show loading indicator
-    const statusBar = document.getElementById('statusBar');
-    const originalStatus = statusBar.innerHTML;
-    statusBar.innerHTML = '<span class="loading"></span>Exporting ' + format.toUpperCase() + ' image...';
-
-    try {
-        if (format === 'png') {
-            Plotly.downloadImage('starmap', {
-                format: 'png',
-                width: config.width,
-                height: config.height,
-                filename: config.filename,
-                scale: config.scale
-            }).then(() => {
-                statusBar.innerHTML = '✅ PNG exported successfully!';
-                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
-            }).catch(error => {
-                console.error('PNG export failed:', error);
-                statusBar.innerHTML = '❌ PNG export failed. Please try again.';
-                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
             });
-        } else if (format === 'jpg') {
-            Plotly.downloadImage('starmap', {
-                format: 'jpeg',
-                width: config.width,
-                height: config.height,
-                filename: config.filename,
-                scale: config.scale
-            }).then(() => {
-                statusBar.innerHTML = '✅ JPG exported successfully!';
-                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
-            }).catch(error => {
-                console.error('JPG export failed:', error);
-                statusBar.innerHTML = '❌ JPG export failed. Please try again.';
-                setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
-            });
-        } else if (format === 'pdf') {
-            // For PDF, we'll use a different approach
-            exportToPDF(config);
+            this.showStatus('View reset', 'info');
         }
-    } catch (error) {
-        console.error('Export failed:', error);
-        statusBar.innerHTML = '❌ Export failed. Please try again.';
-        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
     }
-}
-
-function exportToPDF(config) {
-    // First get the image as base64
-    Plotly.toImage('starmap', {
-        format: 'png',
-        width: config.width,
-        height: config.height,
-        scale: config.scale
-    }).then(function(dataURL) {
-        // Create PDF using jsPDF (we'll need to include this library)
-        // For now, we'll convert the image to PDF on the client side
-        
-        // Create a temporary canvas to draw the image
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const img = new Image();
-        
-        img.onload = function() {
-            canvas.width = img.width;
-            canvas.height = img.height;
-            
-            // Draw white background
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw the starmap image
-            ctx.drawImage(img, 0, 0);
-            
-            // Add title and metadata
-            ctx.fillStyle = '#000000';
-            ctx.font = '24px Arial';
-            ctx.fillText('Starmap: A Picture of the Felgenland Saga', 50, 50);
-            
-            ctx.font = '14px Arial';
-            ctx.fillText('Generated on: ' + new Date().toLocaleDateString(), 50, 80);
-            
-            // Convert canvas to blob and download
-            canvas.toBlob(function(blob) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = config.filename + '.png'; // We'll save as PNG for now
-                link.click();
-                
-                const statusBar = document.getElementById('statusBar');
-                statusBar.innerHTML = '✅ PDF (as PNG) exported successfully!';
-                setTimeout(() => statusBar.innerHTML = 'Ready - Starmap exported', 3000);
-            }, 'image/png');
-        };
-        
-        img.src = dataURL;
-    }).catch(error => {
-        console.error('PDF export failed:', error);
-        const statusBar = document.getElementById('statusBar');
-        statusBar.innerHTML = '❌ PDF export failed. Please try again.';
-        setTimeout(() => statusBar.innerHTML = 'Ready - Click "Update Starmap" to load stars', 3000);
-    });
-}
-
-// Enhanced CSV export with image metadata
-function exportCSV() {
-    if (currentStars.length === 0) {
-        alert('No star data to export. Please update the starmap first.');
-        return;
-    }
-
-    const statusBar = document.getElementById('statusBar');
-    const originalStatus = statusBar.innerHTML;
-    statusBar.innerHTML = '<span class="loading"></span>Exporting CSV data...';
-
-    try {
-        // Add timestamp and export metadata
-        const timestamp = new Date().toISOString();
-        const metadata = [
-            '# Starmap CSV Export - Felgenland Saga',
-            '# Generated: ' + timestamp,
-            '# Total Stars: ' + currentStars.length,
-            '# Magnitude Limit: ' + document.getElementById('magLimit').value,
-            '# Max Stars: ' + document.getElementById('starCount').value,
-            '#'
-        ];
-
-        // Create CSV header
-        const headers = ['name', 'ra', 'dec', 'distance', 'magnitude', 'spectral_type', 'x', 'y', 'z'];
-        
-        // Create CSV content
-        let csvContent = metadata.join('\n') + '\n';
-        csvContent += headers.join(',') + '\n';
-        
-        currentStars.forEach(star => {
-            const row = [
-                `"${star.name || 'Unknown'}"`,
-                star.ra || 0,
-                star.dec || 0,
-                star.distance || 0,
-                star.magnitude || 0,
-                `"${star.spectral_type || 'Unknown'}"`,
-                star.x || 0,
-                star.y || 0,
-                star.z || 0
-            ];
-            csvContent += row.join(',') + '\n';
-        });
-
-        // Download CSV
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `starmap-felgenland-${timestamp.replace(/[:.]/g, '-').slice(0, 19)}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        statusBar.innerHTML = '✅ CSV exported successfully!';
-        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
-    } catch (error) {
-        console.error('CSV export failed:', error);
-        statusBar.innerHTML = '❌ CSV export failed. Please try again.';
-        setTimeout(() => statusBar.innerHTML = originalStatus, 3000);
-    }
-}
-
-// ==========================================
-// STELLAR REGIONS OVERLAY FUNCTIONS
-// ==========================================
-
-async function toggleStellarRegions() {
-    console.log('toggleStellarRegions called');
-    const checkbox = document.getElementById('stellarRegions');
-    stellarRegionsActive = checkbox.checked;
     
-    console.log('Stellar regions active:', stellarRegionsActive);
-    
-    if (stellarRegionsActive) {
-        console.log('Loading stellar regions...');
-        try {
-            await loadStellarRegions();
-            console.log('Stellar regions loaded successfully');
-        } catch (error) {
-            console.error('Failed to load stellar regions:', error);
+    exportData() {
+        if (!this.currentStars.length) {
+            this.showStatus('No data to export', 'warning');
             return;
         }
+        
+        const csv = this.generateCSV(this.currentStars);
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `starmap_data_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        this.showStatus('Data exported successfully', 'success');
     }
     
-    console.log('Calling updateStellarRegionsDisplay...');
-    updateStellarRegionsDisplay();
-}
-
-async function loadStellarRegions() {
-    if (Object.keys(stellarRegionsData).length > 0) {
-        return; // Already loaded
-    }
-    
-    try {
-        updateStatus('Loading stellar regions data...', true);
+    generateCSV(stars) {
+        const headers = ['id', 'name', 'fictional_name', 'x', 'y', 'z', 'magnitude', 'spectral_class', 'constellation', 'distance'];
+        let csv = headers.join(',') + '\n';
         
-        const response = await fetch('/api/stellar-regions');
-        if (!response.ok) {
-            throw new Error('Failed to fetch stellar regions data');
-        }
-        
-        const responseData = await response.json();
-        if (responseData.success && responseData.data) {
-            stellarRegionsData = { regions: responseData.data };
-        } else {
-            throw new Error('Invalid response format from stellar regions API');
-        }
-        
-        console.log('Stellar regions loaded:', stellarRegionsData);
-        updateStatus(`Stellar regions data loaded successfully (${stellarRegionsData.regions?.length || 0} regions)`);
-        
-    } catch (error) {
-        console.error('Error loading stellar regions:', error);
-        updateStatus(`Error loading stellar regions: ${error.message}`);
-        throw error;
-    }
-}
-
-function generateOctantWireframe(xRange, yRange, zRange) {
-    const [xMin, xMax] = xRange;
-    const [yMin, yMax] = yRange;
-    const [zMin, zMax] = zRange;
-    
-    // Define the 8 vertices of the cube
-    const vertices = [
-        [xMin, yMin, zMin], // 0
-        [xMax, yMin, zMin], // 1
-        [xMax, yMax, zMin], // 2
-        [xMin, yMax, zMin], // 3
-        [xMin, yMin, zMax], // 4
-        [xMax, yMin, zMax], // 5
-        [xMax, yMax, zMax], // 6
-        [xMin, yMax, zMax]  // 7
-    ];
-    
-    // Define the 12 edges of the cube
-    const edges = [
-        [0, 1], [1, 2], [2, 3], [3, 0], // bottom face
-        [4, 5], [5, 6], [6, 7], [7, 4], // top face
-        [0, 4], [1, 5], [2, 6], [3, 7]  // vertical edges
-    ];
-    
-    const x = [], y = [], z = [];
-    
-    // Generate line segments for each edge
-    edges.forEach(edge => {
-        const [start, end] = edge;
-        const startVertex = vertices[start];
-        const endVertex = vertices[end];
-        
-        // Add start point
-        x.push(startVertex[0]);
-        y.push(startVertex[1]);
-        z.push(startVertex[2]);
-        
-        // Add end point
-        x.push(endVertex[0]);
-        y.push(endVertex[1]);
-        z.push(endVertex[2]);
-        
-        // Add NaN to separate line segments
-        x.push(NaN);
-        y.push(NaN);
-        z.push(NaN);
-    });
-    
-    return { x, y, z };
-}
-
-function generateSpherePoints(center, radius, resolution = 16) {
-    const x = [], y = [], z = [];
-    const i = [], j = [], k = [];
-    
-    // Generate sphere vertices using spherical coordinates
-    for (let phi = 0; phi <= resolution; phi++) {
-        for (let theta = 0; theta <= resolution; theta++) {
-            const phiRad = (phi * Math.PI) / resolution;
-            const thetaRad = (theta * 2 * Math.PI) / resolution;
-            
-            const px = center[0] + radius * Math.sin(phiRad) * Math.cos(thetaRad);
-            const py = center[1] + radius * Math.sin(phiRad) * Math.sin(thetaRad);
-            const pz = center[2] + radius * Math.cos(phiRad);
-            
-            x.push(px);
-            y.push(py);
-            z.push(pz);
-        }
-    }
-    
-    // Generate triangular faces for the sphere mesh
-    for (let phi = 0; phi < resolution; phi++) {
-        for (let theta = 0; theta < resolution; theta++) {
-            const first = phi * (resolution + 1) + theta;
-            const second = first + resolution + 1;
-            
-            // First triangle
-            i.push(first);
-            j.push(second);
-            k.push(first + 1);
-            
-            // Second triangle
-            i.push(second);
-            j.push(second + 1);
-            k.push(first + 1);
-        }
-    }
-    
-    return { x, y, z, i, j, k };
-}
-
-function getStarsInRegion(region) {
-    const regionStars = [];
-    
-    // For octant-based regions, check all stars against X,Y,Z ranges
-    if (region.x_range && region.y_range && region.z_range) {
-        currentStars.forEach(star => {
-            if (isStarInRegionByLocation(star, region)) {
-                regionStars.push(star);
-            }
-        });
-    }
-    // Legacy support for old region format
-    else if (region.sectors) {
-        region.sectors.forEach(sector => {
-            if (sector.star_id) {
-                const star = currentStars.find(s => s.id === sector.star_id);
-                if (star) {
-                    regionStars.push(star);
-                }
-            }
-        });
-    }
-    
-    return regionStars;
-}
-
-function isStarInRegionByLocation(star, region) {
-    // Check based on X,Y,Z ranges for octant-based regions
-    if (region.x_range && region.y_range && region.z_range) {
-        const x = star.x || 0;
-        const y = star.y || 0;
-        const z = star.z || 0;
-        
-        const [xMin, xMax] = region.x_range;
-        const [yMin, yMax] = region.y_range;
-        const [zMin, zMax] = region.z_range;
-        
-        return (x >= xMin && x <= xMax && 
-                y >= yMin && y <= yMax && 
-                z >= zMin && z <= zMax);
-    }
-    // Legacy support for RA/Dec ranges
-    else if (region.ra_range && region.dec_range && region.distance_range) {
-        const ra = star.ra || 0;
-        const dec = star.dec || 0;
-        const dist = star.dist || 0;
-        
-        const [raMin, raMax] = region.ra_range;
-        const [decMin, decMax] = region.dec_range;
-        const [distMin, distMax] = region.distance_range;
-        
-        return (ra >= raMin && ra <= raMax && 
-                dec >= decMin && dec <= decMax && 
-                dist >= distMin && dist <= distMax);
-    }
-    return false;
-}
-
-function updateStellarRegionsDisplay() {
-    if (!starmapPlot) {
-        console.error('Starmap plot not initialized');
-        return;
-    }
-    
-    // Remove existing stellar regions traces
-    clearStellarRegionsTraces();
-    
-    if (!stellarRegionsActive) {
-        console.log('Stellar regions not active, skipping display');
-        return;
-    }
-    
-    if (!stellarRegionsData || !stellarRegionsData.regions) {
-        console.error('No stellar regions data available');
-        return;
-    }
-    
-    console.log('Updating stellar regions display with', stellarRegionsData.regions.length, 'regions');
-    
-    const tracesToAdd = [];
-    
-    // Add octant boundary traces
-    stellarRegionsData.regions.forEach((region, index) => {
-        console.log(`Processing region: ${region.name}`);
-        
-        // Only handle octant-based regions with x,y,z ranges
-        if (region.x_range && region.y_range && region.z_range) {
-            console.log(`Creating wireframe for ${region.name}`);
-            
-            const wireframeData = generateOctantWireframe(region.x_range, region.y_range, region.z_range);
-            
-            const regionTrace = {
-                type: 'scatter3d',
-                mode: 'lines',
-                x: wireframeData.x,
-                y: wireframeData.y,
-                z: wireframeData.z,
-                line: {
-                    color: region.color_rgb ? `rgb(${region.color_rgb.join(',')})` : '#888888',
-                    width: 3
-                },
-                name: `${region.short_name || region.name}`,
-                showlegend: true,
-                legendgroup: `stellar_region_${index}`,
-                hovertemplate: 
-                    `<b>${region.name}</b><br>` +
-                    `${region.description}<br>` +
-                    `X: ${region.x_range[0]} to ${region.x_range[1]} parsecs<br>` +
-                    `Y: ${region.y_range[0]} to ${region.y_range[1]} parsecs<br>` +
-                    `Z: ${region.z_range[0]} to ${region.z_range[1]} parsecs<br>` +
-                    `<extra></extra>`
-            };
-            
-            const labelTrace = {
-                x: [region.center_point[0]],
-                y: [region.center_point[1]],
-                z: [region.center_point[2]],
-                mode: 'text',
-                type: 'scatter3d',
-                text: [region.short_name || region.name],
-                textfont: {
-                    size: 10,
-                    color: region.color_rgb ? `rgb(${region.color_rgb.join(',')})` : '#ffffff'
-                },
-                name: `${region.name} Label`,
-                showlegend: false,
-                hoverinfo: 'skip'
-            };
-            
-            tracesToAdd.push(regionTrace);
-            tracesToAdd.push(labelTrace);
-            stellarRegionsTraces.push(regionTrace, labelTrace);
-        } else {
-            console.warn(`Region ${region.name} does not have x_range, y_range, z_range`);
-        }
-    });
-    
-    // Add all traces to the plot
-    if (tracesToAdd.length > 0) {
-        console.log('Adding', tracesToAdd.length, 'traces to plot');
-        Plotly.addTraces('starmap', tracesToAdd).then(() => {
-            // Track trace indices for cleanup
-            const currentTraceCount = starmapPlot.data.length;
-            for (let i = 0; i < tracesToAdd.length; i++) {
-                stellarRegionsTraces.push(currentTraceCount - tracesToAdd.length + i);
-            }
-            
-            console.log('Successfully added stellar regions traces');
-            updateStatus(`Stellar regions overlay applied (${stellarRegionsData.regions.length} octants)`);
-        }).catch(error => {
-            console.error('Error adding traces:', error);
-            updateStatus(`Error displaying stellar regions: ${error.message}`);
-        });
-    } else {
-        console.warn('No traces to add');
-        updateStatus('No stellar regions to display');
-    }
-}
-
-function clearStellarRegionsTraces() {
-    if (!starmapPlot || stellarRegionsTraces.length === 0) return;
-    
-    // Remove traces in reverse order to maintain indices
-    stellarRegionsTraces.reverse().forEach(traceIndex => {
-        if (traceIndex < starmapPlot.data.length) {
-            Plotly.deleteTraces('starmap', traceIndex);
-        }
-    });
-    
-    stellarRegionsTraces = [];
-}
-
-function selectStellarRegion(regionName) {
-    selectedRegion = regionName;
-    
-    // Find the region data
-    const region = stellarRegionsData.regions?.find(r => r.name === regionName);
-    if (!region) return;
-    
-    // Update status with region info
-    updateStatus(`Selected region: ${region.name} (${region.population})`);
-    
-    // Optional: Focus camera on region center
-    if (starmapPlot) {
-        const center = region.center_point;
-        const currentCamera = starmapPlot.layout.scene.camera;
-        
-        // Calculate camera position to look at region center
-        const distance = 100; // Distance from center
-        const newCamera = {
-            eye: {
-                x: center[0] / distance + 1,
-                y: center[1] / distance + 1,
-                z: center[2] / distance + 1
-            },
-            center: {
-                x: center[0] / distance,
-                y: center[1] / distance,
-                z: center[2] / distance
-            }
-        };
-        
-        Plotly.relayout('starmap', {
-            'scene.camera': newCamera
-        });
-    }
-}
-
-async function loadRegionBoundaries(regionName) {
-    try {
-        updateStatus(`Loading boundaries for ${regionName}...`, true);
-        
-        const response = await fetch(`/api/stellar-region/${regionName}/boundaries?resolution=20`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch boundaries for ${regionName}`);
-        }
-        
-        const data = await response.json();
-        
-        // Add boundary trace
-        if (data.boundary_points && data.boundary_points.length > 0) {
-            const boundaryTrace = {
-                x: data.boundary_points.map(p => p[0]),
-                y: data.boundary_points.map(p => p[1]),
-                z: data.boundary_points.map(p => p[2]),
-                mode: 'markers',
-                type: 'scatter3d',
-                marker: {
-                    size: 3,
-                    color: '#ffffff',
-                    opacity: 0.2
-                },
-                name: `${regionName} Boundaries`,
-                showlegend: false,
-                hovertemplate: `${regionName} Boundary<extra></extra>`,
-                hoverinfo: 'skip'
-            };
-            
-            Plotly.addTraces('starmap', [boundaryTrace]).then(() => {
-                stellarRegionsTraces.push(starmapPlot.data.length - 1);
-                updateStatus(`Boundaries loaded for ${regionName}`);
+        stars.forEach(star => {
+            const row = headers.map(header => {
+                const value = star[header] || '';
+                return typeof value === 'string' ? `"${value.replace(/"/g, '""')}"` : value;
             });
-        }
+            csv += row.join(',') + '\n';
+        });
         
-    } catch (error) {
-        console.error(`Error loading boundaries for ${regionName}:`, error);
-        updateStatus(`Error loading boundaries: ${error.message}`);
-    }
-}
-
-// Function to reapply stellar regions overlay after starmap updates
-function reapplyStellarRegionsOverlay() {
-    if (stellarRegionsActive && stellarRegionsData.regions) {
-        try {
-            updateStellarRegionsDisplay();
-        } catch (error) {
-            console.error('Error reapplying stellar regions overlay:', error);
-            updateStatus('Warning: Stellar regions overlay may need to be refreshed');
-        }
-    }
-}
-
-// ==========================================
-// STELLAR REGIONS SELECTION FUNCTIONS
-// ==========================================
-
-function showRegionSelectionUI() {
-    const regionSelectionDiv = document.getElementById('regionSelection');
-    const regionSelect = document.getElementById('regionSelect');
-    
-    if (regionSelectionDiv && regionSelect) {
-        // Clear existing options
-        regionSelect.innerHTML = '<option value="">Select a Region...</option>';
-        
-        // Add regions to the dropdown
-        if (stellarRegionsData.regions) {
-            stellarRegionsData.regions.forEach(region => {
-                const option = document.createElement('option');
-                option.value = region.name;
-                option.textContent = region.name;
-                regionSelect.appendChild(option);
-            });
-        }
-        
-        // Remove any existing event listener and add new one
-        regionSelect.removeEventListener('change', handleRegionSelection);
-        regionSelect.addEventListener('change', handleRegionSelection);
-        
-        // Show the region selection UI
-        regionSelectionDiv.style.display = 'block';
-    }
-}
-
-function hideRegionSelectionUI() {
-    const regionSelectionDiv = document.getElementById('regionSelection');
-    if (regionSelectionDiv) {
-        regionSelectionDiv.style.display = 'none';
-    }
-}
-
-function handleRegionSelection() {
-    const regionSelect = document.getElementById('regionSelect');
-    const selectedRegionName = regionSelect.value;
-    
-    // Enable/disable buttons based on selection
-    const focusBtn = document.getElementById('focusRegionBtn');
-    const detailsBtn = document.getElementById('detailsRegionBtn');
-    const boundariesBtn = document.getElementById('boundariesRegionBtn');
-    
-    if (selectedRegionName) {
-        focusBtn.disabled = false;
-        detailsBtn.disabled = false;
-        boundariesBtn.disabled = false;
-        selectedRegion = selectedRegionName;
-        updateStatus(`Selected region: ${selectedRegionName}`);
-    } else {
-        focusBtn.disabled = true;
-        detailsBtn.disabled = true;
-        boundariesBtn.disabled = true;
-        selectedRegion = null;
-        updateStatus('Region selection cleared');
-    }
-}
-
-function focusOnSelectedRegion() {
-    if (!selectedRegion || !stellarRegionsData.regions) {
-        updateStatus('Please select a region first');
-        return;
+        return csv;
     }
     
-    const region = stellarRegionsData.regions.find(r => r.name === selectedRegion);
-    if (!region) {
-        updateStatus('Selected region not found');
-        return;
-    }
-    
-    // Focus the camera on the region's center
-    const centerX = region.center_point[0];
-    const centerY = region.center_point[1];
-    const centerZ = region.center_point[2];
-    
-    // Calculate appropriate zoom level based on region diameter
-    const diameter = region.diameter || 50;
-    const distance = Math.max(diameter * 2, 100); // Minimum distance of 100
-    
-    const newCamera = {
-        center: {
-            x: centerX / distance,
-            y: centerY / distance,
-            z: centerZ / distance
-        },
-        eye: {
-            x: centerX / distance + 1.5,
-            y: centerY / distance + 1.5,
-            z: centerZ / distance + 1.5
-        }
-    };
-    
-    Plotly.relayout('starmap', {
-        'scene.camera': newCamera
-    });
-    
-    updateStatus(`Focused on ${selectedRegion}`);
-}
-
-function showRegionDetails() {
-    if (!selectedRegion || !stellarRegionsData.regions) {
-        updateStatus('Please select a region first');
-        return;
-    }
-    
-    const region = stellarRegionsData.regions.find(r => r.name === selectedRegion);
-    if (!region) {
-        updateStatus('Selected region not found');
-        return;
-    }
-    
-    // Show region details in the search results panel
-    const searchResults = document.getElementById('searchResults');
-    const searchResultsList = document.getElementById('searchResultsList');
-    
-    if (searchResults && searchResultsList) {
-        const detailsHtml = `
-            <div class="region-details">
-                <h6 class="text-primary mb-3">🌌 ${region.name}</h6>
-                
-                <div class="region-info mb-3">
-                    <div class="star-property">
-                        <span><strong>Description:</strong></span>
-                        <span>${region.description}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Established:</strong></span>
-                        <span>${region.established}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Population:</strong></span>
-                        <span>${region.population}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Diameter:</strong></span>
-                        <span>${region.diameter} parsecs</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Economic Zone:</strong></span>
-                        <span>${region.economic_zone}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Trade Routes:</strong></span>
-                        <span>${region.trade_routes}</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Significance:</strong></span>
-                        <span>${region.significance}</span>
-                    </div>
-                </div>
-                
-                <div class="region-coordinates mb-3">
-                    <h6>Coordinates</h6>
-                    <div class="star-property">
-                        <span><strong>Center:</strong></span>
-                        <span>(${region.center_point[0].toFixed(2)}, ${region.center_point[1].toFixed(2)}, ${region.center_point[2].toFixed(2)})</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>RA Range:</strong></span>
-                        <span>${region.ra_range[0]}° - ${region.ra_range[1]}°</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Dec Range:</strong></span>
-                        <span>${region.dec_range[0]}° - ${region.dec_range[1]}°</span>
-                    </div>
-                    <div class="star-property">
-                        <span><strong>Distance Range:</strong></span>
-                        <span>${region.distance_range[0]} - ${region.distance_range[1]} parsecs</span>
-                    </div>
-                </div>
-                
-                <div class="mt-3">
-                    <button class="btn btn-sm btn-outline-primary" onclick="focusOnSelectedRegion()">Focus on Region</button>
-                    <button class="btn btn-sm btn-outline-success" onclick="showRegionBoundaries()">Show Boundaries</button>
-                    <button class="btn btn-sm btn-outline-light" onclick="clearRegionSelection()">Clear</button>
-                </div>
+    updateStats(stats) {
+        const statsDiv = document.getElementById('stats');
+        statsDiv.innerHTML = `
+            <div class="small">
+                ⭐ Stars: ${stats.stars.toLocaleString()}<br>
+                🏛️ Nations: ${stats.nations}<br>
+                🛣️ Trade Routes: ${stats.trade_routes}<br>
+                🪐 Exoplanets: ${stats.exoplanets.toLocaleString()}
             </div>
         `;
-        
-        searchResultsList.innerHTML = detailsHtml;
-        searchResults.style.display = 'block';
-        
-        updateStatus(`Showing details for ${selectedRegion}`);
-    }
-}
-
-function showRegionBoundaries() {
-    if (!selectedRegion) {
-        updateStatus('Please select a region first');
-        return;
     }
     
-    loadRegionBoundaries(selectedRegion);
-}
-
-function clearRegionSelection() {
-    const regionSelect = document.getElementById('regionSelect');
-    if (regionSelect) {
-        regionSelect.value = '';
-        handleRegionSelection(); // This will disable buttons and clear selectedRegion
-    }
-    
-    // Clear the search results panel
-    const searchResults = document.getElementById('searchResults');
-    if (searchResults) {
-        searchResults.style.display = 'none';
-    }
-}
-
-function clearRegionBoundaries() {
-    // Clear existing boundary traces
-    if (starmapPlot && starmapPlot.data) {
-        const traces = starmapPlot.data;
-        const boundaryIndices = [];
+    showStatus(message, type = 'info') {
+        const statusDiv = document.getElementById('status');
+        statusDiv.className = `alert alert-${type} small mb-3`;
+        statusDiv.textContent = message;
         
-        traces.forEach((trace, index) => {
-            if (trace.name && trace.name.includes('Boundaries')) {
-                boundaryIndices.push(index);
-            }
-        });
-        
-        if (boundaryIndices.length > 0) {
-            boundaryIndices.reverse().forEach(index => {
-                try {
-                    Plotly.deleteTraces('starmap', index);
-                } catch (error) {
-                    console.error('Error deleting boundary trace:', error);
+        // Auto-hide success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                if (statusDiv.textContent === message) {
+                    statusDiv.className = 'alert alert-info small mb-3';
+                    statusDiv.textContent = 'Ready';
                 }
-            });
+            }, 3000);
         }
     }
     
-    updateStatus('Region boundaries cleared');
-}
-
-// Function to fetch habitability explanation for a star
-async function fetchHabitabilityExplanation(starId) {
-    try {
-        const response = await fetch(`/api/star/${starId}/habitability`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch habitability explanation');
-        }
-        
-        const data = await response.json();
-        
-        if (data.success && data.data.explanation) {
-            const explanationElement = document.getElementById(`habitability-explanation-${starId}`);
-            if (explanationElement) {
-                explanationElement.textContent = data.data.explanation;
-            }
-        }
-    } catch (error) {
-        console.error('Error fetching habitability explanation:', error);
-        const explanationElement = document.getElementById(`habitability-explanation-${starId}`);
-        if (explanationElement) {
-            explanationElement.textContent = 'Unable to load habitability assessment.';
-        }
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 }
+
+// Global functions for template onclick handlers
+function searchStars() {
+    app.performSearch();
+}
+
+function applyFilters() {
+    app.applyFilters();
+}
+
+function showNationsLegend() {
+    app.showNationsLegend();
+}
+
+function resetView() {
+    app.resetView();
+}
+
+function exportData() {
+    app.exportData();
+}
+
+function hideStarDetails() {
+    app.hideStarDetails();
+}
+
+// Initialize app when DOM is ready
+let app;
+document.addEventListener('DOMContentLoaded', () => {
+    app = new StarmapApp();
+});

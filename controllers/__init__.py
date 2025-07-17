@@ -1,1 +1,1 @@
-# Controllers package for Starmap application
+# Controllers package for Starmap V2

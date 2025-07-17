@@ -1,8 +1,8 @@
-# Contributing to Starmap
+# Contributing to Starmap - Felgenland Saga
 
 ## Welcome Contributors! 🌟
 
-Thank you for your interest in contributing to Starmap! This interactive 3D stellar cartography application is designed for science fiction world-building and astronomical exploration.
+Thank you for your interest in contributing to Starmap - Felgenland Saga! This interactive 3D stellar cartography application is designed for the Felgenland Saga universe, featuring science fiction world-building and astronomical exploration.
 
 ## 🚀 Getting Started
 
@@ -357,6 +357,6 @@ By contributing to Starmap, you agree that your contributions will be licensed u
 
 ---
 
-**Thank you for contributing to Starmap! 🌟**
+**Thank you for contributing to Starmap - Felgenland Saga! 🌟**
 
-Your contributions help make stellar cartography accessible to science fiction writers and astronomy enthusiasts worldwide.
+Your contributions help make stellar cartography accessible to science fiction writers and astronomy enthusiasts exploring the Felgenland Saga universe.

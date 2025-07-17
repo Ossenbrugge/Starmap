@@ -1,8 +1,8 @@
-# Starmap Documentation Index
+# Starmap - Felgenland Saga Documentation Index
 
 ## 📚 Complete Documentation Guide
 
-This index provides easy access to all Starmap documentation, organized by topic and user needs.
+This index provides easy access to all Starmap documentation for the **Felgenland Saga** universe, organized by topic and user needs.
 
 ---
 

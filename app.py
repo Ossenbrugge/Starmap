@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Starmap V2 - Streamlined 3D Interactive Starmap
-Clean MVC architecture with optimized performance
+Starmap - Felgenland Saga
+3D Interactive starmap for the Felgenland Saga universe
+Features real astronomical data enhanced with fictional political entities and trade networks
 """
 
 from flask import Flask, request, jsonify, render_template
@@ -11,7 +12,7 @@ from models.database import Database
 from controllers.api_controller import APIController
 
 app = Flask(__name__)
-app.secret_key = 'starmap_v2_secret_2024'
+app.secret_key = 'starmap_felgenland_saga_2024'
 
 # Initialize database and controllers
 db = Database()
@@ -87,7 +88,7 @@ def server_error(error):
     return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    print("🚀 Starting Starmap V2 Application")
+    print("🚀 Starting Starmap - Felgenland Saga")
     print(f"📊 Database Stats: {db.get_stats()}")
     print("🌐 Access at: http://localhost:8080")
     app.run(host='0.0.0.0', port=8080, debug=True)

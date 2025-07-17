@@ -48,7 +48,7 @@ class Database:
             
         except Exception as e:
             print(f"❌ Error loading data: {e}")
-            self._cache = {'stars': [], 'nations': [], 'trade_routes': [], 'exoplanets': []}
+            self._cache = {'stars': [], 'nations': [], 'trade_routes': [], 'exoplanets': [], 'fictional_exoplanets': [], 'real_exoplanets': []}
     
     def _load_fictional_stars(self):
         """Load fictional stars from CSV file"""
@@ -101,10 +101,11 @@ class Database:
             print(f"Warning: Could not load fictional stars: {e}")
             
     def _load_fictional_exoplanets(self):
-        """Load fictional exoplanets from CSV file"""
+        """Load all exoplanets from CSV file (both real and fictional)"""
         try:
             exoplanet_csv_path = 'data/exoplanet_catalog_20250715_114843.csv'
             fictional_planets = []
+            real_planets = []
             
             if os.path.exists(exoplanet_csv_path):
                 with open(exoplanet_csv_path, 'r') as f:
@@ -113,6 +114,9 @@ class Database:
                         try:
                             star_id = int(row['star_id']) if row['star_id'] and row['star_id'] != 'nan' else None
                             if star_id:
+                                # Determine if this is a fictional planet
+                                is_fictional = row.get('discoverymethod') == 'Fictional' or row.get('discovery_facility') == 'Starmap Universe'
+                                
                                 planet = {
                                     'id': f"{star_id}_{row['pl_letter']}",
                                     'name': row['pl_name'],
@@ -123,13 +127,18 @@ class Database:
                                     'planet_radius_earth': float(row['planet_radius_earth']) if row['planet_radius_earth'] else None,
                                     'planet_mass_earth': float(row['planet_mass_earth']) if row['planet_mass_earth'] else None,
                                     'equilibrium_temperature': float(row['equilibrium_temperature_k']) if row['equilibrium_temperature_k'] else None,
-                                    'discovery_year': int(row['discovery_year']) if row['discovery_year'] else None,
+                                    'discovery_year': int(row['discovery_year']) if row['discovery_year'] and row['discovery_year'] != 'Future' else None,
                                     'discovery_method': row['discovery_method'],
                                     'potentially_habitable': row['potentially_habitable'] == 'True',
                                     'host_distance_pc': float(row['host_distance_pc']) if row['host_distance_pc'] else None,
-                                    'is_fictional': True
+                                    'is_fictional': is_fictional
                                 }
-                                fictional_planets.append(planet)
+                                
+                                # Add to appropriate list based on whether it's fictional
+                                if is_fictional:
+                                    fictional_planets.append(planet)
+                                else:
+                                    real_planets.append(planet)
                                 
                                 # Update the star's exoplanet count
                                 for star in self._cache['stars']:
@@ -281,11 +290,14 @@ class Database:
                     star['has_planets'] = True
                     break
                 
+            # Store both real and fictional exoplanets
             self._cache['fictional_exoplanets'] = fictional_planets
-            print(f"✅ Loaded {len(fictional_planets)} fictional exoplanets")
+            self._cache['real_exoplanets'] = real_planets
+            print(f"✅ Loaded {len(fictional_planets)} fictional exoplanets and {len(real_planets)} real exoplanets")
         except Exception as e:
-            print(f"Warning: Could not load fictional exoplanets: {e}")
+            print(f"Warning: Could not load exoplanets: {e}")
             self._cache['fictional_exoplanets'] = []
+            self._cache['real_exoplanets'] = []
     
     def _add_political_data(self, star):
         """Add political data to a star based on nations territories"""
@@ -528,6 +540,7 @@ class Database:
             'nations': len(self._cache.get('nations', [])),
             'trade_routes': len(self._cache.get('trade_routes', [])),
             'exoplanets': len(self._cache.get('exoplanets', [])),
+            'real_exoplanets': len(self._cache.get('real_exoplanets', [])),
             'fictional_exoplanets': len(self._cache.get('fictional_exoplanets', []))
         }
     
@@ -555,6 +568,20 @@ class Database:
             # Check distance - use host_distance_pc if available, otherwise check host star
             exoplanet_distance = exoplanet.get('host_distance_pc', 0)
             if exoplanet_distance > 0 and exoplanet_distance <= distance_limit:
+                filtered_exoplanets.append(exoplanet)
+        
+        return filtered_exoplanets
+    
+    def get_real_exoplanets(self) -> List[Dict]:
+        """Get all real exoplanets from CSV within distance limit"""
+        distance_limit = 30.0
+        all_exoplanets = self._cache.get('real_exoplanets', [])
+        filtered_exoplanets = []
+        
+        for exoplanet in all_exoplanets:
+            # Check if the host star is within distance limit
+            host_star = self.get_star_by_id(exoplanet.get('star_id'))
+            if host_star and host_star.get('distance', 0) <= distance_limit:
                 filtered_exoplanets.append(exoplanet)
         
         return filtered_exoplanets

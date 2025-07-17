@@ -2,7 +2,73 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for managing data in the Starmap database using the new MontyDB-powered CRUD system. You can add, modify, and remove stars, nations, trade routes, and planetary systems with streamlined templates and validation.
+This guide provides comprehensive instructions for managing data in the Starmap database using both the MontyDB-powered CRUD system and the new Fictional Entity Handlers. You can add, modify, and remove stars, nations, trade routes, and planetary systems using either method:
+
+1. **MontyDB Data Manager** - Direct database operations with templates
+2. **Fictional Entity Handlers** - RESTful API with automatic validation and coordinate calculation
+
+## Fictional Entity Handlers (Recommended)
+
+The new handler system provides the most user-friendly way to add fictional content through REST API endpoints with automatic validation and data integrity checks.
+
+### Quick API Usage
+
+```bash
+# Add a fictional star
+curl -X POST http://localhost:8080/api/fictional/stars \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Haven",
+    "ra": 180.5,
+    "dec": 45.2,
+    "dist": 25.0,
+    "mag": 8.5,
+    "spect": "G2V",
+    "description": "A promising system for exploration"
+  }'
+
+# Add a fictional nation
+curl -X POST http://localhost:8080/api/fictional/nations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Republic",
+    "full_name": "The New Republic of Outer Systems",
+    "government_type": "Federal Republic",
+    "capital_system": "New Haven",
+    "capital_star_id": 999998,
+    "territories": [999998, 999997],
+    "primary_color": "#FF6B35"
+  }'
+```
+
+See **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** for complete handler documentation.
+
+### Handler vs Data Manager Comparison
+
+| Feature | Fictional Entity Handlers | MontyDB Data Manager |
+|---------|---------------------------|----------------------|
+| **Ease of Use** | ✅ REST API, JSON format | ⚠️ Python code required |
+| **Validation** | ✅ Automatic with detailed errors | ⚠️ Manual validation needed |
+| **Coordinate Calculation** | ✅ Automatic from RA/Dec/Distance | ❌ Manual X/Y/Z calculation |
+| **Cross-Reference Checking** | ✅ Validates host stars, nations | ⚠️ Limited validation |
+| **Cache Management** | ✅ Automatic cache reload | ❌ Manual refresh needed |
+| **Error Handling** | ✅ Standardized JSON responses | ⚠️ Python exceptions |
+| **File Format Support** | ✅ Both CSV and JSON | ✅ MontyDB collections |
+| **API Integration** | ✅ Built-in REST endpoints | ❌ Python-only interface |
+| **Real-time Updates** | ✅ Immediate availability | ⚠️ Requires restart/reload |
+| **Best For** | Adding fictional content | Bulk operations, migrations |
+
+**Recommendation**: Use **Fictional Entity Handlers** for adding new fictional content. Use **MontyDB Data Manager** for bulk operations, data migrations, or when direct database access is needed.
+
+## 🔗 Documentation Navigation
+
+- **[README.md](README.md)** - Main project overview with features
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete REST API documentation  
+- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Detailed handler implementation
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development setup and workflow
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation hub
+
+## MontyDB Data Manager (Advanced Users)
 
 ## Quick Start
 

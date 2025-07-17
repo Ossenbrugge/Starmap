@@ -50,6 +50,11 @@ class Database:
             print(f"❌ Error loading data: {e}")
             self._cache = {'stars': [], 'nations': [], 'trade_routes': [], 'exoplanets': [], 'fictional_exoplanets': [], 'real_exoplanets': []}
     
+    def reload_cache(self):
+        """Reload the entire cache - useful after adding new fictional entities"""
+        print("🔄 Reloading database cache...")
+        self._load_all_data()
+    
     def _load_fictional_stars(self):
         """Load fictional stars from CSV file"""
         try:

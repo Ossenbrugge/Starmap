@@ -79,6 +79,63 @@ def get_exoplanets():
     """Get exoplanets data"""
     return api.get_exoplanets()
 
+# Fictional entity management endpoints
+
+@app.route('/api/fictional/stars', methods=['GET'])
+def get_fictional_stars():
+    """Get all fictional stars"""
+    return api.get_fictional_stars()
+
+@app.route('/api/fictional/stars', methods=['POST'])
+def add_fictional_star():
+    """Add a new fictional star"""
+    return api.add_fictional_star()
+
+@app.route('/api/fictional/stars/<int:star_id>', methods=['DELETE'])
+def delete_fictional_star(star_id):
+    """Delete a fictional star"""
+    return api.delete_fictional_star(star_id)
+
+@app.route('/api/fictional/exoplanets', methods=['GET'])
+def get_fictional_exoplanets_new():
+    """Get all fictional exoplanets"""
+    return api.get_fictional_exoplanets()
+
+@app.route('/api/fictional/exoplanets', methods=['POST'])
+def add_fictional_exoplanet():
+    """Add a new fictional exoplanet"""
+    return api.add_fictional_exoplanet()
+
+@app.route('/api/fictional/nations', methods=['GET'])
+def get_fictional_nations():
+    """Get all fictional nations"""
+    return api.get_fictional_nations()
+
+@app.route('/api/fictional/nations', methods=['POST'])
+def add_fictional_nation():
+    """Add a new fictional nation"""
+    return api.add_fictional_nation()
+
+@app.route('/api/fictional/nations/<string:nation_id>', methods=['DELETE'])
+def delete_fictional_nation(nation_id):
+    """Delete a fictional nation"""
+    return api.delete_fictional_nation(nation_id)
+
+@app.route('/api/fictional/trade-routes', methods=['GET'])
+def get_fictional_trade_routes():
+    """Get all fictional trade routes"""
+    return api.get_fictional_trade_routes()
+
+@app.route('/api/fictional/trade-routes', methods=['POST'])
+def add_fictional_trade_route():
+    """Add a new fictional trade route"""
+    return api.add_fictional_trade_route()
+
+@app.route('/api/fictional/trade-routes/<string:route_id>', methods=['DELETE'])
+def delete_fictional_trade_route(route_id):
+    """Delete a fictional trade route"""
+    return api.delete_fictional_trade_route(route_id)
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'success': False, 'error': 'Endpoint not found'}), 404

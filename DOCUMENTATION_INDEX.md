@@ -25,7 +25,8 @@ This index provides easy access to all Starmap documentation for the **Felgenlan
 ## 📖 Core Documentation
 
 ### Main Application
-- **[README.md](README.md)** - Primary documentation with features overview
+- **[README.md](README.md)** - Primary documentation with features overview and API examples
+- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Complete fictional entity handler documentation
 - **[Application Architecture](#application-architecture)** - MVC structure explanation
 - **[API Reference](#api-reference)** - Complete endpoint documentation
 - **[User Interface Guide](#user-interface)** - Using the web interface
@@ -53,6 +54,8 @@ This index provides easy access to all Starmap documentation for the **Felgenlan
 - **[Trade Network Design](#trade-networks)** - Economic system creation
 
 ### For Developers
+- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Fictional entity handlers and API
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development setup and handler workflow
 - **[API Documentation](#api-documentation)** - REST API endpoints
 - **[Database Schema](#database-schema)** - MontyDB collections and structure
 - **[Extension Guide](#extension-guide)** - Adding new features
@@ -69,6 +72,7 @@ This index provides easy access to all Starmap documentation for the **Felgenlan
 ## 📊 Feature Documentation
 
 ### Core Features
+- **[Fictional Entity Handlers](HANDLERS_DOCUMENTATION.md)** - Adding stars, planets, nations, and trade routes
 - **[Star Management](#star-management)** - Adding, editing, and searching stars
 - **[Nation Management](#nation-management)** - Political entities and territories
 - **[Trade Routes](#trade-routes)** - Economic connections between systems
@@ -93,7 +97,8 @@ This index provides easy access to all Starmap documentation for the **Felgenlan
 - **[Migration Scripts](README_MONTYDB.md#migration-process)** - Data conversion
 
 ### API
-- **[REST Endpoints](README.md#api-reference)** - HTTP API documentation
+- **[Fictional Entity API](HANDLERS_DOCUMENTATION.md)** - Complete handler API documentation
+- **[REST Endpoints](README.md#api-reference)** - HTTP API documentation with examples
 - **[Response Formats](README.md#response-formats)** - JSON structure standards
 - **[Error Handling](README.md#error-handling)** - Error codes and messages
 - **[Authentication](README.md#authentication)** - Security implementation
@@ -131,6 +136,7 @@ This index provides easy access to all Starmap documentation for the **Felgenlan
 ## 🎨 Customization Guides
 
 ### World Building
+- **[Fictional Entity Handlers](HANDLERS_DOCUMENTATION.md)** - Complete system for adding fictional content
 - **[Creating Custom Stars](DATA_MANAGEMENT_GUIDE.md#star-operations)** - Adding new star systems
 - **[Nation Building](DATA_MANAGEMENT_GUIDE.md#nation-operations)** - Political entity creation
 - **[Trade Network Design](DATA_MANAGEMENT_GUIDE.md#trade-route-operations)** - Economic systems
@@ -177,6 +183,7 @@ python -c "from managers.felgenland_cleanup import remove_all_felgenland_data; r
 ## 🔍 Search and Navigation
 
 ### By Topic
+- **Fictional Content**: [HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)
 - **Installation**: [README.md#installation](README.md#installation)
 - **Database**: [README_MONTYDB.md](README_MONTYDB.md)
 - **Data Management**: [DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)
@@ -185,12 +192,15 @@ python -c "from managers.felgenland_cleanup import remove_all_felgenland_data; r
 
 ### By User Type
 - **New Users**: Start with [README.md](README.md)
-- **Developers**: See [README_MONTYDB.md](README_MONTYDB.md) and [API Reference](README.md#api-reference)
-- **Content Creators**: Use [DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)
+- **Content Creators**: Use [HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md) for fictional content
+- **Developers**: See [DEVELOPMENT.md](DEVELOPMENT.md) and [HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)
+- **Database Users**: See [README_MONTYDB.md](README_MONTYDB.md) and [DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)
 - **System Admins**: Check [Installation](README.md#installation) and [Troubleshooting](README.md#troubleshooting)
 
 ### By Task
 - **First Time Setup**: [README.md#quick-setup](README.md#quick-setup)
+- **Adding Fictional Content**: [HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)
+- **API Development**: [README.md#api-reference](README.md#api-reference) and [HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)
 - **Adding New Data**: [DATA_MANAGEMENT_GUIDE.md#crud-operations](DATA_MANAGEMENT_GUIDE.md#crud-operations)
 - **Removing Felgenland**: [DATA_MANAGEMENT_GUIDE.md#felgenland-saga-cleanup](DATA_MANAGEMENT_GUIDE.md#felgenland-saga-cleanup)
 - **Database Migration**: [README_MONTYDB.md#migration-process](README_MONTYDB.md#migration-process)
@@ -220,12 +230,14 @@ python -c "from managers.felgenland_cleanup import remove_all_felgenland_data; r
 
 | Document | Last Updated | Status | Coverage |
 |----------|-------------|---------|----------|
-| README.md | Current | ✅ Complete | Installation, Features, API |
+| README.md | Current | ✅ Complete | Installation, Features, API Examples |
+| HANDLERS_DOCUMENTATION.md | Current | ✅ Complete | Fictional Entity Handlers, API |
 | README_MONTYDB.md | Current | ✅ Complete | Database, Migration, Performance |
-| DATA_MANAGEMENT_GUIDE.md | Current | ✅ Complete | CRUD, Templates, Cleanup |
+| DATA_MANAGEMENT_GUIDE.md | Current | ✅ Complete | CRUD, Templates, Cleanup, Handlers |
+| DEVELOPMENT.md | Current | ✅ Complete | Development Setup, Handler Workflow |
 | DOCUMENTATION_INDEX.md | Current | ✅ Complete | Navigation, Cross-references |
 
 ---
 
-*Last Updated: 2024-07-09*
-*Version: 2.0 (MontyDB Implementation)*
+*Last Updated: 2025-01-17*
+*Version: 2.1 (Fictional Entity Handlers Added)*

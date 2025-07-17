@@ -38,6 +38,86 @@ python tests/run_tests.py --quick
 python app_montydb.py
 ```
 
+## 🛠️ Architecture Overview
+
+### Application Structure
+
+```
+starmap/
+├── app.py                     # Main Flask application (current version)
+├── app_montydb.py            # MontyDB version (legacy)
+├── controllers/              # API controllers
+│   └── api_controller.py     # REST API endpoints
+├── handlers/                 # Fictional entity handlers (NEW)
+│   ├── __init__.py          # Package initialization
+│   ├── star_handler.py      # Fictional star management
+│   ├── exoplanet_handler.py # Fictional exoplanet management
+│   ├── nation_handler.py    # Fictional nation management
+│   └── trade_route_handler.py # Fictional trade route management
+├── models/                   # Data models
+│   └── database.py          # Database interface
+├── managers/                # Data management (MontyDB)
+│   ├── data_manager.py      # CRUD operations
+│   └── felgenland_cleanup.py # Cleanup utilities
+├── templates/               # Jinja2 templates
+├── static/                  # Static assets
+├── data/                    # Data files
+└── tests/                   # Test suite
+```
+
+### Handler System (NEW)
+
+The new handler system provides a clean abstraction for managing fictional entities:
+
+- **Modular Design**: Each entity type has its own handler
+- **Validation**: Automatic validation of required fields and cross-references
+- **Coordinate Calculation**: Automatic 3D positioning from astronomical data
+- **Cache Management**: Automatic database cache updates
+- **Error Handling**: Consistent error response format
+- **File Management**: Handles both CSV and JSON formats
+
+#### Handler Development Workflow
+
+1. **Create Handler Class**: Inherit common patterns from existing handlers
+2. **Implement Validation**: Add required field and cross-reference checks
+3. **Add Calculations**: Include any automatic property calculations
+4. **File Operations**: Handle both reading and writing to appropriate files
+5. **Error Handling**: Return consistent success/error response format
+6. **Integration**: Add API endpoints to `api_controller.py` and `app.py`
+7. **Testing**: Create unit tests for validation and functionality
+
+#### Testing Handlers
+
+```bash
+# Test individual handlers
+python -c "
+from handlers import StarHandler
+handler = StarHandler()
+result = handler.add_fictional_star({
+    'name': 'Test Star',
+    'ra': 180.0,
+    'dec': 0.0,
+    'dist': 10.0,
+    'mag': 8.0,
+    'spect': 'G5V'
+})
+print(result)
+"
+
+# Test API endpoints
+curl -X POST http://localhost:8080/api/fictional/stars \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test API Star", "ra": 180, "dec": 0, "dist": 10, "mag": 8, "spect": "G5V"}'
+```
+
+## 🔗 Documentation Navigation
+
+- **[README.md](README.md)** - Main project overview and quick start
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete REST API documentation
+- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Detailed handler implementation
+- **[DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)** - Data management workflows
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation hub
+
 ### Development Dependencies
 
 ```bash

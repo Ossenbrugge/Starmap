@@ -13,6 +13,7 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
 
 ## ✨ Features
 
+### Core Universe
 - **24,676 Real Stars** with accurate astronomical data from multiple catalogs
 - **5 Major Nations** controlling territories across human space:
   - **Terran Directorate** - Earth-centered authoritarian republic
@@ -27,6 +28,15 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
   - **Pentothia Prime** - Reptilian trade hub (Groombridge 1618)
   - **Valorgraemo** - Dorsai military academy world (Fomalhaut)
 - **425 Real Exoplanets** from NASA Exoplanet Archive
+
+### Content Creation & Management
+- **Fictional Entity Handlers** - Add new stars, planets, nations, and trade routes
+- **Real-time Data Validation** - Ensures data integrity and cross-references
+- **Automatic Coordinate Calculation** - 3D positioning from astronomical data
+- **Dynamic Cache Management** - Instant updates when adding new content
+- **RESTful API** - Complete CRUD operations for all entity types
+
+### Visualization & Interface
 - **Interactive 3D Visualization** with political overlays
 - **Real-time Search** and advanced filtering
 - **Modern Responsive UI** with space-themed design
@@ -44,6 +54,106 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
    ```
 
 3. **Open your browser to:** http://localhost:8080
+
+---
+
+## 📚 Documentation Navigation
+
+- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation with examples
+- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Detailed handler implementation guide
+- **[DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)** - Data management workflows and comparison
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development setup and contribution guide
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation navigation hub
+
+---
+
+## 🛠️ API Reference
+
+### Fictional Entity Management
+
+The Starmap includes handlers for managing fictional content through RESTful API endpoints:
+
+#### Fictional Stars
+- `GET /api/fictional/stars` - Get all fictional stars
+- `POST /api/fictional/stars` - Add a new fictional star
+- `DELETE /api/fictional/stars/<star_id>` - Delete a fictional star
+
+**Example JSON for adding a fictional star:**
+```json
+{
+  "name": "New System Alpha",
+  "ra": 180.5,
+  "dec": 45.2,
+  "dist": 25.0,
+  "mag": 8.5,
+  "spect": "G2V",
+  "description": "A promising system for exploration"
+}
+```
+
+#### Fictional Exoplanets
+- `GET /api/fictional/exoplanets` - Get all fictional exoplanets
+- `POST /api/fictional/exoplanets` - Add a new fictional exoplanet
+
+**Example JSON for adding a fictional exoplanet:**
+```json
+{
+  "name": "New World",
+  "host_star_id": 999998,
+  "orbital_period_days": 365.25,
+  "semi_major_axis_au": 1.0,
+  "radius_earth": 1.2,
+  "mass_earth": 1.1,
+  "description": "An Earth-like world"
+}
+```
+
+#### Fictional Nations
+- `GET /api/fictional/nations` - Get all fictional nations
+- `POST /api/fictional/nations` - Add a new fictional nation
+- `DELETE /api/fictional/nations/<nation_id>` - Delete a fictional nation
+
+**Example JSON for adding a fictional nation:**
+```json
+{
+  "name": "New Republic",
+  "full_name": "The New Republic of Outer Systems",
+  "government_type": "Federal Republic",
+  "capital_system": "New Capital",
+  "capital_star_id": 999997,
+  "territories": [999997, 999996],
+  "primary_color": "#FF6B35",
+  "description": "A frontier republic"
+}
+```
+
+#### Fictional Trade Routes
+- `GET /api/fictional/trade-routes` - Get all fictional trade routes
+- `POST /api/fictional/trade-routes` - Add a new fictional trade route
+- `DELETE /api/fictional/trade-routes/<route_id>` - Delete a fictional trade route
+
+**Example JSON for adding a fictional trade route:**
+```json
+{
+  "name": "New Trade Corridor",
+  "from_star_id": 999997,
+  "to_star_id": 999996,
+  "controlling_nation": "new_republic",
+  "route_type": "Commercial",
+  "cargo_types": ["Technology", "Raw Materials"],
+  "frequency": "Daily"
+}
+```
+
+### Handler Features
+
+- **Data Validation**: All handlers validate required fields and cross-references
+- **3D Coordinates**: Automatic calculation from astronomical data (RA/Dec/Distance)
+- **Cache Management**: Database cache automatically updates when new entities are added
+- **Error Handling**: Detailed error messages for validation failures
+- **File Management**: Handles both JSON and CSV file formats as needed
+
+See **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** for complete handler documentation.
 
 ## 🏛️ Major Star Systems
 

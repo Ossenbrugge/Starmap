@@ -3,14 +3,21 @@ API Controller for Starmap V2
 Handles all API endpoints with clean response formatting
 """
 
-from flask import jsonify
+from flask import jsonify, request
 from typing import Dict, List, Any
+from handlers import StarHandler, ExoplanetHandler, NationHandler, TradeRouteHandler
 
 class APIController:
     """Handles all API operations with consistent response formatting"""
     
     def __init__(self, database):
         self.db = database
+        
+        # Initialize handlers
+        self.star_handler = StarHandler()
+        self.exoplanet_handler = ExoplanetHandler()
+        self.nation_handler = NationHandler()
+        self.trade_route_handler = TradeRouteHandler()
     
     def _success_response(self, data: Any, message: str = None) -> Dict:
         """Create standardized success response"""
@@ -175,3 +182,144 @@ class APIController:
             return self._success_response(exoplanets, f"Loaded {len(exoplanets)} exoplanets")
         except Exception as e:
             return self._error_response(f"Error loading exoplanets: {str(e)}", 500)
+    
+    # Handler-based endpoints for adding fictional entities
+    
+    def add_fictional_star(self):
+        """Add a new fictional star"""
+        try:
+            data = request.get_json()
+            if not data:
+                return self._error_response("No data provided", 400)
+            
+            result = self.star_handler.add_fictional_star(data)
+            
+            if result['success']:
+                # Reload database cache to include new star
+                self.db.reload_cache()
+                return self._success_response(result['data'], result['message'])
+            else:
+                return self._error_response(result['error'], 400)
+                
+        except Exception as e:
+            return self._error_response(f"Error adding fictional star: {str(e)}", 500)
+    
+    def add_fictional_exoplanet(self):
+        """Add a new fictional exoplanet"""
+        try:
+            data = request.get_json()
+            if not data:
+                return self._error_response("No data provided", 400)
+            
+            result = self.exoplanet_handler.add_fictional_exoplanet(data)
+            
+            if result['success']:
+                # Reload database cache to include new exoplanet
+                self.db.reload_cache()
+                return self._success_response(result['data'], result['message'])
+            else:
+                return self._error_response(result['error'], 400)
+                
+        except Exception as e:
+            return self._error_response(f"Error adding fictional exoplanet: {str(e)}", 500)
+    
+    def add_fictional_nation(self):
+        """Add a new fictional nation"""
+        try:
+            data = request.get_json()
+            if not data:
+                return self._error_response("No data provided", 400)
+            
+            result = self.nation_handler.add_fictional_nation(data)
+            
+            if result['success']:
+                # Reload database cache to include new nation
+                self.db.reload_cache()
+                return self._success_response(result['data'], result['message'])
+            else:
+                return self._error_response(result['error'], 400)
+                
+        except Exception as e:
+            return self._error_response(f"Error adding fictional nation: {str(e)}", 500)
+    
+    def add_fictional_trade_route(self):
+        """Add a new fictional trade route"""
+        try:
+            data = request.get_json()
+            if not data:
+                return self._error_response("No data provided", 400)
+            
+            result = self.trade_route_handler.add_fictional_trade_route(data)
+            
+            if result['success']:
+                # Reload database cache to include new trade route
+                self.db.reload_cache()
+                return self._success_response(result['data'], result['message'])
+            else:
+                return self._error_response(result['error'], 400)
+                
+        except Exception as e:
+            return self._error_response(f"Error adding fictional trade route: {str(e)}", 500)
+    
+    def get_fictional_stars(self):
+        """Get all fictional stars"""
+        try:
+            stars = self.star_handler.get_fictional_stars()
+            return self._success_response(stars, f"Loaded {len(stars)} fictional stars")
+        except Exception as e:
+            return self._error_response(f"Error loading fictional stars: {str(e)}", 500)
+    
+    def get_fictional_nations(self):
+        """Get all fictional nations"""
+        try:
+            nations = self.nation_handler.get_fictional_nations()
+            return self._success_response(nations, f"Loaded {len(nations)} fictional nations")
+        except Exception as e:
+            return self._error_response(f"Error loading fictional nations: {str(e)}", 500)
+    
+    def get_fictional_trade_routes(self):
+        """Get all fictional trade routes"""
+        try:
+            routes = self.trade_route_handler.get_fictional_trade_routes()
+            return self._success_response(routes, f"Loaded {len(routes)} fictional trade routes")
+        except Exception as e:
+            return self._error_response(f"Error loading fictional trade routes: {str(e)}", 500)
+    
+    def delete_fictional_star(self, star_id: int):
+        """Delete a fictional star"""
+        try:
+            result = self.star_handler.delete_fictional_star(star_id)
+            
+            if result['success']:
+                return self._success_response(None, result['message'])
+            else:
+                return self._error_response(result['error'], 404)
+                
+        except Exception as e:
+            return self._error_response(f"Error deleting fictional star: {str(e)}", 500)
+    
+    def delete_fictional_nation(self, nation_id: str):
+        """Delete a fictional nation"""
+        try:
+            result = self.nation_handler.delete_nation(nation_id)
+            
+            if result['success']:
+                return self._success_response(None, result['message'])
+            else:
+                return self._error_response(result['error'], 404)
+                
+        except Exception as e:
+            return self._error_response(f"Error deleting fictional nation: {str(e)}", 500)
+    
+    def delete_fictional_trade_route(self, route_id: str):
+        """Delete a fictional trade route"""
+        try:
+            result = self.trade_route_handler.delete_trade_route(route_id)
+            
+            if result['success']:
+                return self._success_response(None, result['message'])
+            else:
+                return self._error_response(result['error'], 404)
+                
+        except Exception as e:
+            return self._error_response(f"Error deleting fictional trade route: {str(e)}", 500)

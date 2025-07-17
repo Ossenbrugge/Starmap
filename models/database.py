@@ -330,7 +330,7 @@ class Database:
                 # Add fictional names for the fictional stars
                 fictional_names = {
                     999999: {'name': 'Tiefe-Grenze Tor', 'desc': 'Deep frontier gateway system of the Felgenland Union, monitoring the outer boundaries of human space.'},
-                    52409: {'name': 'Pentothia Prime', 'desc': 'Capital of the Pentothian Trade Conglomerate, home to reptilian traders. Neutral trading center controlling extensive frontier commerce.'}
+                    49767: {'name': 'Pentothia Prime', 'desc': 'Capital of the Pentothian Trade Conglomerate, home to reptilian traders. Neutral trading center controlling extensive frontier commerce.'}
                 }
                 
                 # Generate a good name for the star

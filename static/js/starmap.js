@@ -110,7 +110,7 @@ class StarmapApp {
             const magLimit = document.getElementById('magLimit').value;
             const spectralType = document.getElementById('spectralType').value;
             
-            const url = `/api/stars?limit=${limit}&mag_limit=${magLimit}&spectral_type=${spectralType}`;
+            const url = `/api/stars?count_limit=${limit}&mag_limit=${magLimit}&spectral_type=${spectralType}`;
             console.log('Loading stars from:', url);
             
             const response = await fetch(url);
@@ -319,8 +319,14 @@ class StarmapApp {
     }
     
     async selectStar(star) {
+        // Check if star object is valid
+        if (!star || !star.id) {
+            console.error('Invalid star object:', star);
+            return;
+        }
+        
         this.selectedStar = star;
-        this.showStatus(`Loading details for ${star.fictional_name || star.name}...`, 'info');
+        this.showStatus(`Loading details for ${star.fictional_name || star.name || 'Unknown Star'}...`, 'info');
         
         try {
             const response = await fetch(`/api/star/${star.id}`);
@@ -1329,12 +1335,20 @@ class StarmapApp {
     
     updateStats(stats) {
         const statsDiv = document.getElementById('stats');
+        
+        // Handle the MontyDB stats format with database nested structure
+        const dbStats = stats.database || stats;
+        const starsCount = dbStats.stars || 0;
+        const nationsCount = dbStats.nations || 0;
+        const tradeRoutesCount = dbStats.trade_routes || 0;
+        const exoplanetsCount = dbStats.exoplanets || dbStats.planetary_systems || 0;
+        
         statsDiv.innerHTML = `
             <div class="small">
-                ⭐ Stars: ${stats.stars.toLocaleString()}<br>
-                🏛️ Nations: ${stats.nations}<br>
-                🛣️ Trade Routes: ${stats.trade_routes}<br>
-                🪐 Exoplanets: ${stats.exoplanets.toLocaleString()}
+                ⭐ Stars: ${starsCount.toLocaleString()}<br>
+                🏛️ Nations: ${nationsCount}<br>
+                🛣️ Trade Routes: ${tradeRoutesCount}<br>
+                🪐 Systems: ${exoplanetsCount}
             </div>
         `;
     }

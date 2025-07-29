@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 
 # Import MontyDB models
-from database.config import initialize_database, get_collection_stats
+from database.config import initialize_database, get_collection_stats, get_database
 from models.star_model_db import StarModelDB
 from models.nation_model_db import NationModelDB
 from models.trade_route_model_db import TradeRouteModelDB
@@ -105,7 +105,11 @@ def api_stars():
             client_stars.append(client_star)
         
         logger.info(f"API: Served {len(client_stars)} stars (limit: {limit}, mag: {mag_limit}, spectral: {spectral_type})")
-        return jsonify(client_stars)
+        return jsonify({
+            'success': True,
+            'data': client_stars,
+            'count': len(client_stars)
+        })
         
     except Exception as e:
         logger.error(f"Error in /api/stars: {e}")
@@ -144,7 +148,11 @@ def api_search():
             client_results.append(client_result)
         
         logger.info(f"API: Search '{query}' returned {len(client_results)} results")
-        return jsonify(client_results)
+        return jsonify({
+            'success': True,
+            'data': client_results,
+            'count': len(client_results)
+        })
         
     except Exception as e:
         logger.error(f"Error in /api/search: {e}")
@@ -194,7 +202,11 @@ def api_nations():
     try:
         nations = nation_model.get_nations()
         logger.info(f"API: Served {len(nations)} nations")
-        return jsonify(nations)
+        return jsonify({
+            'success': True,
+            'data': nations,
+            'count': len(nations)
+        })
         
     except Exception as e:
         logger.error(f"Error in /api/nations: {e}")
@@ -206,7 +218,11 @@ def api_trade_routes():
     try:
         routes = trade_model.get_trade_routes()
         logger.info(f"API: Served {len(routes)} trade routes")
-        return jsonify(routes)
+        return jsonify({
+            'success': True,
+            'data': routes,
+            'count': len(routes)
+        })
         
     except Exception as e:
         logger.error(f"Error in /api/trade-routes: {e}")
@@ -228,7 +244,10 @@ def api_stats():
             'timestamp': datetime.now().isoformat()
         }
         
-        return jsonify(stats)
+        return jsonify({
+            'success': True,
+            'data': stats
+        })
         
     except Exception as e:
         logger.error(f"Error in /api/stats: {e}")
@@ -270,6 +289,116 @@ def api_network_analysis():
         logger.error(f"Error in /api/network-analysis: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/exoplanets')
+def api_exoplanets():
+    """Get all real exoplanets"""
+    try:
+        # For now, return empty array since we don't have exoplanet models implemented yet
+        return jsonify({
+            'success': True,
+            'data': [],
+            'count': 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/exoplanets: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fictional-exoplanets')
+def api_fictional_exoplanets():
+    """Get all fictional exoplanets"""
+    try:
+        # For now, return empty array since we don't have exoplanet models implemented yet
+        return jsonify({
+            'success': True,
+            'data': [],
+            'count': 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/fictional-exoplanets: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stellar-regions')
+def api_stellar_regions():
+    """Get all stellar regions"""
+    try:
+        db = get_database()
+        stellar_regions = db.stellar_regions
+        regions = list(stellar_regions.find())
+        
+        return jsonify({
+            'success': True,
+            'data': regions,
+            'count': len(regions)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/stellar-regions: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/galactic-directions')
+def api_galactic_directions():
+    """Get galactic directions data"""
+    try:
+        import math
+        
+        def ra_dec_to_xyz(ra, dec, distance):
+            """Convert RA/Dec coordinates to Cartesian coordinates"""
+            ra_rad = math.radians(ra)
+            dec_rad = math.radians(dec)
+            
+            x = distance * math.cos(dec_rad) * math.cos(ra_rad)
+            y = distance * math.cos(dec_rad) * math.sin(ra_rad)
+            z = distance * math.sin(dec_rad)
+            
+            return [x, y, z]
+        
+        # Return static galactic directions data with 3D positions
+        # Position them at the edge of the visible star field (~25 parsecs)
+        directions = [
+            {
+                'name': 'Galactic Center',
+                'position': ra_dec_to_xyz(266.4, -29.0, 25),  # Within visible range
+                'color': '#ff6b6b',
+                'description': 'Direction toward the center of the Milky Way'
+            },
+            {
+                'name': 'Galactic North',
+                'position': ra_dec_to_xyz(192.9, 27.1, 25),
+                'color': '#4ecdc4',
+                'description': 'Direction toward the galactic north pole'
+            },
+            {
+                'name': 'Galactic South',
+                'position': ra_dec_to_xyz(12.9, -27.1, 25),
+                'color': '#45b7d1',
+                'description': 'Direction toward the galactic south pole'
+            },
+            {
+                'name': 'Galactic Anticenter',
+                'position': ra_dec_to_xyz(86.4, 29.0, 25),
+                'color': '#f9ca24',
+                'description': 'Direction opposite to the galactic center'
+            },
+            {
+                'name': 'Sol',
+                'position': [0.0, 0.0, 0.0],  # Origin point
+                'color': '#ffeb3b',
+                'description': 'Solar system - our reference point'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'data': directions,
+            'count': len(directions)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/galactic-directions: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Not found'}), 404
@@ -291,7 +420,7 @@ if __name__ == '__main__':
     # Run Flask app
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=5001,
         debug=True,
         use_reloader=False  # Disable reloader to prevent double initialization
     )

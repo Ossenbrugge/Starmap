@@ -22,6 +22,18 @@
                 <h4 class="text-primary mb-3">🌌 Starmap</h4>
                 <p class="small text-muted mb-3">Felgenland Saga</p>
                 
+                <!-- Authentication Status -->
+                {% if user %}
+                <div class="alert alert-success small mb-3">
+                    🛡️ Authenticated: <strong>{{ user.username }}</strong>
+                    <br><small>Role: {{ user.role|title }}</small>
+                    <div class="mt-2">
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
+                        <button onclick="generateApiToken()" class="btn btn-outline-info btn-sm">API Token</button>
+                    </div>
+                </div>
+                {% endif %}
+                
                 <!-- Status -->
                 <div id="status" class="alert alert-info small mb-3">
                     Initializing starmap...
@@ -167,5 +179,55 @@
     
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/starmap.js') }}"></script>
+    
+    <script>
+        // Authentication functions
+        async function generateApiToken() {
+            try {
+                const response = await fetch('/api/auth/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        expires_hours: 24
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show token in a modal-like alert
+                    const tokenInfo = `🎫 API Token Generated Successfully!
+                        
+Token: ${data.token}
+
+Expires: ${data.expires_in_hours} hours
+User: ${data.user}
+
+Use in API requests:
+Authorization: Bearer ${data.token}`;
+                    
+                    // Create a temporary textarea to copy token
+                    const textarea = document.createElement('textarea');
+                    textarea.value = data.token;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    
+                    alert(tokenInfo + '\n\n✅ Token copied to clipboard!');
+                } else {
+                    alert('❌ Failed to generate API token');
+                }
+            } catch (error) {
+                console.error('Error generating token:', error);
+                alert('❌ Error generating API token');
+            }
+        }
+        
+        // Initialize the starmap application
+        const app = new StarmapApp();
+    </script>
 </body>
 </html>

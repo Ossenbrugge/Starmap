@@ -94,6 +94,27 @@ class TradeRouteModelDB:
                     'id': route['_id'],
                     'name': route['name'],
                     'route_type': route['route_type'],
+                    'endpoints': {
+                        'from': {
+                            'system': route['endpoints']['from']['system'],
+                            'star_id': route['endpoints']['from']['star_id']
+                        },
+                        'to': {
+                            'system': route['endpoints']['to']['system'],
+                            'star_id': route['endpoints']['to']['star_id']
+                        }
+                    },
+                    'logistics': {
+                        'cargo_types': route['logistics']['cargo_types'],
+                        'travel_time_days': route['logistics']['travel_time_days'],
+                        'frequency': route['logistics']['frequency']
+                    },
+                    'control': {
+                        'controlling_nation': route['control']['controlling_nation'],
+                        'security_level': route['control']['security_level']
+                    },
+                    'operational': route.get('status', {}).get('operational', True),
+                    # Keep flat format for backward compatibility
                     'from_system': route['endpoints']['from']['system'],
                     'to_system': route['endpoints']['to']['system'],
                     'from_star_id': route['endpoints']['from']['star_id'],
@@ -102,8 +123,7 @@ class TradeRouteModelDB:
                     'travel_time_days': route['logistics']['travel_time_days'],
                     'frequency': route['logistics']['frequency'],
                     'controlling_nation': route['control']['controlling_nation'],
-                    'security_level': route['control']['security_level'],
-                    'operational': route.get('status', {}).get('operational', True)
+                    'security_level': route['control']['security_level']
                 })
             return routes
         except Exception as e:

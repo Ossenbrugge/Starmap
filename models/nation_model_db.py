@@ -156,29 +156,37 @@ class NationModelDB:
         try:
             total_nations = self.nations.count_documents({})
             
-            # Get territory counts
-            territory_stats = list(self.nations.aggregate([
-                {'$project': {'territory_count': {'$size': '$territories'}}},
-                {'$group': {
-                    '_id': None,
-                    'total_territories': {'$sum': '$territory_count'},
-                    'avg_territories': {'$avg': '$territory_count'},
-                    'max_territories': {'$max': '$territory_count'}
-                }}
-            ]))
+            # Get territory counts using basic queries since aggregate is not supported
+            all_nations = list(self.nations.find())
+            territory_counts = []
+            total_territories = 0
+            
+            for nation in all_nations:
+                territory_count = len(nation.get('territories', []))
+                territory_counts.append(territory_count)
+                total_territories += territory_count
+            
+            # Calculate statistics
+            avg_territories = round(total_territories / total_nations, 2) if total_nations > 0 else 0
+            max_territories = max(territory_counts) if territory_counts else 0
             
             stats = {
                 'total_nations': total_nations,
-                'total_territories': territory_stats[0]['total_territories'] if territory_stats else 0,
-                'avg_territories': round(territory_stats[0]['avg_territories'], 2) if territory_stats else 0,
-                'max_territories': territory_stats[0]['max_territories'] if territory_stats else 0
+                'total_territories': total_territories,
+                'avg_territories': avg_territories,
+                'max_territories': max_territories
             }
             
             return stats
             
         except Exception as e:
             print(f"Error getting nation stats: {e}")
-            return {}
+            return {
+                'total_nations': 0,
+                'total_territories': 0,
+                'avg_territories': 0,
+                'max_territories': 0
+            }
     
     def add_nation(self, nation_data: Dict) -> bool:
         """Add a new nation"""

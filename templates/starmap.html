@@ -11,6 +11,10 @@
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     
+    <!-- A-Frame for VR/3D starfield -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
 </head>
@@ -82,6 +86,19 @@
                     <button class="btn btn-primary btn-sm w-100" onclick="applyFilters()">Apply Filters</button>
                 </div>
                 
+                <!-- View Toggle -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Starfield View</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="viewToggle" id="plotlyView" checked onchange="switchView('plotly')">
+                        <label class="btn btn-outline-primary btn-sm" for="plotlyView">📊 Plotly</label>
+                        
+                        <input type="radio" class="btn-check" name="viewToggle" id="aframeView" onchange="switchView('aframe')">
+                        <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 A-Frame</label>
+                    </div>
+                    <small class="text-muted">Switch between 2D/3D and VR-ready views</small>
+                </div>
+                
                 <!-- Overlays -->
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Overlays</label>
@@ -138,7 +155,101 @@
             
             <!-- Main Starmap -->
             <div class="col-md-9 col-lg-10 p-0">
+                <!-- Plotly View -->
                 <div id="starmap" class="starmap-container"></div>
+                
+                <!-- A-Frame VR View -->
+                <div id="aframe-container" class="starmap-container" style="display: none;">
+                    <a-scene 
+                        id="starfield-scene"
+                        background="color: #000011"
+                        vr-mode-ui="enabled: true"
+                        embedded
+                        style="height: 100vh; width: 100%;"
+                        fog="type: linear; color: #0B1426; near: 50; far: 300">
+                        
+                        <!-- Assets -->
+                        <a-assets>
+                            <!-- Star materials -->
+                            <a-mixin id="star-base" 
+                                     geometry="primitive: sphere; radius: 0.1"
+                                     material="shader: standard; metalness: 0; roughness: 0; emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
+                            
+                            <!-- Nation colors -->
+                            <a-mixin id="terran-star" 
+                                     mixin="star-base"
+                                     material="emissive: #1565C0; emissiveIntensity: 1.2"></a-mixin>
+                            <a-mixin id="felgenland-star" 
+                                     mixin="star-base"
+                                     material="emissive: #4CAF50; emissiveIntensity: 1.2"></a-mixin>
+                            <a-mixin id="neutral-star" 
+                                     mixin="star-base"
+                                     material="emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
+                            <a-mixin id="fictional-star" 
+                                     mixin="star-base"
+                                     material="emissive: #00ff88; emissiveIntensity: 1.5"></a-mixin>
+                        </a-assets>
+                        
+                        <!-- Camera with orbit controls -->
+                        <a-camera 
+                            id="camera"
+                            position="0 0 30"
+                            look-controls="enabled: true"
+                            wasd-controls="enabled: true"
+                            orbit-controls="
+                                target: 0 0 0;
+                                enableDamping: true;
+                                dampingFactor: 0.1;
+                                rotateSpeed: 0.05;
+                                enableZoom: true;
+                                minDistance: 5;
+                                maxDistance: 200;
+                                enablePan: true;">
+                            
+                            <!-- VR controllers -->
+                            <a-entity 
+                                id="left-hand" 
+                                hand-controls="hand: left"
+                                laser-controls
+                                raycaster="objects: .star"></a-entity>
+                            <a-entity 
+                                id="right-hand" 
+                                hand-controls="hand: right"
+                                laser-controls
+                                raycaster="objects: .star"></a-entity>
+                        </a-camera>
+                        
+                        <!-- Ambient lighting -->
+                        <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
+                        
+                        <!-- Directional light (represents galactic core) -->
+                        <a-light 
+                            type="directional" 
+                            position="0 10 0" 
+                            color="#ffffff" 
+                            intensity="0.2"
+                            light="castShadow: false"></a-light>
+                        
+                        <!-- Stars container -->
+                        <a-entity id="star-field"></a-entity>
+                        
+                        <!-- Galactic grid (optional) -->
+                        <a-entity 
+                            id="galactic-grid"
+                            visible="false">
+                            <!-- Grid lines will be added via JavaScript -->
+                        </a-entity>
+                        
+                        <!-- Navigation info -->
+                        <a-text 
+                            id="nav-info"
+                            position="0 25 -30"
+                            value="🌌 Felgenland Starfield - Use mouse/WASD to navigate - Click stars for details"
+                            color="#00ff88"
+                            align="center"
+                            scale="2 2 2"></a-text>
+                    </a-scene>
+                </div>
                 
                 <!-- Star Details Panel -->
                 <div id="starDetails" class="star-details-panel">
@@ -226,8 +337,167 @@ Authorization: Bearer ${data.token}`;
             }
         }
         
-        // Initialize the starmap application
-        const app = new StarmapApp();
+        // View switching functionality
+        let currentView = 'plotly';
+        let aframeInitialized = false;
+        
+        function switchView(view) {
+            currentView = view;
+            
+            const plotlyContainer = document.getElementById('starmap');
+            const aframeContainer = document.getElementById('aframe-container');
+            
+            if (view === 'plotly') {
+                plotlyContainer.style.display = 'block';
+                aframeContainer.style.display = 'none';
+                
+                // Refresh Plotly if needed
+                if (app && app.plot) {
+                    Plotly.Plots.resize(app.plot);
+                }
+            } else if (view === 'aframe') {
+                plotlyContainer.style.display = 'none';
+                aframeContainer.style.display = 'block';
+                
+                // Initialize A-Frame starfield if not already done
+                if (!aframeInitialized) {
+                    initializeAFrameStarfield();
+                    aframeInitialized = true;
+                } else {
+                    // Refresh A-Frame scene
+                    refreshAFrameStarfield();
+                }
+            }
+        }
+        
+        // A-Frame starfield functions
+        async function initializeAFrameStarfield() {
+            console.log('🥽 Initializing A-Frame starfield...');
+            
+            try {
+                // Get star data (limit to 100 for performance)
+                const response = await fetch('/api/stars?count_limit=100&mag_limit=8');
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    createAFrameStars(data.data);
+                    console.log(`✅ A-Frame starfield created with ${data.data.length} stars`);
+                }
+            } catch (error) {
+                console.error('❌ Error initializing A-Frame starfield:', error);
+            }
+        }
+        
+        async function refreshAFrameStarfield() {
+            console.log('🔄 Refreshing A-Frame starfield...');
+            
+            // Clear existing stars
+            const starField = document.getElementById('star-field');
+            if (starField) {
+                starField.innerHTML = '';
+                
+                // Reload stars
+                await initializeAFrameStarfield();
+            }
+        }
+        
+        function createAFrameStars(stars) {
+            const starField = document.getElementById('star-field');
+            if (!starField) return;
+            
+            stars.forEach((star, index) => {
+                // Create star entity
+                const starEntity = document.createElement('a-sphere');
+                
+                // Position (scale coordinates for better visibility)
+                starEntity.setAttribute('position', `${star.x} ${star.z} ${-star.y}`);
+                
+                // Size based on magnitude (brighter = bigger)
+                const size = Math.max(0.05, (8 - star.magnitude) * 0.03);
+                starEntity.setAttribute('radius', size);
+                
+                // Color and material based on star properties
+                let mixin = 'neutral-star';
+                let color = '#ffffff';
+                
+                if (star.fictional_name) {
+                    mixin = 'fictional-star';
+                    color = '#00ff88';
+                } else if (star.nation) {
+                    if (star.nation.id === 'terran_directorate') {
+                        mixin = 'terran-star';
+                        color = '#1565C0';
+                    } else if (star.nation.id === 'felgenland_union') {
+                        mixin = 'felgenland-star';
+                        color = '#4CAF50';
+                    }
+                } else {
+                    // Color by spectral class
+                    const spectral = star.spectral_class?.charAt(0) || 'G';
+                    const spectralColors = {
+                        'O': '#9bb0ff', 'B': '#aabfff', 'A': '#cad7ff',
+                        'F': '#f8f7ff', 'G': '#fff4ea', 'K': '#ffd2a1',
+                        'M': '#ffad51'
+                    };
+                    color = spectralColors[spectral] || '#ffffff';
+                }
+                
+                starEntity.setAttribute('material', `
+                    shader: standard;
+                    metalness: 0;
+                    roughness: 0;
+                    emissive: ${color};
+                    emissiveIntensity: ${star.fictional_name ? 1.5 : 0.8};
+                `);
+                
+                // Add interaction
+                starEntity.setAttribute('class', 'star');
+                starEntity.setAttribute('data-star-id', star.id);
+                starEntity.setAttribute('data-star-name', star.fictional_name || star.name);
+                
+                // Click event for star details
+                starEntity.addEventListener('click', function() {
+                    showAFrameStarDetails(star);
+                });
+                
+                // Hover effect
+                starEntity.addEventListener('mouseenter', function() {
+                    this.setAttribute('scale', '2 2 2');
+                });
+                
+                starEntity.addEventListener('mouseleave', function() {
+                    this.setAttribute('scale', '1 1 1');
+                });
+                
+                starField.appendChild(starEntity);
+            });
+            
+            console.log(`🌟 Created ${stars.length} A-Frame star entities`);
+        }
+        
+        function showAFrameStarDetails(star) {
+            console.log('⭐ Star clicked in A-Frame:', star.fictional_name || star.name);
+            
+            // Update the navigation info with star details
+            const navInfo = document.getElementById('nav-info');
+            if (navInfo) {
+                const info = `⭐ ${star.fictional_name || star.name} | ${star.spectral_class} | ${star.distance.toFixed(1)} pc | Mag: ${star.magnitude.toFixed(1)}`;
+                navInfo.setAttribute('value', info);
+                
+                // Reset after 5 seconds
+                setTimeout(() => {
+                    navInfo.setAttribute('value', '🌌 Felgenland Starfield - Use mouse/WASD to navigate - Click stars for details');
+                }, 5000);
+            }
+            
+            // Also trigger the regular star details panel
+            if (app && app.selectStar) {
+                app.selectStar(star);
+            }
+        }
+        
+        // Note: The main StarmapApp is initialized in static/js/starmap.js
+        // No additional initialization needed here - app variable will be available globally
     </script>
 </body>
 </html>

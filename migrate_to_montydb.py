@@ -16,6 +16,7 @@ from database.config import initialize_database, get_collection_stats
 from models.star_model_db import StarModelDB
 from models.nation_model_db import NationModelDB
 from models.trade_route_model_db import TradeRouteModelDB
+from models.exoplanet_model_db import ExoplanetModelDB
 
 def create_backup():
     """Create backup of existing data files"""
@@ -128,6 +129,10 @@ def main():
         # Migrate trade routes
         trade_model = TradeRouteModelDB()
         trade_model.migrate_from_json()
+        
+        # Migrate exoplanets and Sol system
+        exoplanet_model = ExoplanetModelDB()
+        exoplanet_model.migrate_from_json()
         
         # Migrate stellar regions
         migrate_stellar_regions()

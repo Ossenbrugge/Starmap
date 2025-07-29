@@ -332,8 +332,8 @@ class StarmapApp {
             const response = await fetch(`/api/star/${star.id}`);
             const data = await response.json();
             
-            if (data.success) {
-                this.showStarDetails(data.data);
+            if (response.ok && data.success) {
+                this.showStarDetails(data);
                 this.showStatus(`Selected: ${star.fictional_name || star.name}`, 'success');
             } else {
                 throw new Error(data.error || 'Failed to load star details');
@@ -348,65 +348,72 @@ class StarmapApp {
         const panel = document.getElementById('starDetails');
         const content = document.getElementById('starDetailsContent');
         
+        // Handle the API response structure
+        const starName = star.names?.fictional_name || star.names?.primary_name || star.name || 'Unknown Star';
+        const primaryName = star.names?.primary_name || star.name || 'Unknown Star';
+        const coordinates = star.coordinates || {};
+        const physical = star.physical_properties || {};
+        const classification = star.classification || {};
+        
         let html = `
-            <h6 class="text-primary">${star.fictional_data?.name || star.name}</h6>
-            ${star.fictional_data?.name ? `<p class="small text-muted">${star.name}</p>` : ''}
+            <h6 class="text-primary">${starName}</h6>
+            ${starName !== primaryName ? `<p class="small text-muted">${primaryName}</p>` : ''}
             
             <div class="row">
                 <div class="col-6">
                     <strong>Magnitude:</strong><br>
-                    <span class="text-info">${(star.magnitude || 0).toFixed(2)}</span>
+                    <span class="text-info">${(physical.magnitude || 0).toFixed(2)}</span>
                 </div>
                 <div class="col-6">
                     <strong>Distance:</strong><br>
-                    <span class="text-info">${(star.distance || 0).toFixed(1)} pc</span>
+                    <span class="text-info">${(coordinates.dist || 0).toFixed(1)} pc</span>
                 </div>
             </div>
             
             <div class="row mt-2">
                 <div class="col-6">
                     <strong>Spectral Class:</strong><br>
-                    <span class="text-warning">${star.spectral_class || 'Unknown'}</span>
+                    <span class="text-warning">${physical.spectral_class || 'Unknown'}</span>
                 </div>
                 <div class="col-6">
                     <strong>Constellation:</strong><br>
-                    <span class="text-success">${star.constellation_full || star.constellation || 'Unknown'}</span>
+                    <span class="text-success">${classification.constellation_full || classification.constellation || 'Unknown'}</span>
                 </div>
             </div>
             
             <div class="mt-3">
                 <strong>Coordinates:</strong><br>
                 <small class="text-muted">
-                    RA: ${(star.ra || 0).toFixed(3)}° | Dec: ${(star.dec || 0).toFixed(3)}°<br>
-                    XYZ: (${(star.x || 0).toFixed(1)}, ${(star.y || 0).toFixed(1)}, ${(star.z || 0).toFixed(1)})
+                    RA: ${(coordinates.ra || 0).toFixed(3)}° | Dec: ${(coordinates.dec || 0).toFixed(3)}°<br>
+                    XYZ: (${(coordinates.x || 0).toFixed(1)}, ${(coordinates.y || 0).toFixed(1)}, ${(coordinates.z || 0).toFixed(1)})
                 </small>
             </div>
         `;
         
-        if (star.fictional_data?.description) {
+        if (star.names?.fictional_description) {
             html += `
                 <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
                     <small><strong>Fictional Universe:</strong><br>
-                    ${star.fictional_data.description}</small>
+                    ${star.names.fictional_description}</small>
                 </div>
             `;
         }
         
-        if (star.nation) {
+        if (star.political) {
             html += `
-                <div class="mt-3 p-2 rounded" style="background-color: ${star.nation.color}20; border-left: 3px solid ${star.nation.color}">
+                <div class="mt-3 p-2 rounded" style="background-color: #4CAF50; border-left: 3px solid #4CAF50">
                     <strong>Political Control:</strong><br>
-                    <span style="color: ${star.nation.color}">${star.nation.name}</span><br>
-                    <small class="text-muted">Capital: ${star.nation.capital_system}</small>
+                    <span style="color: #4CAF50">${star.political.nation_name}</span><br>
+                    <small class="text-muted">Strategic Importance: ${star.political.strategic_importance || 'Normal'}</small>
                 </div>
             `;
         }
         
-        if (star.habitability?.has_planets) {
+        if (star.exoplanets?.has_planets) {
             html += `
                 <div class="mt-3 p-2 bg-info bg-opacity-10 rounded">
                     <strong>Planetary System:</strong><br>
-                    🪐 ${star.habitability.planet_count} confirmed planet(s)
+                    🪐 ${star.exoplanets.count} confirmed planet(s)
                 </div>
             `;
         }

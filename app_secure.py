@@ -14,6 +14,7 @@ from database.config import initialize_database, get_collection_stats, get_datab
 from models.star_model_db import StarModelDB
 from models.nation_model_db import NationModelDB
 from models.trade_route_model_db import TradeRouteModelDB
+from models.exoplanet_model_db import ExoplanetModelDB
 
 # Import authentication
 from auth import AuthManager, get_auth_config
@@ -49,6 +50,7 @@ auth_manager = AuthManager(app.config['SECRET_KEY'])
 star_model = None
 nation_model = None
 trade_model = None
+exoplanet_model = None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -82,7 +84,7 @@ def api_auth_required(f):
 
 def initialize_app():
     """Initialize the application with MontyDB"""
-    global star_model, nation_model, trade_model
+    global star_model, nation_model, trade_model, exoplanet_model
     
     logger.info("🚀 Starting Secure Starmap with MontyDB backend")
     
@@ -96,6 +98,7 @@ def initialize_app():
         star_model = StarModelDB()
         nation_model = NationModelDB()
         trade_model = TradeRouteModelDB()
+        exoplanet_model = ExoplanetModelDB()
         
         # Log statistics
         stats = get_collection_stats()
@@ -313,6 +316,48 @@ def api_search():
         logger.error(f"Error in /api/search: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Star details endpoint
+@app.route('/api/star/<int:star_id>')
+@api_auth_required
+def api_star_detail(star_id):
+    """Get detailed information about a specific star - protected"""
+    try:
+        star = star_model.get_star_by_id(star_id)
+        if not star:
+            return jsonify({'error': 'Star not found'}), 404
+        
+        # Get connected trade routes
+        trade_routes = trade_model.get_routes_by_star(star_id)
+        
+        # Format detailed response
+        detail = {
+            'success': True,
+            'id': star['_id'],
+            'names': star['names'],
+            'coordinates': star['coordinates'],
+            'physical_properties': star['physical_properties'],
+            'classification': star['classification'],
+            'exoplanets': star['exoplanets'],
+            'political': star.get('political'),
+            'trade_routes': [
+                {
+                    'id': route['_id'],
+                    'name': route['name'],
+                    'route_type': route['route_type'],
+                    'connected_to': route['endpoints']['to']['system'] if route['endpoints']['from']['star_id'] == star_id else route['endpoints']['from']['system']
+                }
+                for route in trade_routes
+            ],
+            'is_fictional': star.get('is_fictional', False)
+        }
+        
+        logger.info(f"🔐 API: Served star details for {star_id}")
+        return jsonify(detail)
+        
+    except Exception as e:
+        logger.error(f"Error in /api/star/{star_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # Copy remaining endpoints with protection
 @app.route('/api/trade-routes')
 @api_auth_required
@@ -329,6 +374,47 @@ def api_trade_routes():
         
     except Exception as e:
         logger.error(f"Error in /api/trade-routes: {e}")
+        return jsonify({'error': str(e)}), 500
+
+# Exoplanet endpoints (public for now, can be protected if needed)
+@app.route('/api/exoplanets')
+def api_exoplanets():
+    """Get all real exoplanets - public"""
+    try:
+        if not exoplanet_model:
+            return jsonify({'success': True, 'data': [], 'count': 0})
+            
+        exoplanets = exoplanet_model.get_exoplanets()
+        logger.info(f"📡 API: Served {len(exoplanets)} real exoplanets")
+        
+        return jsonify({
+            'success': True,
+            'data': exoplanets,
+            'count': len(exoplanets)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/exoplanets: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fictional-exoplanets')
+def api_fictional_exoplanets():
+    """Get all fictional exoplanets (including Sol system) - public"""
+    try:
+        if not exoplanet_model:
+            return jsonify({'success': True, 'data': [], 'count': 0})
+            
+        fictional_exoplanets = exoplanet_model.get_fictional_exoplanets()
+        logger.info(f"🌍 API: Served {len(fictional_exoplanets)} fictional exoplanets (including Sol system)")
+        
+        return jsonify({
+            'success': True,
+            'data': fictional_exoplanets,
+            'count': len(fictional_exoplanets)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/fictional-exoplanets: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Keep utility endpoints (add more as needed)

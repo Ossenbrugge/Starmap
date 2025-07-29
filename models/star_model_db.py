@@ -312,6 +312,54 @@ class StarModelDB:
         """Clear internal cache"""
         self._cache.clear()
     
+    def update_exoplanet_counts(self):
+        """Update star data with exoplanet counts from exoplanet database"""
+        print("🔄 Updating star exoplanet counts...")
+        
+        # Get exoplanet database
+        exoplanets_collection = self.db.exoplanets
+        fictional_exoplanets_collection = self.db.fictional_exoplanets
+        
+        # Get all stars
+        all_stars = list(self.stars.find())
+        updated_count = 0
+        
+        for star in all_stars:
+            star_id = star['_id']
+            star_name = star['names']['primary_name']
+            
+            # Count real exoplanets by star name
+            real_exoplanet_count = exoplanets_collection.count_documents({
+                'host_star.name': star_name
+            })
+            
+            # Count fictional exoplanets by star ID
+            fictional_exoplanet_count = fictional_exoplanets_collection.count_documents({
+                'star_id': star_id
+            })
+            
+            total_count = real_exoplanet_count + fictional_exoplanet_count
+            has_planets = total_count > 0
+            
+            # Update star if counts changed
+            current_count = star.get('exoplanets', {}).get('count', 0)
+            current_has_planets = star.get('exoplanets', {}).get('has_planets', False)
+            
+            if current_count != total_count or current_has_planets != has_planets:
+                self.stars.update_one(
+                    {'_id': star_id},
+                    {'$set': {
+                        'exoplanets.count': total_count,
+                        'exoplanets.has_planets': has_planets
+                    }}
+                )
+                updated_count += 1
+                
+                if total_count > 0:
+                    print(f"  ✅ Updated {star_name} ({star_id}): {total_count} planets")
+        
+        print(f"✅ Updated {updated_count} stars with exoplanet data")
+
     def get_cache_stats(self) -> Dict:
         """Get cache statistics"""
         return {

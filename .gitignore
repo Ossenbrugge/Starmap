@@ -108,12 +108,15 @@ docs/generated/
 
 # Starmap-Specific Files
 backup/
+backup_*/
+data_backup/
 *.backup
 *.bak
 migrations/
 temp/
 tmp/
 scratch/
+starmap_db/
 
 # Environment Configuration
 .env.local

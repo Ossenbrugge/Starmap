@@ -9,6 +9,95 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     
+    <!-- A-Frame Loading Screen Component -->
+    <script>
+        // Custom loading screen component
+        AFRAME.registerComponent('loading-screen', {
+            init: function() {
+                console.log('🔄 A-Frame loading screen component initialized');
+                this.showLoadingScreen();
+                
+                // Listen for scene loaded event
+                this.el.addEventListener('loaded', () => {
+                    console.log('✅ A-Frame scene loaded');
+                    setTimeout(() => {
+                        this.hideLoadingScreen();
+                    }, 1000);
+                });
+                
+                // Also hide on renderstart (backup)
+                this.el.addEventListener('renderstart', () => {
+                    console.log('🎬 A-Frame render started');
+                    setTimeout(() => {
+                        this.hideLoadingScreen();
+                    }, 2000);
+                });
+            },
+            
+            showLoadingScreen: function() {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'aframe-loading-screen';
+                loadingDiv.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(135deg, #000011 0%, #1a1a2e 50%, #16213e 100%);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                        color: #00ff88;
+                        font-family: 'Courier New', monospace;
+                    ">
+                        <div style="text-align: center;">
+                            <h1 style="font-size: 3em; margin-bottom: 20px; text-shadow: 0 0 20px #00ff88;">🌌 Felgenland Starfield</h1>
+                            <div class="loading-spinner" style="
+                                width: 50px;
+                                height: 50px;
+                                border: 3px solid rgba(0, 255, 136, 0.3);
+                                border-top: 3px solid #00ff88;
+                                border-radius: 50%;
+                                animation: spin 1s linear infinite;
+                                margin: 20px auto;
+                            "></div>
+                            <p style="font-size: 1.2em; margin: 10px 0;">Loading A-Frame VR Environment...</p>
+                            <p style="font-size: 0.9em; opacity: 0.7;" id="loading-status">Initializing assets...</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Add CSS animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(style);
+                document.body.appendChild(loadingDiv);
+                
+                console.log('📺 A-Frame loading screen displayed');
+            },
+            
+            hideLoadingScreen: function() {
+                const loadingScreen = document.getElementById('aframe-loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.transition = 'opacity 0.5s ease-out';
+                    setTimeout(() => {
+                        loadingScreen.remove();
+                        console.log('✨ A-Frame loading screen hidden');
+                    }, 500);
+                }
+            }
+        });
+    </script>
+    
     <style>
         body {
             margin: 0;
@@ -62,10 +151,11 @@
     <a-scene 
         background="color: #000011"
         vr-mode-ui="enabled: true"
-        fog="type: linear; color: #0B1426; near: 50; far: 300">
+        fog="type: linear; color: #0B1426; near: 50; far: 300"
+        loading-screen>
         
-        <!-- Assets -->
-        <a-assets>
+        <!-- Assets with increased timeout and error logging -->
+        <a-assets timeout="30000">
             <a-mixin id="star-base" 
                      geometry="primitive: sphere; radius: 0.1"
                      material="shader: standard; metalness: 0; roughness: 0; emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
@@ -255,12 +345,100 @@
             console.log('Star selected:', star.fictional_name || star.name);
         }
         
+        // Asset loading error logging
+        function setupAssetErrorLogging() {
+            const assetsEl = document.querySelector('a-assets');
+            const scene = document.querySelector('a-scene');
+            
+            console.log('🔧 Setting up A-Frame asset error logging...');
+            
+            // Log asset loading events
+            assetsEl.addEventListener('loaded', function() {
+                console.log('✅ A-Frame assets loaded successfully');
+                updateLoadingStatus('Assets loaded - Initializing scene...');
+            });
+            
+            assetsEl.addEventListener('timeout', function() {
+                console.error('❌ A-Frame assets loading timeout (30s exceeded)');
+                updateLoadingStatus('Asset loading timeout - Using fallbacks...');
+            });
+            
+            // Monitor individual asset errors
+            const assets = assetsEl.querySelectorAll('*');
+            assets.forEach((asset, index) => {
+                asset.addEventListener('error', function(event) {
+                    console.error(`❌ Asset ${index} failed to load:`, asset, event);
+                });
+                
+                asset.addEventListener('loaded', function() {
+                    console.log(`✅ Asset ${index} loaded:`, asset.tagName, asset.id);
+                });
+            });
+            
+            // Scene loading events
+            scene.addEventListener('loaded', function() {
+                console.log('🎬 A-Frame scene fully loaded');
+                updateLoadingStatus('Scene loaded - Creating starfield...');
+            });
+            
+            scene.addEventListener('renderstart', function() {
+                console.log('🚀 A-Frame rendering started');
+                updateLoadingStatus('Rendering started - Almost ready...');
+            });
+            
+            // Error handling for scene
+            scene.addEventListener('error', function(event) {
+                console.error('❌ A-Frame scene error:', event);
+                updateLoadingStatus('Scene error - Check console for details');
+            });
+            
+            // Log WebGL and VR capabilities
+            console.log('🖥️ WebGL Support:', !!window.WebGLRenderingContext);
+            console.log('🥽 WebXR Support:', 'xr' in navigator);
+            console.log('📱 Mobile Device:', /Mobi|Android/i.test(navigator.userAgent));
+        }
+        
+        function updateLoadingStatus(message) {
+            const statusEl = document.getElementById('loading-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                console.log('📺 Loading status:', message);
+            }
+        }
+        
+        // Enhanced error handling for A-Frame
+        window.addEventListener('error', function(event) {
+            if (event.message.includes('A-Frame') || event.message.includes('aframe')) {
+                console.error('🚨 A-Frame JavaScript Error:', event.error, event.message);
+                updateLoadingStatus('JavaScript error - Check console');
+            }
+        });
+        
         // Initialize when A-Frame is ready
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 DOM Content Loaded - Setting up A-Frame demo');
+            
+            // Setup error logging first
+            setupAssetErrorLogging();
+            
+            // Wait for A-Frame to initialize
             setTimeout(() => {
+                console.log('⭐ Creating sample stars...');
+                updateLoadingStatus('Creating starfield...');
                 createStars(sampleStars);
-            }, 1000);
+                updateLoadingStatus('Ready!');
+            }, 2000);
         });
+        
+        // Monitor A-Frame loading progress
+        setInterval(() => {
+            const scene = document.querySelector('a-scene');
+            if (scene && scene.hasLoaded) {
+                console.log('🎯 A-Frame scene status: Loaded and ready');
+            } else if (scene) {
+                console.log('⏳ A-Frame scene status: Still loading...');
+            }
+        }, 5000);
     </script>
 </body>
 </html>

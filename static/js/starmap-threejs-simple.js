@@ -246,10 +246,30 @@ class ThreeJSStarmap {
         geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
         geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
         
-        // Create custom shader material for better performance
+        // Try shader material first, fallback to basic material
+        let material;
+        try {
+            material = this.createShaderMaterial();
+        } catch (error) {
+            console.warn('Shader material failed, using fallback:', error);
+            material = this.createFallbackMaterial();
+        }
+        
+        // Create Points object (ParticleSystem)
+        const particles = new THREE.Points(geometry, material);
+        particles.name = 'StarParticleSystem';
+        this.starField.add(particles);
+        
+        console.log('✨ ParticleSystem created with', stars.length, 'star particles');
+    }
+    
+    createShaderMaterial() {
         const material = new THREE.ShaderMaterial({
             uniforms: {
-                time: { value: 0 }
+                time: { 
+                    type: 'f',
+                    value: 0.0 
+                }
             },
             vertexShader: `
                 attribute float size;
@@ -285,12 +305,24 @@ class ThreeJSStarmap {
             depthWrite: false
         });
         
-        // Create Points object (ParticleSystem)
-        const particles = new THREE.Points(geometry, material);
-        particles.name = 'StarParticleSystem';
-        this.starField.add(particles);
+        // Initialize the uniform properly
+        if (material.uniforms && material.uniforms.time) {
+            material.uniforms.time.value = 0.0;
+        }
         
-        console.log('✨ ParticleSystem created with', stars.length, 'star particles');
+        return material;
+    }
+    
+    createFallbackMaterial() {
+        // Simple PointsMaterial fallback
+        return new THREE.PointsMaterial({
+            size: 8,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
     }
     
     createSpecialStars(stars) {
@@ -584,10 +616,21 @@ class ThreeJSStarmap {
             this.controls.update();
         }
         
-        // Update particle system time for twinkling
-        const particleSystem = this.starField.getObjectByName('StarParticleSystem');
-        if (particleSystem && particleSystem.material.uniforms) {
-            particleSystem.material.uniforms.time.value = Date.now() * 0.001;
+        // Update particle system time for twinkling - with error handling
+        try {
+            const particleSystem = this.starField.getObjectByName('StarParticleSystem');
+            if (particleSystem && 
+                particleSystem.material && 
+                particleSystem.material.uniforms && 
+                particleSystem.material.uniforms.time &&
+                particleSystem.material.uniforms.time.hasOwnProperty('value')) {
+                particleSystem.material.uniforms.time.value = Date.now() * 0.001;
+            }
+        } catch (error) {
+            // Silently handle uniform errors to prevent console spam
+            if (this.frameCount % 300 === 0) { // Log error every 5 seconds
+                console.warn('ParticleSystem uniform update error:', error);
+            }
         }
         
         // Animate planet orbits

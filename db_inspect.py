@@ -1,86 +1,61 @@
-from montydb import MontyClient
+from montydb import set_storage, MontyClient
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 
-DB_REPO = "./starmap_db"  # Updated to match our actual DB path
+DB_REPO = "data/starmap.db"  # SQLite
+set_storage(DB_REPO, storage="sqlite")
+
 client = MontyClient(DB_REPO)
-db = client.starmap  # Use the correct database name from the collections
+db = client.starmap_db
 
 print("🔍 DATABASE INSPECTION REPORT")
-print("=" * 50)
+print("==================================================")
 
-# List all collections
-collections = db.list_collection_names()
+collections = db.list_collection_names()  # Call once
 print(f"📋 Collections in DB: {collections}")
 
-# Count documents in key collections
-collection_names = ['stars', 'exoplanets', 'fictional_exoplanets', 'nations', 'trade_routes', 'stellar_regions']
-for col in collection_names:
+for col in ['stars', 'exoplanets', 'fictional_exoplanets', 'nations', 'trade_routes', 'stellar_regions']:
     if col in collections:
         count = db[col].count_documents({})
         print(f"📊 {col} has {count} documents")
-        
-        # Sample one if exists
-        sample = db[col].find_one()
-        if sample:
-            # Show just the key fields for readability
-            if col == 'stars':
-                name = sample.get('names', {}).get('primary_name', 'Unknown')
-                print(f"   Sample star: {name} (ID: {sample.get('_id')})")
-            elif col in ['exoplanets', 'fictional_exoplanets']:
-                name = sample.get('name', 'Unknown')
-                host = sample.get('host_star_name', sample.get('host_star', {}).get('name', 'Unknown'))
-                print(f"   Sample planet: {name} orbiting {host}")
-            elif col == 'nations':
-                name = sample.get('name', 'Unknown')
-                print(f"   Sample nation: {name}")
-            elif col == 'trade_routes':
-                name = sample.get('name', 'Unknown')
-                print(f"   Sample route: {name}")
-            else:
-                print(f"   Sample from {col}: {str(sample)[:100]}...")
+        if count > 0:
+            sample = db[col].find_one()
+            print(f"   Sample from {col}: {sample.get('name') or sample.get('short_name') or sample}")
         else:
             print(f"   ❌ {col} is empty!")
     else:
         print(f"   ❌ {col} collection missing!")
 
 print("\n🔍 SPECIFIC CHECKS")
-print("-" * 30)
+print("------------------------------")
 
-# Check for Sol
-sol = db.stars.find_one({"names.primary_name": "Sol"})
+sol = db.stars.find_one({"names.primary_name": "Sol"})  # Dot notation for subfield
 if sol:
-    print(f"🌞 Sol found: ID {sol['_id']}, Exoplanets: {sol.get('exoplanets', {})}")
+    print(f"🌞 Sol found: ID {sol.get('_id')}, Exoplanets: {{'count': {db.exoplanets.count_documents({{'host_star': 'Sol'}})}, 'has_planets': {db.exoplanets.count_documents({{'host_star': 'Sol'}}) > 0}}}")
 else:
     print("❌ Sol not found!")
 
-# Check for Holsten Tor (fictional star)
-fictional_star = db.stars.find_one({"names.fictional_name": "Holsten Tor"})
-if not fictional_star:
-    fictional_star = db.stars.find_one({"names.primary_name": "Holsten Tor"})
-if fictional_star:
-    print(f"🚀 Holsten Tor found: {fictional_star['names']}")
+holsten = db.stars.find_one({"names.fictional_name": "Holsten Tor"})  # Dot notation
+if holsten:
+    print(f"🚀 Holsten Tor found: {holsten}")
 else:
-    print("❌ No Holsten Tor found!")
+    print("❌ Holsten Tor not found!")
 
-# Check for Kepler exoplanet
 kepler = db.exoplanets.find_one({"name": {"$regex": "Kepler", "$options": "i"}})
 if kepler:
-    print(f"🪐 Kepler exoplanet found: {kepler['name']}")
+    print(f"🌌 Kepler exoplanet sample: {kepler}")
 else:
     print("❌ No Kepler exoplanets found!")
 
-# Check for Sol system planets
-sol_planets = list(db.fictional_exoplanets.find({"star_id": 500000}))
-if sol_planets:
-    planet_names = [p['name'] for p in sol_planets]
-    print(f"🌍 Sol system ({len(sol_planets)} planets): {', '.join(planet_names)}")
+sol_planets_count = db.exoplanets.count_documents({"host_star": "Sol"}) + db.fictional_exoplanets.count_documents({"host_star": "Sol"})  # Query both
+sol_planet_sample = db.exoplanets.find_one({"host_star": "Sol"}) or db.fictional_exoplanets.find_one({"host_star": "Sol"})
+if sol_planets_count > 0:
+    print(f"🌍 Sol system planets found: {sol_planets_count}")
+    print(f"   Sample Sol planet: {sol_planet_sample.get('name')}")
 else:
     print("❌ No Sol system planets found!")
 
-# Check for any fictional exoplanets
-fictional_count = db.fictional_exoplanets.count_documents({})
-real_count = db.exoplanets.count_documents({})
-print(f"\n📈 TOTALS: {real_count} real exoplanets, {fictional_count} fictional exoplanets")
+print(f"\n📈 TOTALS: {db.exoplanets.count_documents({})} real exoplanets, {db.fictional_exoplanets.count_documents({})} fictional exoplanets")
 
 print("\n🚬 Database inspection complete - time for that virtual smoke break! 🚬")

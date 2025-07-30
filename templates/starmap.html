@@ -15,6 +15,10 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     
+    <!-- Three.js for cinematic 3D -->
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
 </head>
@@ -90,13 +94,16 @@
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Starfield View</label>
                     <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="viewToggle" id="plotlyView" checked onchange="switchView('plotly')">
+                        <input type="radio" class="btn-check" name="viewToggle" id="plotlyView" onchange="switchView('plotly')">
                         <label class="btn btn-outline-primary btn-sm" for="plotlyView">📊 Plotly</label>
                         
+                        <input type="radio" class="btn-check" name="viewToggle" id="threejsView" checked onchange="switchView('threejs')">
+                        <label class="btn btn-outline-warning btn-sm" for="threejsView">🌟 Three.js</label>
+                        
                         <input type="radio" class="btn-check" name="viewToggle" id="aframeView" onchange="switchView('aframe')">
-                        <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 A-Frame</label>
+                        <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 A-Frame VR</label>
                     </div>
-                    <small class="text-muted">Switch between 2D/3D and VR-ready views</small>
+                    <small class="text-muted">Choose your preferred 3D visualization</small>
                 </div>
                 
                 <!-- Overlays -->
@@ -139,8 +146,11 @@
                     <button class="btn btn-outline-info btn-sm w-100 mb-2" onclick="resetView()">
                         🎯 Reset View
                     </button>
-                    <button class="btn btn-outline-warning btn-sm w-100" onclick="exportData()">
+                    <button class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="exportData()">
                         💾 Export CSV
+                    </button>
+                    <button class="btn btn-outline-info btn-sm w-100" onclick="window.testThreeJS ? window.testThreeJS() : console.log('Test not available')">
+                        🧪 Test Three.js
                     </button>
                 </div>
                 
@@ -156,7 +166,10 @@
             <!-- Main Starmap -->
             <div class="col-md-9 col-lg-10 p-0">
                 <!-- Plotly View -->
-                <div id="starmap" class="starmap-container"></div>
+                <div id="starmap" class="starmap-container" style="display: none;"></div>
+                
+                <!-- Three.js View -->
+                <div id="threejs-container" class="starmap-container"></div>
                 
                 <!-- A-Frame VR View -->
                 <div id="aframe-container" class="starmap-container" style="display: none;">
@@ -290,6 +303,8 @@
     
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/starmap.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/starmap-threejs-simple.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/threejs-test.js') }}"></script>
     
     <script>
         // Authentication functions
@@ -338,25 +353,42 @@ Authorization: Bearer ${data.token}`;
         }
         
         // View switching functionality
-        let currentView = 'plotly';
+        let currentView = 'threejs';
         let aframeInitialized = false;
+        let threejsInitialized = false;
+        let threejsStarmap = null;
         
         function switchView(view) {
             currentView = view;
             
             const plotlyContainer = document.getElementById('starmap');
+            const threejsContainer = document.getElementById('threejs-container');
             const aframeContainer = document.getElementById('aframe-container');
+            
+            // Hide all containers
+            plotlyContainer.style.display = 'none';
+            threejsContainer.style.display = 'none';
+            aframeContainer.style.display = 'none';
             
             if (view === 'plotly') {
                 plotlyContainer.style.display = 'block';
-                aframeContainer.style.display = 'none';
                 
                 // Refresh Plotly if needed
                 if (app && app.plot) {
                     Plotly.Plots.resize(app.plot);
                 }
+            } else if (view === 'threejs') {
+                threejsContainer.style.display = 'block';
+                
+                // Initialize Three.js if not already done
+                if (!threejsInitialized) {
+                    initializeThreeJSStarfield();
+                    threejsInitialized = true;
+                } else if (threejsStarmap) {
+                    threejsStarmap.setVisible(true);
+                    threejsStarmap.resize();
+                }
             } else if (view === 'aframe') {
-                plotlyContainer.style.display = 'none';
                 aframeContainer.style.display = 'block';
                 
                 // Initialize A-Frame starfield if not already done
@@ -367,6 +399,96 @@ Authorization: Bearer ${data.token}`;
                     // Refresh A-Frame scene
                     refreshAFrameStarfield();
                 }
+            }
+        }
+        
+        // Three.js starfield functions
+        async function initializeThreeJSStarfield() {
+            console.log('🌟 Initializing Three.js starfield...');
+            console.log('📊 MontyDB fetch starting...');
+            
+            try {
+                // Create Three.js starmap instance
+                threejsStarmap = new window.ThreeJSStarmap();
+                
+                // Wait a moment for initialization
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Load star data and create stars - REQUEST ALL STARS for 24k+ display
+                console.log('🔍 Checking app star data...');
+                if (app && app.currentStars && app.currentStars.length > 0) {
+                    console.log(`✅ Using existing app stars: ${app.currentStars.length}`);
+                    threejsStarmap.createStars(app.currentStars);
+                } else {
+                    console.log('📡 Fetching all stars from MontyDB API...');
+                    const startTime = Date.now();
+                    
+                    // Fetch ALL stars (remove limits for full galaxy view)
+                    const response = await fetch('/api/stars?count_limit=50000&mag_limit=15');
+                    const fetchTime = Date.now() - startTime;
+                    
+                    console.log(`⏱️ MontyDB fetch took ${fetchTime}ms`);
+                    console.log('📦 API Response status:', response.status);
+                    console.log('📦 API Response headers:', [...response.headers.entries()]);
+                    
+                    const data = await response.json();
+                    const parseTime = Date.now() - startTime - fetchTime;
+                    
+                    console.log(`📊 MontyDB Data Stats:`);
+                    console.log(`   - Success: ${data.success}`);
+                    console.log(`   - Stars count: ${data.data ? data.data.length : 0}`);
+                    console.log(`   - Parse time: ${parseTime}ms`);
+                    console.log(`   - Total fetch time: ${Date.now() - startTime}ms`);
+                    
+                    if (data.success && data.data) {
+                        console.log('🎯 Sample star data from MontyDB:', data.data[0]);
+                        threejsStarmap.createStars(data.data);
+                    } else {
+                        console.error('❌ Failed to load stars from MontyDB:', data.error);
+                    }
+                }
+                
+                // Load and create exoplanets
+                console.log('🪐 Loading exoplanet data from MontyDB...');
+                const exoStartTime = Date.now();
+                
+                const [fictionalResponse, realResponse] = await Promise.all([
+                    fetch('/api/fictional-exoplanets'),
+                    fetch('/api/exoplanets')
+                ]);
+                
+                const fictionalData = await fictionalResponse.json();
+                const realData = await realResponse.json();
+                
+                console.log(`🪐 MontyDB Exoplanet Stats:`);
+                console.log(`   - Fictional planets: ${fictionalData.data ? fictionalData.data.length : 0}`);
+                console.log(`   - Real planets: ${realData.data ? realData.data.length : 0}`);
+                console.log(`   - Fetch time: ${Date.now() - exoStartTime}ms`);
+                
+                if (fictionalData.success && realData.success) {
+                    const allExoplanets = [...fictionalData.data, ...realData.data];
+                    console.log(`🌍 Total exoplanets: ${allExoplanets.length}`);
+                    threejsStarmap.createExoplanets(allExoplanets);
+                }
+                
+                // Load and create stellar regions
+                console.log('🗺️ Loading stellar regions from MontyDB...');
+                const regionStartTime = Date.now();
+                
+                const regionsResponse = await fetch('/api/stellar-regions');
+                const regionsData = await regionsResponse.json();
+                
+                console.log(`🗺️ MontyDB Regions Stats:`);
+                console.log(`   - Regions count: ${regionsData.data ? regionsData.data.length : 0}`);
+                console.log(`   - Fetch time: ${Date.now() - regionStartTime}ms`);
+                
+                if (regionsData.success) {
+                    threejsStarmap.createRegionBoxes(regionsData.data);
+                }
+                
+                console.log('✅ Three.js starfield initialized');
+            } catch (error) {
+                console.error('❌ Error initializing Three.js starfield:', error);
             }
         }
         
@@ -495,6 +617,31 @@ Authorization: Bearer ${data.token}`;
                 app.selectStar(star);
             }
         }
+        
+        // Initialize Three.js view on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, current view:', currentView);
+            // Give the main app time to initialize first
+            setTimeout(() => {
+                console.log('Initializing Three.js after delay, current view:', currentView);
+                if (currentView === 'threejs') {
+                    // First run the test
+                    if (window.testThreeJS) {
+                        console.log('Running Three.js test first...');
+                        window.testThreeJS();
+                        
+                        // Wait a bit then initialize the starmap
+                        setTimeout(() => {
+                            initializeThreeJSStarfield();
+                            threejsInitialized = true;
+                        }, 2000);
+                    } else {
+                        initializeThreeJSStarfield();
+                        threejsInitialized = true;
+                    }
+                }
+            }, 2000);
+        });
         
         // Note: The main StarmapApp is initialized in static/js/starmap.js
         // No additional initialization needed here - app variable will be available globally

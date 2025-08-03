@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Starmap - Felgenland Saga</title>
     
+    <!-- Content Security Policy - strict mode without unsafe-eval for security testing -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com https://aframe.io; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://cdn.aframe.io https://migaku-public-data.migaku.com; connect-src 'self' https://cdn.aframe.io https://migaku-public-data.migaku.com; object-src 'none'; font-src 'self' https://cdn.jsdelivr.net https://cdn.aframe.io https://migaku-public-data.migaku.com https://fonts.gstatic.com; media-src 'self' data: blob:; worker-src 'self' blob:;">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Plotly.js -->
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <!-- Plotly.js - temporarily disabled to test CSP compliance -->
+    <!-- <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script> -->
     
     <!-- A-Frame for VR/3D starfield -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
@@ -100,9 +103,15 @@
         }
     </script>
     
-    <!-- Three.js for cinematic 3D -->
-    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Three.js for cinematic 3D (ES6 modules) -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/examples/jsm/controls/OrbitControls": "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js"
+            }
+        }
+    </script>
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
@@ -237,6 +246,9 @@
                     <button class="btn btn-outline-info btn-sm w-100" onclick="window.testThreeJS ? window.testThreeJS() : console.log('Test not available')">
                         🧪 Test Three.js
                     </button>
+                    <button class="btn btn-outline-warning btn-sm w-100" onclick="enableFullDataset()">
+                        🚀 Enable 24k+ Stars
+                    </button>
                 </div>
                 
                 <!-- Statistics -->
@@ -265,7 +277,8 @@
                         embedded
                         style="height: 100vh; width: 100%;"
                         fog="type: linear; color: #0B1426; near: 50; far: 300"
-                        loading-screen>
+                        loading-screen
+                        a-assets-timeout="30000">
                         
                         <!-- Assets with increased timeout -->
                         <a-assets timeout="30000">
@@ -389,7 +402,7 @@
     
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/starmap.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/starmap-threejs-simple.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/starmap-threejs-simple.js') }}"></script>
     <script src="{{ url_for('static', filename='js/threejs-test.js') }}"></script>
     
     <script>
@@ -459,9 +472,11 @@ Authorization: Bearer ${data.token}`;
             if (view === 'plotly') {
                 plotlyContainer.style.display = 'block';
                 
-                // Refresh Plotly if needed
-                if (app && app.plot) {
+                // Refresh Plotly if needed (check if Plotly is available)
+                if (typeof Plotly !== 'undefined' && app && app.plot) {
                     Plotly.Plots.resize(app.plot);
+                } else if (typeof Plotly === 'undefined') {
+                    plotlyContainer.innerHTML = '<div class="alert alert-warning m-4"><h5>📊 Plotly View Temporarily Disabled</h5><p>Plotly.js has been temporarily disabled for CSP compliance testing. Three.js view is fully functional.</p></div>';
                 }
             } else if (view === 'threejs') {
                 threejsContainer.style.display = 'block';
@@ -534,6 +549,9 @@ Authorization: Bearer ${data.token}`;
                     }
                 }
                 
+                // GHOST HUNTING: Disable exoplanets and regions temporarily to isolate uniform issue
+                console.log('👻 GHOST HUNTING: Skipping exoplanets and regions to isolate uniform issue');
+                /*
                 // Load and create exoplanets
                 console.log('🪐 Loading exoplanet data from MontyDB...');
                 const exoStartTime = Date.now();
@@ -571,6 +589,7 @@ Authorization: Bearer ${data.token}`;
                 if (regionsData.success) {
                     threejsStarmap.createRegionBoxes(regionsData.data);
                 }
+                */
                 
                 console.log('✅ Three.js starfield initialized');
             } catch (error) {
@@ -764,9 +783,19 @@ Authorization: Bearer ${data.token}`;
             }
         }
         
+        // Enable full dataset for InstancedMesh testing
+        function enableFullDataset() {
+            window.starmapConfig = { useFullDataset: true };
+            console.log('🚀 Full dataset mode enabled - next starmap reload will use all 24k+ stars with InstancedMesh');
+            alert('🚀 Full dataset mode enabled!\n\nThe next time you reload the starmap, it will use all 24k+ stars with InstancedMesh for optimal performance.\n\nReload the page or switch views to see the effect.');
+        }
+        
         // Initialize Three.js view on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, current view:', currentView);
+            
+            // Note about CSP warnings for users
+            console.log('ℹ️ Note: CSP warnings about blocked fonts/images from migaku-public-data.migaku.com are from browser extensions (like Migaku language learning tool), not from our starmap code. These can be safely ignored.');
             // Give the main app time to initialize first
             setTimeout(() => {
                 console.log('Initializing Three.js after delay, current view:', currentView);

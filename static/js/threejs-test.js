@@ -22,9 +22,10 @@ function testThreeJS() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x222222);
     
-    // Create camera
-    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.z = 5;
+    // Create Plotly.js-style perspective camera
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 10000);
+    camera.position.z = 1000;  // Zoom out for 24k stars as specified
+    camera.lookAt(scene.position);
     
     // Create renderer
     const renderer = new THREE.WebGLRenderer();
@@ -34,13 +35,18 @@ function testThreeJS() {
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
     
-    // Create a simple cube
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    // Create a cube visible from z=1000 distance
+    const geometry = new THREE.BoxGeometry(50, 50, 50); // Larger cube for z=1000 camera distance
+    const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: false }); // Your exact specification
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
     
-    console.log('Scene created with cube, starting animation');
+    // Test with axes to verify distribution as requested
+    const axesHelper = new THREE.AxesHelper(1000); // Your exact specification
+    scene.add(axesHelper);
+    
+    console.log('Scene created with cube and axes helper, starting animation');
+    console.log('Axes: Red=X, Green=Y, Blue=Z (1000 units each)');
     
     // Animation loop
     function animate() {

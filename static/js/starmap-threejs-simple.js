@@ -64,10 +64,13 @@ class ThreeJSStarmap {
             this.setupLighting();
             this.setupEventListeners();
             
-            // Load exoplanets and nations immediately
-            this.loadExoplanets();
-            this.loadNations();
-            this.loadFictionalExoplanets();
+            // Load stars first, then other data that depends on stars
+            this.loadStars().then(() => {
+                this.loadExoplanets();
+                this.loadNations();
+                this.loadFictionalExoplanets();
+                this.loadTradeRoutes();
+            });
             
             this.animate();
             
@@ -106,6 +109,9 @@ class ThreeJSStarmap {
         this.scene.add(this.nationsGroup);
         this.scene.add(this.nationalBordersGroup);
         this.scene.add(this.tradeRoutesGroup);
+        
+        // Trade routes start visible by default
+        this.tradeRoutesGroup.visible = true;
         
         // Add galactic direction axes
         this.createGalacticDirections();
@@ -271,6 +277,24 @@ class ThreeJSStarmap {
         console.log('🎯 Orbit target reset to origin (Sol)');
     }
     
+    async loadStars() {
+        try {
+            const response = await fetch('/api/stars');
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                this.createStars(data.data);
+                return data.data;
+            } else if (Array.isArray(data)) {
+                this.createStars(data);
+                return data;
+            }
+        } catch (error) {
+            console.error('Error loading stars:', error);
+            return [];
+        }
+    }
+    
     showStarInMainWindow(starData) {
         const starDetailsPanel = document.getElementById('starDetails');
         if (starDetailsPanel) {
@@ -420,68 +444,43 @@ class ThreeJSStarmap {
     }
     
     async loadNations() {
-        try {
-            const response = await fetch('/api/nations');
-            const data = await response.json();
-            this.createNationBoundaries(data.data || data);
-        } catch (error) {
-            console.error('Error loading nations:', error);
-        }
+        const response = await fetch('/api/nations');
+        const data = await response.json();
+        this.createNationSpheres(data.data || data);
     }
     
-    createNationBoundaries(data) {
-        console.log('🏛️ Creating nation boundaries for', data.length, 'nations');
+    createNationSpheres(data) {
+        console.log('🏛️ Creating nation spheres for', data.length, 'nations');
         const scale = 100; // Match star scale
         
-        data.forEach((nation, i) => {
-            // Check if nation has the expected data structure
-            if (!nation.territory_boundaries || !nation.territory_boundaries.length) {
-                console.warn(`Nation ${nation.name || nation.id} has no territory boundaries`);
-                return;
-            }
-            
-            // Create a bounding box from territory boundaries
-            let minX = Infinity, maxX = -Infinity;
-            let minY = Infinity, maxY = -Infinity; 
-            let minZ = Infinity, maxZ = -Infinity;
-            
-            nation.territory_boundaries.forEach(boundary => {
-                boundary.forEach(point => {
-                    minX = Math.min(minX, point[0]);
-                    maxX = Math.max(maxX, point[0]);
-                    minY = Math.min(minY, point[1]);
-                    maxY = Math.max(maxY, point[1]);
-                    minZ = Math.min(minZ, point[2]);
-                    maxZ = Math.max(maxZ, point[2]);
-                });
-            });
-            
-            const width = (maxX - minX) * scale;
-            const height = (maxY - minY) * scale;
-            const depth = (maxZ - minZ) * scale;
-            
-            const geometry = new THREE.BoxGeometry(width, height, depth);
+        data.forEach(nation => {
+            // Assume nation has capital_star_id or center_point
+            const center = nation.center_point || this.getStarCenter(nation.capital_star_id); // Fetch coords if needed
+            if (!center) return;
+
+            const geometry = new THREE.SphereGeometry((nation.radius || 50) * scale, 32, 32); // Larger radius for visibility, scaled
             const material = new THREE.MeshBasicMaterial({
                 color: nation.color || 0x00ff00,
-                opacity: Math.min(0.2 + i * 0.05, 0.6), // Cap opacity at 0.6
                 transparent: true,
+                opacity: 0.3,
                 wireframe: true
             });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(center.x * scale, center.y * scale, center.z * scale); // Apply scale to position
+            sphere.userData.nationData = nation;
+            sphere.name = `NationSphere_${nation.name || nation.id}`;
+            this.nationsGroup.add(sphere);
             
-            const box = new THREE.Mesh(geometry, material);
-            box.position.set(
-                ((minX + maxX) / 2) * scale,
-                ((minY + maxY) / 2) * scale,
-                ((minZ + maxZ) / 2) * scale
-            );
-            box.userData.nationData = nation;
-            box.name = `NationBoundary_${nation.name || nation.id}`;
-            
-            this.nationsGroup.add(box);
-            console.log(`🏛️ Created nation boundary: "${nation.name}" with dimensions ${width.toFixed(1)} x ${height.toFixed(1)} x ${depth.toFixed(1)}`);
+            console.log(`🏛️ Created nation sphere: "${nation.name}" at (${(center.x * scale).toFixed(1)}, ${(center.y * scale).toFixed(1)}, ${(center.z * scale).toFixed(1)}) radius: ${((nation.radius || 50) * scale).toFixed(1)}`);
         });
         
-        console.log(`✅ Created ${data.length} nation boundaries (${scale}x scaled)`);
+        console.log(`✅ Created ${data.length} nation spheres (radius 50 * ${scale}, wireframe, translucent)`);
+    }
+
+    getStarCenter(starId) {
+        // Fetch star coords from API or currentStars
+        const star = this.currentStars.find(s => s.id === starId);
+        return star ? { x: star.x, y: star.y, z: star.z } : { x: 0, y: 0, z: 0 }; // Default to origin if not found
     }
     
     createNations(nations) {

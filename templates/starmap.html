@@ -228,6 +228,12 @@
                                 <label class="form-check-label small" for="galacticDirectionsOverlay">Directions</label>
                             </div>
                         </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="exoplanetsOverlay">
+                                <label class="form-check-label small" for="exoplanetsOverlay">Exoplanets</label>
+                            </div>
+                        </div>
                     </div>
                     <button class="btn btn-outline-success btn-sm w-100 mt-2" onclick="showNationsLegend()">
                         🏛️ Nations Legend
@@ -243,8 +249,14 @@
                     <button class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="exportData()">
                         💾 Export CSV
                     </button>
-                    <button class="btn btn-outline-info btn-sm w-100" onclick="window.testThreeJS ? window.testThreeJS() : console.log('Test not available')">
+                    <button class="btn btn-outline-info btn-sm w-100 mb-1" onclick="window.testThreeJS ? window.testThreeJS() : console.log('Test not available')">
                         🧪 Test Three.js
+                    </button>
+                    <button class="btn btn-outline-success btn-sm w-100 mb-1" onclick="testSmallDataset()">
+                        🎯 BLITZ Test (50 Stars)
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm w-100 mb-1" onclick="validateStarmapSystems()">
+                        🔍 Validate Systems
                     </button>
                     <button class="btn btn-outline-warning btn-sm w-100" onclick="enableFullDataset()">
                         🚀 Enable 24k+ Stars
@@ -549,51 +561,185 @@ Authorization: Bearer ${data.token}`;
                     }
                 }
                 
-                // GHOST HUNTING: Disable exoplanets and regions temporarily to isolate uniform issue
-                console.log('👻 GHOST HUNTING: Skipping exoplanets and regions to isolate uniform issue');
-                /*
-                // Load and create exoplanets
-                console.log('🪐 Loading exoplanet data from MontyDB...');
-                const exoStartTime = Date.now();
-                
-                const [fictionalResponse, realResponse] = await Promise.all([
-                    fetch('/api/fictional-exoplanets'),
-                    fetch('/api/exoplanets')
-                ]);
-                
-                const fictionalData = await fictionalResponse.json();
-                const realData = await realResponse.json();
-                
-                console.log(`🪐 MontyDB Exoplanet Stats:`);
-                console.log(`   - Fictional planets: ${fictionalData.data ? fictionalData.data.length : 0}`);
-                console.log(`   - Real planets: ${realData.data ? realData.data.length : 0}`);
-                console.log(`   - Fetch time: ${Date.now() - exoStartTime}ms`);
-                
-                if (fictionalData.success && realData.success) {
-                    const allExoplanets = [...fictionalData.data, ...realData.data];
-                    console.log(`🌍 Total exoplanets: ${allExoplanets.length}`);
-                    threejsStarmap.createExoplanets(allExoplanets);
-                }
-                
-                // Load and create stellar regions
-                console.log('🗺️ Loading stellar regions from MontyDB...');
-                const regionStartTime = Date.now();
-                
-                const regionsResponse = await fetch('/api/stellar-regions');
-                const regionsData = await regionsResponse.json();
-                
-                console.log(`🗺️ MontyDB Regions Stats:`);
-                console.log(`   - Regions count: ${regionsData.data ? regionsData.data.length : 0}`);
-                console.log(`   - Fetch time: ${Date.now() - regionStartTime}ms`);
-                
-                if (regionsData.success) {
-                    threejsStarmap.createRegionBoxes(regionsData.data);
-                }
-                */
+                // Load all overlays by default to demonstrate functionality
+                console.log('🌌 Loading all Three.js overlays...');
+                await loadAllThreeJSOverlays();
                 
                 console.log('✅ Three.js starfield initialized');
             } catch (error) {
                 console.error('❌ Error initializing Three.js starfield:', error);
+            }
+        }
+        
+        // Load all Three.js overlays
+        async function loadAllThreeJSOverlays() {
+            if (!threejsStarmap) return;
+            
+            try {
+                // Load stellar regions (includes galactic directions) - note: hyphen not underscore
+                await threejsStarmap.loadStellarRegions();
+                
+                // Load nations  
+                await threejsStarmap.loadNations();
+                
+                // Load trade routes - note: hyphen not underscore
+                await threejsStarmap.loadTradeRoutes();
+                
+                console.log('✅ All Three.js overlays loaded');
+            } catch (error) {
+                console.error('❌ Error loading Three.js overlays:', error);
+            }
+        }
+        
+        // Connect search functionality to Three.js starmap
+        function searchStars() {
+            const searchInput = document.getElementById('searchInput');
+            const searchTerm = searchInput.value.trim();
+            
+            if (!searchTerm) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+            
+            console.log('🔍 Searching for star:', searchTerm);
+            
+            // Search in main app if available
+            if (app && app.performSearch) {
+                app.performSearch();
+            }
+            
+            // Search in Three.js starmap
+            if (threejsStarmap && threejsStarmap.searchStarByName) {
+                const foundStar = threejsStarmap.searchStarByName(searchTerm);
+                
+                // Update search results
+                const searchResults = document.getElementById('searchResults');
+                if (foundStar) {
+                    searchResults.innerHTML = `<small class="text-success">✅ Found: ${foundStar.name || foundStar.fictional_name}</small>`;
+                } else {
+                    searchResults.innerHTML = `<small class="text-warning">❌ No star found matching "${searchTerm}"</small>`;
+                }
+            }
+        }
+        
+        // Connect overlay toggles to Three.js starmap
+        function updateOverlays() {
+            if (!threejsStarmap) return;
+            
+            const nationsToggle = document.getElementById('nationsOverlay').checked;
+            const tradeRoutesToggle = document.getElementById('tradeRoutesOverlay').checked;
+            const stellarRegionsToggle = document.getElementById('stellarRegionsOverlay').checked;
+            const galacticDirectionsToggle = document.getElementById('galacticDirectionsOverlay').checked;
+            const exoplanetsToggle = document.getElementById('exoplanetsOverlay').checked;
+            
+            console.log('🎛️ Updating overlays:', {
+                nations: nationsToggle,
+                tradeRoutes: tradeRoutesToggle,
+                stellarRegions: stellarRegionsToggle,
+                galacticDirections: galacticDirectionsToggle,
+                exoplanets: exoplanetsToggle
+            });
+            
+            // Show/hide overlay groups
+            if (threejsStarmap.nationsGroup) {
+                threejsStarmap.nationsGroup.visible = nationsToggle;
+            }
+            
+            if (threejsStarmap.tradeRoutesGroup) {
+                threejsStarmap.tradeRoutesGroup.visible = tradeRoutesToggle;
+            }
+            
+            if (threejsStarmap.stellarRegionsGroup) {
+                threejsStarmap.stellarRegionsGroup.visible = stellarRegionsToggle;
+            }
+            
+            if (threejsStarmap.exoplanetGroup) {
+                threejsStarmap.exoplanetGroup.visible = exoplanetsToggle;
+            }
+            
+            // Handle axis labels visibility
+            if (threejsStarmap.axisLabels) {
+                threejsStarmap.axisLabels.forEach(label => {
+                    label.visible = galacticDirectionsToggle;
+                });
+            }
+            
+            // Also toggle AxesHelper itself
+            if (threejsStarmap.axesHelper) {
+                threejsStarmap.axesHelper.visible = galacticDirectionsToggle;
+            }
+        }
+        
+        // Apply filters function
+        function applyFilters() {
+            console.log('🎛️ Applying filters...');
+            
+            if (app && app.loadStars) {
+                app.loadStars();
+            }
+            
+            if (threejsStarmap) {
+                // Reload starmap with new filters
+                initializeThreeJSStarfield();
+            }
+        }
+        
+        // Reset view function
+        function resetView() {
+            console.log('🎯 Resetting view...');
+            
+            if (threejsStarmap && threejsStarmap.camera && threejsStarmap.controls) {
+                // Reset camera position
+                threejsStarmap.camera.position.set(0, 0, 1000);
+                threejsStarmap.camera.lookAt(0, 0, 0);
+                
+                // Reset controls target
+                if (threejsStarmap.controls.target) {
+                    threejsStarmap.controls.target.set(0, 0, 0);
+                }
+                
+                // Clear highlights
+                if (threejsStarmap.clearStarHighlights) {
+                    threejsStarmap.clearStarHighlights();
+                }
+                
+                console.log('✅ View reset to origin');
+            }
+        }
+        
+        // Export data function
+        function exportData() {
+            console.log('💾 Exporting data...');
+            
+            if (app && app.exportToCSV) {
+                app.exportToCSV();
+            } else {
+                console.warn('Export functionality not available');
+            }
+        }
+        
+        // Show nations legend
+        function showNationsLegend() {
+            console.log('🏛️ Showing nations legend...');
+            
+            if (app && app.showNationsModal) {
+                app.showNationsModal();
+            } else {
+                // Basic nations info
+                alert('🏛️ Nations Legend\n\nNations data is loaded and displayed as wireframe boundaries.\nCheck the console for detailed nation information.');
+            }
+        }
+        
+        // Hide star details panel
+        function hideStarDetails() {
+            const starDetailsPanel = document.getElementById('starDetails');
+            if (starDetailsPanel) {
+                starDetailsPanel.style.display = 'none';
+            }
+            
+            // Also clear Three.js highlights
+            if (threejsStarmap && threejsStarmap.clearStarHighlights) {
+                threejsStarmap.clearStarHighlights();
             }
         }
         
@@ -790,9 +936,128 @@ Authorization: Bearer ${data.token}`;
             alert('🚀 Full dataset mode enabled!\n\nThe next time you reload the starmap, it will use all 24k+ stars with InstancedMesh for optimal performance.\n\nReload the page or switch views to see the effect.');
         }
         
+        // Test with small dataset - BLITZ MODE
+        async function testSmallDataset() {
+            console.log('🧪 BLITZ TEST: Starting small dataset test...');
+            
+            if (!threejsStarmap) {
+                console.error('❌ BLITZ TEST: Three.js starmap not initialized');
+                return;
+            }
+            
+            try {
+                // Test with small, known dataset
+                console.log('🧪 BLITZ TEST: Fetching small star dataset (limit 50)...');
+                const response = await fetch('/api/stars?count_limit=50&mag_limit=6');
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    console.log('✅ BLITZ TEST: Small dataset loaded:', data.data.length, 'stars');
+                    console.log('📊 BLITZ TEST: Sample star:', data.data[0]);
+                    
+                    // Clear existing stars
+                    threejsStarmap.starField.clear();
+                    
+                    // Create with small dataset
+                    threejsStarmap.createStars(data.data);
+                    
+                    // Test all overlays with small dataset
+                    console.log('🧪 BLITZ TEST: Testing all overlays...');
+                    await loadAllThreeJSOverlays();
+                    
+                    // Test raycaster on first star
+                    if (data.data.length > 0) {
+                        const testStar = data.data[0];
+                        console.log('🧪 BLITZ TEST: Test star for raycaster:', testStar);
+                        
+                        // Simulate click on first star's position
+                        const testEvent = {
+                            clientX: threejsStarmap.renderer.domElement.width / 2,
+                            clientY: threejsStarmap.renderer.domElement.height / 2
+                        };
+                        
+                        console.log('🧪 BLITZ TEST: Simulating click at center...');
+                        threejsStarmap.onMouseClick(testEvent);
+                    }
+                    
+                    console.log('✅ BLITZ TEST: Small dataset test completed successfully');
+                    alert('✅ BLITZ TEST Complete!\n\nSmall dataset test successful with ' + data.data.length + ' stars.\nCheck console for detailed logs.');
+                    
+                } else {
+                    console.error('❌ BLITZ TEST: Failed to load small dataset:', data);
+                }
+                
+            } catch (error) {
+                console.error('❌ BLITZ TEST: Error during small dataset test:', error);
+            }
+        }
+        
+        // Comprehensive system validation
+        function validateStarmapSystems() {
+            console.log('🔍 VALIDATION: Starting comprehensive system validation...');
+            
+            const results = {
+                raycaster: false,
+                stellarRegions: false,
+                tradeRoutes: false,
+                galacticAxes: false,
+                performance: false
+            };
+            
+            if (threejsStarmap) {
+                // Check raycaster
+                results.raycaster = !!(threejsStarmap.raycaster && threejsStarmap.mouse && threejsStarmap.camera);
+                console.log('🔍 VALIDATION: Raycaster system:', results.raycaster ? '✅' : '❌');
+                
+                // Check stellar regions
+                results.stellarRegions = !!(threejsStarmap.stellarRegionsGroup && threejsStarmap.stellarRegionsGroup.children.length > 0);
+                console.log('🔍 VALIDATION: Stellar regions:', results.stellarRegions ? '✅' : '❌', threejsStarmap.stellarRegionsGroup?.children.length || 0, 'regions');
+                
+                // Check trade routes
+                results.tradeRoutes = !!(threejsStarmap.tradeRoutesGroup && threejsStarmap.tradeRoutesGroup.children.length > 0);
+                console.log('🔍 VALIDATION: Trade routes:', results.tradeRoutes ? '✅' : '❌', threejsStarmap.tradeRoutesGroup?.children.length || 0, 'routes');
+                
+                // Check galactic axes
+                results.galacticAxes = !!(threejsStarmap.axisLabels && threejsStarmap.axisLabels.length > 0);
+                console.log('🔍 VALIDATION: Galactic axes:', results.galacticAxes ? '✅' : '❌', threejsStarmap.axisLabels?.length || 0, 'labels');
+                
+                // Check performance
+                const starCount = threejsStarmap.currentStars?.length || 0;
+                const fps = threejsStarmap.frameCount || 0;
+                results.performance = starCount > 0 && fps > 0;
+                console.log('🔍 VALIDATION: Performance:', results.performance ? '✅' : '❌', `${starCount} stars, ${fps} frames`);
+                
+                // Detailed object counts
+                console.log('📊 VALIDATION: Scene object counts:', {
+                    starField: threejsStarmap.starField?.children.length || 0,
+                    stellarRegions: threejsStarmap.stellarRegionsGroup?.children.length || 0,
+                    nations: threejsStarmap.nationsGroup?.children.length || 0,
+                    tradeRoutes: threejsStarmap.tradeRoutesGroup?.children.length || 0,
+                    axisLabels: threejsStarmap.axisLabels?.length || 0,
+                    totalSceneObjects: threejsStarmap.scene?.children.length || 0
+                });
+                
+            } else {
+                console.error('❌ VALIDATION: Three.js starmap not initialized');
+            }
+            
+            const allPassed = Object.values(results).every(result => result);
+            console.log(allPassed ? '✅ VALIDATION: All systems operational' : '⚠️ VALIDATION: Some systems need attention', results);
+            
+            return results;
+        }
+        
         // Initialize Three.js view on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, current view:', currentView);
+            
+            // Set up overlay toggle event listeners
+            ['nationsOverlay', 'tradeRoutesOverlay', 'stellarRegionsOverlay', 'galacticDirectionsOverlay', 'exoplanetsOverlay'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', updateOverlays);
+                }
+            });
             
             // Note about CSP warnings for users
             console.log('ℹ️ Note: CSP warnings about blocked fonts/images from migaku-public-data.migaku.com are from browser extensions (like Migaku language learning tool), not from our starmap code. These can be safely ignored.');

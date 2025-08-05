@@ -102,6 +102,10 @@ class ThreeJSStarmap {
         // NATIONAL BORDERS START HIDDEN - set nationalBordersGroup visibility to false
         this.nationalBordersGroup.visible = false;
         
+        // EXOPLANETS START VISIBLE - set exoplanetGroup visibility to true
+        this.exoplanetGroup.visible = true;
+        this.fictionalExoplanetGroup.visible = true;
+        
         this.scene.add(this.starField);
         this.scene.add(this.exoplanetGroup);
         this.scene.add(this.fictionalExoplanetGroup);
@@ -225,14 +229,33 @@ class ThreeJSStarmap {
         if (!this.raycaster || !this.camera || !this.scene) return;
         
         this.raycaster.setFromCamera(this.mouse, this.camera);
-        const intersects = this.raycaster.intersectObjects(this.scene.children, true);
         
-        if (intersects.length > 0) {
-            const selectedObject = intersects[0].object;
+        // First try to intersect with star field objects only (highest priority)
+        const starIntersects = this.raycaster.intersectObjects(this.starField.children, false);
+        if (starIntersects.length > 0) {
+            const selectedObject = starIntersects[0].object;
             this.handleStarSelection(selectedObject);
-        } else {
-            this.clearStarHighlights();
+            return;
         }
+        
+        // Then try exoplanets (including Sol system)
+        const planetIntersects = this.raycaster.intersectObjects(this.exoplanetGroup.children, false);
+        if (planetIntersects.length > 0) {
+            const selectedObject = planetIntersects[0].object;
+            this.handlePlanetSelection(selectedObject);
+            return;
+        }
+        
+        // Then try fictional exoplanets
+        const fictionalPlanetIntersects = this.raycaster.intersectObjects(this.fictionalExoplanetGroup.children, false);
+        if (fictionalPlanetIntersects.length > 0) {
+            const selectedObject = fictionalPlanetIntersects[0].object;
+            this.handleFictionalPlanetSelection(selectedObject);
+            return;
+        }
+        
+        // If nothing was selected, clear highlights
+        this.clearStarHighlights();
     }
     
     handleStarSelection(selectedObject) {
@@ -262,10 +285,70 @@ class ThreeJSStarmap {
         return null;
     }
     
+    handlePlanetSelection(selectedObject) {
+        if (selectedObject.userData && selectedObject.userData.planetData) {
+            const planetData = selectedObject.userData.planetData;
+            console.log('🪐 Planet selected:', planetData.name);
+            
+            this.clearStarHighlights();
+            selectedObject.material.color.setHex(0xff0000);
+            this.selectedStar = selectedObject;
+            
+            this.showPlanetInMainWindow(planetData);
+            return planetData;
+        } else if (selectedObject.userData && selectedObject.userData.exoplanetData) {
+            const exoplanetData = selectedObject.userData.exoplanetData;
+            console.log('🪐 Exoplanet selected:', exoplanetData.name);
+            
+            this.clearStarHighlights();
+            selectedObject.material.color.setHex(0xff0000);
+            this.selectedStar = selectedObject;
+            
+            this.showExoplanetInMainWindow(exoplanetData);
+            return exoplanetData;
+        }
+        return null;
+    }
+    
+    handleFictionalPlanetSelection(selectedObject) {
+        if (selectedObject.userData && selectedObject.userData.fictionalPlanetData) {
+            const planetData = selectedObject.userData.fictionalPlanetData;
+            console.log('🔴 Fictional planet selected:', planetData.name);
+            
+            this.clearStarHighlights();
+            selectedObject.material.color.setHex(0xffff00);
+            this.selectedStar = selectedObject;
+            
+            this.showFictionalPlanetInMainWindow(planetData);
+            return planetData;
+        }
+        return null;
+    }
+    
     clearStarHighlights() {
         if (this.selectedStar) {
-            const starData = this.selectedStar.userData.starData;
-            this.selectedStar.material.color = this.getStarColor(starData);
+            // Handle different object types
+            if (this.selectedStar.userData.starData) {
+                // It's a star
+                const starData = this.selectedStar.userData.starData;
+                this.selectedStar.material.color = this.getStarColor(starData);
+            } else if (this.selectedStar.userData.planetData) {
+                // It's a Sol system planet - restore original color
+                const planetData = this.selectedStar.userData.planetData;
+                const solarPlanets = {
+                    'Mercury': 0x8c6239, 'Venus': 0xffc649, 'Earth': 0x6b93d6, 'Mars': 0xcd5c5c,
+                    'Jupiter': 0xd8ca9d, 'Saturn': 0xfad5a5, 'Uranus': 0x4fd0e4, 'Neptune': 0x4b70dd
+                };
+                this.selectedStar.material.color.setHex(solarPlanets[planetData.name] || 0x4ecdc4);
+            } else if (this.selectedStar.userData.exoplanetData) {
+                // It's an exoplanet - restore original color
+                const exoplanetData = this.selectedStar.userData.exoplanetData;
+                this.selectedStar.material.color = this.getPlanetColor(exoplanetData);
+            } else if (this.selectedStar.userData.fictionalPlanetData) {
+                // It's a fictional planet - restore red color
+                this.selectedStar.material.color.setHex(0xff0000);
+            }
+            
             this.selectedStar = null;
         }
     }
@@ -347,6 +430,59 @@ class ThreeJSStarmap {
             }
             if (starData.system_notes) {
                 html += `<p><strong>Notes:</strong> ${starData.system_notes}</p>`;
+            }
+            
+            starDetailsPanel.innerHTML = html;
+            starDetailsPanel.style.display = 'block';
+        }
+    }
+    
+    showPlanetInMainWindow(planetData) {
+        const starDetailsPanel = document.getElementById('starDetails');
+        if (starDetailsPanel) {
+            let html = `<h5>🪐 ${planetData.name}</h5>`;
+            html += `<p><strong>System:</strong> ${planetData.system}</p>`;
+            html += `<p><strong>Type:</strong> ${planetData.type || 'Unknown'}</p>`;
+            html += `<p><strong>Category:</strong> ${planetData.category}</p>`;
+            if (planetData.distance) {
+                html += `<p><strong>Distance from Star:</strong> ${planetData.distance} AU</p>`;
+            }
+            
+            starDetailsPanel.innerHTML = html;
+            starDetailsPanel.style.display = 'block';
+        }
+    }
+    
+    showExoplanetInMainWindow(exoplanetData) {
+        const starDetailsPanel = document.getElementById('starDetails');
+        if (starDetailsPanel) {
+            let html = `<h5>🪐 ${exoplanetData.name || 'Unknown Exoplanet'}</h5>`;
+            html += `<p><strong>Type:</strong> <span style="color: #4ecdc4;">Exoplanet</span></p>`;
+            if (exoplanetData.host_star) {
+                html += `<p><strong>Host Star:</strong> ${exoplanetData.host_star}</p>`;
+            }
+            if (exoplanetData.x !== undefined) {
+                html += `<p><strong>Coordinates:</strong> (${exoplanetData.x?.toFixed(2)}, ${exoplanetData.y?.toFixed(2)}, ${exoplanetData.z?.toFixed(2)})</p>`;
+            }
+            
+            starDetailsPanel.innerHTML = html;
+            starDetailsPanel.style.display = 'block';
+        }
+    }
+    
+    showFictionalPlanetInMainWindow(planetData) {
+        const starDetailsPanel = document.getElementById('starDetails');
+        if (starDetailsPanel) {
+            let html = `<h5>🔴 ${planetData.name || 'Unknown Fictional Planet'}</h5>`;
+            html += `<p><strong>Type:</strong> <span style="color: #ff6b6b;">Fictional Exoplanet</span></p>`;
+            if (planetData.host_star) {
+                html += `<p><strong>Host Star:</strong> ${planetData.host_star}</p>`;
+            }
+            if (planetData.description) {
+                html += `<p><strong>Description:</strong> ${planetData.description}</p>`;
+            }
+            if (planetData.x !== undefined) {
+                html += `<p><strong>Coordinates:</strong> (${planetData.x?.toFixed(2)}, ${planetData.y?.toFixed(2)}, ${planetData.z?.toFixed(2)})</p>`;
             }
             
             starDetailsPanel.innerHTML = html;
@@ -458,7 +594,7 @@ class ThreeJSStarmap {
             const center = nation.center_point || this.getStarCenter(nation.capital_star_id); // Fetch coords if needed
             if (!center) return;
 
-            const geometry = new THREE.SphereGeometry((nation.radius || 50) * scale, 32, 32); // Larger radius for visibility, scaled
+            const geometry = new THREE.SphereGeometry((nation.radius || 25) * scale, 32, 32); // Reduced radius by half for better visibility
             const material = new THREE.MeshBasicMaterial({
                 color: nation.color || 0x00ff00,
                 transparent: true,
@@ -471,10 +607,10 @@ class ThreeJSStarmap {
             sphere.name = `NationSphere_${nation.name || nation.id}`;
             this.nationsGroup.add(sphere);
             
-            console.log(`🏛️ Created nation sphere: "${nation.name}" at (${(center.x * scale).toFixed(1)}, ${(center.y * scale).toFixed(1)}, ${(center.z * scale).toFixed(1)}) radius: ${((nation.radius || 50) * scale).toFixed(1)}`);
+            console.log(`🏛️ Created nation sphere: "${nation.name}" at (${(center.x * scale).toFixed(1)}, ${(center.y * scale).toFixed(1)}, ${(center.z * scale).toFixed(1)}) radius: ${((nation.radius || 25) * scale).toFixed(1)}`);
         });
         
-        console.log(`✅ Created ${data.length} nation spheres (radius 50 * ${scale}, wireframe, translucent)`);
+        console.log(`✅ Created ${data.length} nation spheres (radius 25 * ${scale}, wireframe, translucent)`);
     }
 
     getStarCenter(starId) {
@@ -654,14 +790,23 @@ class ThreeJSStarmap {
     
     async loadExoplanets() {
         try {
+            console.log('📡 Loading real exoplanets...');
             const response = await fetch('/api/exoplanets');
             const data = await response.json();
             
+            console.log('📊 Exoplanets response:', data);
+            
             if (data.success && data.data) {
+                console.log(`✅ Found ${data.data.length} real exoplanets`);
                 this.createExoplanets(data.data);
+            } else if (Array.isArray(data)) {
+                console.log(`✅ Found ${data.length} real exoplanets (direct array)`);
+                this.createExoplanets(data);
+            } else {
+                console.warn('⚠️ No real exoplanets data found');
             }
         } catch (error) {
-            console.error('Error loading exoplanets:', error);
+            console.error('❌ Error loading exoplanets:', error);
         }
     }
     
@@ -676,21 +821,21 @@ class ThreeJSStarmap {
         
         // Add our solar system planets around Sol at origin
         const solarSystemPlanets = [
-            { name: 'Mercury', distance: 0.39, color: 0x8c6239, type: 'terrestrial' },
-            { name: 'Venus', distance: 0.72, color: 0xffc649, type: 'terrestrial' },
-            { name: 'Earth', distance: 1.0, color: 0x6b93d6, type: 'terrestrial' },
-            { name: 'Mars', distance: 1.52, color: 0xcd5c5c, type: 'terrestrial' },
-            { name: 'Jupiter', distance: 5.2, color: 0xd8ca9d, size: 0.6, type: 'gas_giant' },
-            { name: 'Saturn', distance: 9.5, color: 0xfad5a5, size: 0.5, type: 'gas_giant' },
-            { name: 'Uranus', distance: 19.2, color: 0x4fd0e4, size: 0.4, type: 'ice_giant' },
-            { name: 'Neptune', distance: 30.1, color: 0x4b70dd, size: 0.4, type: 'ice_giant' }
+            { name: 'Mercury', distance: 3.0, color: 0x8c6239, size: 0.3, type: 'terrestrial' },
+            { name: 'Venus', distance: 4.5, color: 0xffc649, size: 0.4, type: 'terrestrial' },
+            { name: 'Earth', distance: 6.0, color: 0x6b93d6, size: 0.4, type: 'terrestrial' },
+            { name: 'Mars', distance: 8.0, color: 0xcd5c5c, size: 0.3, type: 'terrestrial' },
+            { name: 'Jupiter', distance: 15.0, color: 0xd8ca9d, size: 0.8, type: 'gas_giant' },
+            { name: 'Saturn', distance: 22.0, color: 0xfad5a5, size: 0.7, type: 'gas_giant' },
+            { name: 'Uranus', distance: 35.0, color: 0x4fd0e4, size: 0.5, type: 'ice_giant' },
+            { name: 'Neptune', distance: 45.0, color: 0x4b70dd, size: 0.5, type: 'ice_giant' }
         ];
         
         solarSystemPlanets.forEach((planet, index) => {
             const angle = (index / solarSystemPlanets.length) * Math.PI * 2;
-            const distance = planet.distance * 2; // Scale distance for visibility
+            const distance = planet.distance; // Use defined distance directly
             
-            const geometry = new THREE.SphereGeometry(planet.size || 0.5, 32, 32); // Increased size and quality for visibility
+            const geometry = new THREE.SphereGeometry(planet.size, 32, 32); // Use specific planet size
             const material = new THREE.MeshBasicMaterial({
                 color: planet.color,
                 transparent: true,
@@ -718,8 +863,18 @@ class ThreeJSStarmap {
         
         // Add other exoplanets from API data with enhanced colors
         if (exoplanets && exoplanets.length > 0) {
+            let createdCount = 0;
+            let skippedCount = 0;
+            
             exoplanets.forEach((exoplanet, i) => {
-                const geometry = new THREE.SphereGeometry(0.5, 32, 32); // Increased size for better visibility
+                // Skip exoplanets without coordinates
+                if (exoplanet.x === undefined || exoplanet.y === undefined || exoplanet.z === undefined) {
+                    console.warn(`⚠️ Skipping exoplanet "${exoplanet.name || 'Unknown'}" - missing coordinates`);
+                    skippedCount++;
+                    return;
+                }
+                
+                const geometry = new THREE.SphereGeometry(1.2, 32, 32); // Increased size for better visibility
                 const material = new THREE.MeshBasicMaterial({
                     color: this.getPlanetColor(exoplanet),
                     transparent: true,
@@ -737,25 +892,35 @@ class ThreeJSStarmap {
                 
                 this.exoplanetGroup.add(planet);
                 console.log(`🪐 Created exoplanet: "${exoplanet.name || 'Unknown'}" at position (${exoplanet.x * scale}, ${exoplanet.y * scale}, ${exoplanet.z * scale})`);
+                createdCount++;
             });
+            
+            console.log(`📊 Exoplanet creation summary: ${createdCount} created, ${skippedCount} skipped (missing coordinates)`);
         }
         
         console.log(`✅ Enhanced exoplanet system created: ${solarSystemPlanets.length} solar system planets + ${exoplanets ? exoplanets.length : 0} exoplanets`);
-        console.log(`🪐 EXOPLANET SIZES: Solar system planets = 0.5 units, API exoplanets = 0.5 units, 32x32 geometry`);
+        console.log(`🪐 EXOPLANET SIZES: Solar system planets = 1.5 units, API exoplanets = 1.2 units, 32x32 geometry`);
     }
     
     async loadFictionalExoplanets() {
         try {
+            console.log('📡 Loading fictional exoplanets...');
             const response = await fetch('/api/fictional-exoplanets');
             const data = await response.json();
             
+            console.log('📊 Fictional exoplanets response:', data);
+            
             if (data.success && data.data) {
+                console.log(`✅ Found ${data.data.length} fictional exoplanets`);
                 this.createFictionalExoplanets(data.data);
             } else if (Array.isArray(data)) {
+                console.log(`✅ Found ${data.length} fictional exoplanets (direct array)`);
                 this.createFictionalExoplanets(data);
+            } else {
+                console.warn('⚠️ No fictional exoplanets data found');
             }
         } catch (error) {
-            console.error('Error loading fictional exoplanets:', error);
+            console.error('❌ Error loading fictional exoplanets:', error);
         }
     }
     
@@ -766,9 +931,19 @@ class ThreeJSStarmap {
         const scale = 100; // Match star scale
         
         if (fictionalPlanets && fictionalPlanets.length > 0) {
+            let createdCount = 0;
+            let skippedCount = 0;
+            
             fictionalPlanets.forEach((planet, i) => {
-                // Create glowing red sphere - DOUBLED radius for visibility
-                const geometry = new THREE.SphereGeometry(1.0, 32, 32); // Doubled from 0.5 to 1.0
+                // Skip fictional planets without coordinates
+                if (planet.x === undefined || planet.y === undefined || planet.z === undefined) {
+                    console.warn(`⚠️ Skipping fictional planet "${planet.name || 'Unknown'}" - missing coordinates`);
+                    skippedCount++;
+                    return;
+                }
+                
+                // Create glowing red sphere - INCREASED radius for visibility
+                const geometry = new THREE.SphereGeometry(2.0, 32, 32); // Increased to 2.0 for better visibility
                 const material = new THREE.MeshBasicMaterial({
                     color: 0xff0000, // Glowing red
                     transparent: true,
@@ -790,11 +965,14 @@ class ThreeJSStarmap {
                 this.createOrbitRing(planet, scale, 2.0); // Doubled orbit radius
                 
                 console.log(`🔴 Created fictional exoplanet: "${planet.name || 'Unknown'}" at position (${planet.x * scale}, ${planet.y * scale}, ${planet.z * scale})`);
+                createdCount++;
             });
+            
+            console.log(`📊 Fictional exoplanet creation summary: ${createdCount} created, ${skippedCount} skipped (missing coordinates)`);
         }
         
         console.log(`✅ Fictional exoplanet system created: ${fictionalPlanets ? fictionalPlanets.length : 0} glowing red planets with orbits`);
-        console.log(`🔴 FICTIONAL PLANET SIZES: 1.0 units (doubled), orbit radius: 2.0 units (doubled), glowing red`);
+        console.log(`🔴 FICTIONAL PLANET SIZES: 2.0 units (increased), orbit radius: 2.0 units (doubled), glowing red`);
     }
     
     createOrbitRing(planet, scale, orbitRadius) {
@@ -908,12 +1086,12 @@ class ThreeJSStarmap {
     }
     
     getStarSize(star) {
-        // Double the sizes AGAIN for maximum visibility
-        if (star.name === 'Sol' || star.id === 500000 || star.id === 0) return 2.0; // Sol very prominent
-        if (star.fictional_name === 'Tiefe-Grenze Tor' || star.id === 999999) return 1.6;
-        if (star.is_fictional) return 1.2;
-        if (star.has_planets || star.exoplanet_count > 0) return 1.0;
-        return 0.6; // Doubled again for maximum visibility
+        // Increased star sizes for better visibility
+        if (star.name === 'Sol' || star.id === 500000 || star.id === 0) return 3.0; // Sol very prominent
+        if (star.fictional_name === 'Tiefe-Grenze Tor' || star.id === 999999) return 2.4;
+        if (star.is_fictional) return 1.8;
+        if (star.has_planets || star.exoplanet_count > 0) return 1.5;
+        return 1.0; // Increased base star size
     }
     
     onWindowResize() {

@@ -27,7 +27,11 @@ class APIController:
         }
         if message:
             response['message'] = message
-        return jsonify(response)
+        json_response = jsonify(response)
+        json_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        json_response.headers['Pragma'] = 'no-cache'
+        json_response.headers['Expires'] = '0'
+        return json_response
     
     def _error_response(self, error: str, status_code: int = 400) -> Dict:
         """Create standardized error response"""

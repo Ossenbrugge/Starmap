@@ -553,6 +553,9 @@ class Database:
         """Get all fictional exoplanets within distance limit"""
         distance_limit = 30.0
         all_exoplanets = self._cache.get('fictional_exoplanets', [])
+        print(f"DEBUG: fictional_exoplanets cache has {len(all_exoplanets)} planets")
+        print(f"DEBUG: cache keys: {list(self._cache.keys())}")
+        
         filtered_exoplanets = []
         
         for exoplanet in all_exoplanets:
@@ -561,6 +564,7 @@ class Database:
             if host_star and host_star.get('distance', 0) <= distance_limit:
                 filtered_exoplanets.append(exoplanet)
         
+        print(f"DEBUG: returning {len(filtered_exoplanets)} filtered fictional exoplanets")
         return filtered_exoplanets
     
     def get_exoplanets(self) -> List[Dict]:
@@ -570,8 +574,8 @@ class Database:
         filtered_exoplanets = []
         
         for exoplanet in all_exoplanets:
-            # Check distance - use host_distance_pc if available, otherwise check host star
-            exoplanet_distance = exoplanet.get('host_distance_pc', 0)
+            # Check distance - use distance field if available
+            exoplanet_distance = exoplanet.get('distance', 0)
             if exoplanet_distance > 0 and exoplanet_distance <= distance_limit:
                 filtered_exoplanets.append(exoplanet)
         

@@ -8,6 +8,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 import logging
 from datetime import datetime
 from functools import wraps
+from typing import Optional
 
 # Import MontyDB models
 from database.config import initialize_database, get_collection_stats, get_database
@@ -15,6 +16,8 @@ from models.star_model_db import StarModelDB
 from models.nation_model_db import NationModelDB
 from models.trade_route_model_db import TradeRouteModelDB
 from models.exoplanet_model_db import ExoplanetModelDB
+# Import regular database for exoplanet data
+from models.database import Database
 
 # Import authentication
 from auth import AuthManager, get_auth_config
@@ -47,10 +50,11 @@ login_manager.login_message_category = 'info'
 auth_manager = AuthManager(app.config['SECRET_KEY'])
 
 # Initialize models
-star_model = None
-nation_model = None
-trade_model = None
-exoplanet_model = None
+star_model: Optional[StarModelDB] = None
+nation_model: Optional[NationModelDB] = None
+trade_model: Optional[TradeRouteModelDB] = None
+exoplanet_model: Optional[ExoplanetModelDB] = None
+exoplanet_db: Optional[Database] = None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -84,7 +88,7 @@ def api_auth_required(f):
 
 def initialize_app():
     """Initialize the application with MontyDB"""
-    global star_model, nation_model, trade_model, exoplanet_model
+    global star_model, nation_model, trade_model, exoplanet_model, exoplanet_db
     
     logger.info("🚀 Starting Secure Starmap with MontyDB backend")
     
@@ -100,9 +104,13 @@ def initialize_app():
         trade_model = TradeRouteModelDB()
         exoplanet_model = ExoplanetModelDB()
         
+        # Initialize exoplanet database with working data
+        exoplanet_db = Database()
+        
         # Log statistics
         stats = get_collection_stats()
         logger.info(f"📊 Database loaded: {stats}")
+        logger.info(f"📊 Exoplanet stats: {exoplanet_db.get_stats()}")
         
         return True
         
@@ -178,6 +186,9 @@ def starmap():
 def api_stars():
     """Enhanced star data API - protected"""
     try:
+        if not star_model:
+            return jsonify({'error': 'Star model not initialized'}), 500
+            
         # Get parameters
         limit = min(int(request.args.get('count_limit', 1000)), 2000)
         mag_limit = float(request.args.get('mag_limit', 8.0))
@@ -230,6 +241,9 @@ def api_stars():
 def api_nations():
     """Get all nations - protected"""
     try:
+        if not nation_model:
+            return jsonify({'error': 'Nation model not initialized'}), 500
+            
         nations = nation_model.get_nations()
         logger.info(f"🔐 API: Served {len(nations)} nations to authenticated user")
         return jsonify({
@@ -254,7 +268,7 @@ def api_stats():
         }
         
         # Add detailed stats only for authenticated users
-        if current_user.is_authenticated:
+        if current_user.is_authenticated and nation_model and trade_model and star_model:
             stats.update({
                 'nations': nation_model.get_nation_stats(),
                 'trade_network': trade_model.get_trade_network_analysis(),
@@ -275,6 +289,58 @@ def api_stats():
         return jsonify({'error': str(e)}), 500
 
 # Additional protected endpoints
+@app.route('/api/stars/nation/<nation_id>')
+@api_auth_required
+def api_stars_by_nation(nation_id):
+    """Get all stars controlled by a nation - protected"""
+    try:
+        if not star_model:
+            return jsonify({'error': 'Star model not initialized'}), 500
+            
+        stars = star_model.get_stars_by_nation(nation_id)
+        
+        client_stars = []
+        for star in stars:
+            client_star = {
+                'id': star['_id'],
+                'name': star['names']['primary_name'],
+                'fictional_name': star['names'].get('fictional_name'),
+                'coordinates': star['coordinates'],
+                'magnitude': star['physical_properties']['magnitude'],
+                'spectral_class': star['physical_properties']['spectral_class']
+            }
+            client_stars.append(client_star)
+        
+        logger.info(f"🔐 API: Served {len(client_stars)} stars for nation {nation_id}")
+        return jsonify({
+            'success': True,
+            'data': client_stars,
+            'count': len(client_stars)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/stars/nation/{nation_id}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/network-analysis')
+@api_auth_required
+def api_network_analysis():
+    """Get trade network analysis - protected"""
+    try:
+        if not trade_model:
+            return jsonify({'error': 'Trade model not initialized'}), 500
+            
+        analysis = trade_model.get_trade_network_analysis()
+        logger.info(f"🔐 API: Served network analysis")
+        return jsonify({
+            'success': True,
+            'data': analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in /api/network-analysis: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/search')
 @api_auth_required
 def api_search():
@@ -284,6 +350,9 @@ def api_search():
         limit = min(int(request.args.get('limit', 20)), 100)
         spectral_type = request.args.get('spectral_type', '').strip()
         
+        if not star_model:
+            return jsonify({'error': 'Star model not initialized'}), 500
+            
         if not query:
             return jsonify({'success': True, 'data': [], 'count': 0})
         
@@ -322,6 +391,9 @@ def api_search():
 def api_star_detail(star_id):
     """Get detailed information about a specific star - protected"""
     try:
+        if not star_model or not trade_model:
+            return jsonify({'error': 'Models not initialized'}), 500
+            
         star = star_model.get_star_by_id(star_id)
         if not star:
             return jsonify({'error': 'Star not found'}), 404
@@ -364,6 +436,9 @@ def api_star_detail(star_id):
 def api_trade_routes():
     """Get all trade routes - protected"""
     try:
+        if not trade_model:
+            return jsonify({'error': 'Trade model not initialized'}), 500
+            
         routes = trade_model.get_trade_routes()
         logger.info(f"🔐 API: Served {len(routes)} trade routes")
         return jsonify({
@@ -381,10 +456,10 @@ def api_trade_routes():
 def api_exoplanets():
     """Get all real exoplanets - public"""
     try:
-        if not exoplanet_model:
+        if not exoplanet_db:
             return jsonify({'success': True, 'data': [], 'count': 0})
             
-        exoplanets = exoplanet_model.get_exoplanets()
+        exoplanets = exoplanet_db.get_exoplanets()
         logger.info(f"📡 API: Served {len(exoplanets)} real exoplanets")
         
         return jsonify({
@@ -401,10 +476,10 @@ def api_exoplanets():
 def api_fictional_exoplanets():
     """Get all fictional exoplanets (including Sol system) - public"""
     try:
-        if not exoplanet_model:
+        if not exoplanet_db:
             return jsonify({'success': True, 'data': [], 'count': 0})
             
-        fictional_exoplanets = exoplanet_model.get_fictional_exoplanets()
+        fictional_exoplanets = exoplanet_db.get_fictional_exoplanets()
         logger.info(f"🌍 API: Served {len(fictional_exoplanets)} fictional exoplanets (including Sol system)")
         
         return jsonify({
@@ -423,6 +498,9 @@ def api_stellar_regions():
     """Get all stellar regions - public for display"""
     try:
         db = get_database()
+        if not db:
+            return jsonify({'error': 'Database not initialized'}), 500
+            
         stellar_regions = db.stellar_regions
         regions = list(stellar_regions.find())
         
@@ -504,7 +582,7 @@ def unauthorized(error):
 def not_found(error):
     return jsonify({'error': 'Not found'}), 404
 
-@app.errorhandler(500)
+@app.errorhandler(500)  
 def internal_error(error):
     logger.error(f"Internal server error: {error}")
     return jsonify({'error': 'Internal server error'}), 500

@@ -748,9 +748,23 @@ class ThreeJSStarmap {
         
         routes.forEach(route => {
             if (route.endpoints?.from?.star_id && route.endpoints?.to?.star_id) {
-                // Find the actual star coordinates by star_id
-                const fromStar = this.currentStars.find(star => star.id === route.endpoints.from.star_id);
-                const toStar = this.currentStars.find(star => star.id === route.endpoints.to.star_id);
+                // Find the actual star coordinates by star_id, with fallback to system name
+                let fromStar = this.currentStars.find(star => star.id === route.endpoints.from.star_id);
+                let toStar = this.currentStars.find(star => star.id === route.endpoints.to.star_id);
+                
+                // Fallback: try to find by system name
+                if (!fromStar && route.endpoints.from.system) {
+                    fromStar = this.currentStars.find(star => 
+                        star.name === route.endpoints.from.system || 
+                        star.fictional_name === route.endpoints.from.system
+                    );
+                }
+                if (!toStar && route.endpoints.to.system) {
+                    toStar = this.currentStars.find(star => 
+                        star.name === route.endpoints.to.system || 
+                        star.fictional_name === route.endpoints.to.system
+                    );
+                }
                 
                 if (fromStar && toStar) {
                     // Scale coordinates by 100x
@@ -780,7 +794,9 @@ class ThreeJSStarmap {
                     this.tradeRoutesGroup.add(line);
                     createdRoutes++;
                 } else {
-                    console.warn(`Trade route ${route.name}: Could not find stars with IDs ${route.endpoints.from.star_id} or ${route.endpoints.to.star_id}`);
+                    const fromInfo = `${route.endpoints.from.system} (ID: ${route.endpoints.from.star_id})`;
+                    const toInfo = `${route.endpoints.to.system} (ID: ${route.endpoints.to.star_id})`;
+                    console.warn(`Trade route ${route.name}: Could not find stars - From: ${fromInfo}, To: ${toInfo}`);
                 }
             }
         });
@@ -813,6 +829,53 @@ class ThreeJSStarmap {
     createExoplanets(exoplanets) {
         console.log('🪐 Creating enhanced exoplanet system for', exoplanets ? exoplanets.length : 0, 'planets');
         
+        // LOG ALL REAL EXOPLANET DATA
+        console.log('📊 REAL EXOPLANETS DATA ANALYSIS:');
+        console.log('=====================================');
+        
+        if (exoplanets && exoplanets.length > 0) {
+            console.log(`📈 Total real exoplanets received: ${exoplanets.length}`);
+            
+            // Log first 5 complete entries
+            console.log('📋 First 5 real exoplanets (full data):');
+            exoplanets.slice(0, 5).forEach((planet, i) => {
+                console.log(`${i + 1}. "${planet.name || 'Unknown'}"`, planet);
+            });
+            
+            // Analyze coordinate availability
+            const withCoords = exoplanets.filter(p => p.x !== undefined && p.y !== undefined && p.z !== undefined);
+            const withoutCoords = exoplanets.filter(p => p.x === undefined || p.y === undefined || p.z === undefined);
+            
+            console.log(`📍 Coordinate analysis:`);
+            console.log(`   - With coordinates: ${withCoords.length}`);
+            console.log(`   - Without coordinates: ${withoutCoords.length}`);
+            
+            if (withCoords.length > 0) {
+                console.log('✅ Sample planets WITH coordinates:');
+                withCoords.slice(0, 3).forEach(p => {
+                    console.log(`   - ${p.name}: (${p.x}, ${p.y}, ${p.z})`);
+                });
+            }
+            
+            if (withoutCoords.length > 0) {
+                console.log('❌ Sample planets WITHOUT coordinates:');
+                withoutCoords.slice(0, 3).forEach(p => {
+                    console.log(`   - ${p.name || 'Unknown'}: missing coords, has host_star: ${p.host_star || 'No'}`);
+                });
+            }
+            
+            // Analyze host star data
+            const withHostStar = exoplanets.filter(p => p.host_star);
+            console.log(`🌟 Host star analysis:`);
+            console.log(`   - With host_star field: ${withHostStar.length}`);
+            console.log(`   - Sample host stars: ${withHostStar.slice(0, 3).map(p => p.host_star).join(', ')}`);
+            
+        } else {
+            console.log('❌ No real exoplanet data received');
+        }
+        
+        console.log('=====================================');
+        
         // Clear existing exoplanets with proper disposal
         this.clearExoplanets();
         this.exoplanets = exoplanets || [];
@@ -831,6 +894,8 @@ class ThreeJSStarmap {
             { name: 'Neptune', distance: 45.0, color: 0x4b70dd, size: 0.5, type: 'ice_giant' }
         ];
         
+        const createdSolarPlanets = []; // Track created planets for duplicate checking
+        
         solarSystemPlanets.forEach((planet, index) => {
             const angle = (index / solarSystemPlanets.length) * Math.PI * 2;
             const distance = planet.distance; // Use defined distance directly
@@ -843,11 +908,13 @@ class ThreeJSStarmap {
             });
             
             const planetMesh = new THREE.Mesh(geometry, material);
-            planetMesh.position.set(
-                Math.cos(angle) * distance,
-                0,
-                Math.sin(angle) * distance
-            );
+            const initialPosition = {
+                x: Math.cos(angle) * distance,
+                y: 0,
+                z: Math.sin(angle) * distance
+            };
+            
+            planetMesh.position.set(initialPosition.x, initialPosition.y, initialPosition.z);
             planetMesh.userData.planetData = {
                 name: planet.name,
                 system: 'Sol',
@@ -857,15 +924,34 @@ class ThreeJSStarmap {
             };
             planetMesh.name = `SolarPlanet_${planet.name}`;
             
+            // Check for duplicate positions
+            const duplicates = this.checkForDuplicatePositions(
+                { position: planetMesh.position, name: planet.name },
+                createdSolarPlanets,
+                2.0 // Threshold for Sol system planets
+            );
+            
+            if (duplicates.length > 0) {
+                const newPosition = this.resolveDuplicatePosition(
+                    { position: planetMesh.position, name: planet.name },
+                    duplicates,
+                    'Sol system planet'
+                );
+                planetMesh.position.set(newPosition.x, newPosition.y, newPosition.z);
+            }
+            
             this.exoplanetGroup.add(planetMesh);
-            console.log(`🪐 Created solar system planet: "${planet.name}" at distance ${planet.distance} AU`);
+            createdSolarPlanets.push({ position: planetMesh.position, name: planet.name });
+            console.log(`🪐 Created solar system planet: "${planet.name}" at position (${planetMesh.position.x.toFixed(1)}, ${planetMesh.position.y.toFixed(1)}, ${planetMesh.position.z.toFixed(1)})`);
         });
         
+        console.log(`✅ Sol system duplicate check complete: ${createdSolarPlanets.length} planets positioned`);
+        
         // Add other exoplanets from API data with enhanced colors
+        let createdCount = 0;
+        let skippedCount = 0;
+        
         if (exoplanets && exoplanets.length > 0) {
-            let createdCount = 0;
-            let skippedCount = 0;
-            
             exoplanets.forEach((exoplanet, i) => {
                 // Skip exoplanets without coordinates
                 if (exoplanet.x === undefined || exoplanet.y === undefined || exoplanet.z === undefined) {
@@ -898,8 +984,16 @@ class ThreeJSStarmap {
             console.log(`📊 Exoplanet creation summary: ${createdCount} created, ${skippedCount} skipped (missing coordinates)`);
         }
         
-        console.log(`✅ Enhanced exoplanet system created: ${solarSystemPlanets.length} solar system planets + ${exoplanets ? exoplanets.length : 0} exoplanets`);
-        console.log(`🪐 EXOPLANET SIZES: Solar system planets = 1.5 units, API exoplanets = 1.2 units, 32x32 geometry`);
+        console.log(`✅ Enhanced exoplanet system created: ${solarSystemPlanets.length} solar system planets + ${createdCount || 0} real exoplanets`);
+        console.log(`🪐 EXOPLANET SIZES: Solar system planets = variable sizes, API exoplanets = 1.2 units, 32x32 geometry`);
+        
+        // REAL EXOPLANET CREATION SUMMARY
+        console.log('📊 REAL EXOPLANET CREATION SUMMARY:');
+        console.log('====================================');
+        console.log(`🌞 Sol System: 8 planets created (Mercury to Neptune)`);
+        console.log(`🪐 API Exoplanets: ${createdCount || 0} created, ${skippedCount || 0} skipped`);
+        console.log(`📍 Real planets with coordinates: ${createdCount || 0}`);
+        console.log('====================================');
     }
     
     async loadFictionalExoplanets() {
@@ -924,55 +1018,450 @@ class ThreeJSStarmap {
         }
     }
     
+    checkForDuplicatePositions(newPlanet, existingPlanets, threshold = 1.0) {
+        const duplicates = [];
+        
+        existingPlanets.forEach((existing, index) => {
+            const distance = Math.sqrt(
+                Math.pow(newPlanet.position.x - existing.position.x, 2) +
+                Math.pow(newPlanet.position.y - existing.position.y, 2) +
+                Math.pow(newPlanet.position.z - existing.position.z, 2)
+            );
+            
+            if (distance < threshold) {
+                duplicates.push({
+                    index: index,
+                    planet: existing,
+                    distance: distance
+                });
+            }
+        });
+        
+        return duplicates;
+    }
+    
+    resolveDuplicatePosition(planet, duplicates, planetType = 'planet') {
+        if (duplicates.length === 0) return planet.position;
+        
+        console.warn(`🚨 Found ${duplicates.length} duplicate position(s) for ${planetType} "${planet.name}"`);
+        duplicates.forEach((dup, i) => {
+            console.warn(`   ${i + 1}. Distance ${dup.distance.toFixed(2)} from "${dup.planet.name}"`);
+        });
+        
+        // Find a new position by offsetting in a spiral pattern
+        let attempts = 0;
+        let newPosition = { ...planet.position };
+        const maxAttempts = 20;
+        const offsetStep = 0.5;
+        
+        while (attempts < maxAttempts) {
+            attempts++;
+            const angle = (attempts * 137.5) * (Math.PI / 180); // Golden angle for spiral
+            const radius = attempts * offsetStep;
+            
+            newPosition = {
+                x: planet.position.x + radius * Math.cos(angle),
+                y: planet.position.y + radius * Math.sin(angle) * 0.3, // Flatten slightly
+                z: planet.position.z + radius * Math.sin(angle)
+            };
+            
+            // Check if new position is clear
+            const newDuplicates = this.checkForDuplicatePositions(
+                { position: newPosition, name: planet.name }, 
+                duplicates.map(d => d.planet),
+                1.0
+            );
+            
+            if (newDuplicates.length === 0) {
+                console.log(`✅ Resolved duplicate position for "${planet.name}" after ${attempts} attempts`);
+                console.log(`   New position: (${newPosition.x.toFixed(2)}, ${newPosition.y.toFixed(2)}, ${newPosition.z.toFixed(2)})`);
+                return newPosition;
+            }
+        }
+        
+        console.error(`❌ Could not resolve duplicate position for "${planet.name}" after ${maxAttempts} attempts`);
+        return planet.position; // Return original if we can't resolve
+    }
+    
+    convertAUtoPosition(au, angleRad, starPos) {
+        // Convert AU to starmap units: Keep planets visible near their stars
+        // 1 AU = 5 starmap units (about 0.05 parsecs at 100x scale)
+        const distance = Math.min(au * 5, 100); // Cap at 100 units for very distant orbits
+        
+        const x = starPos.x + distance * Math.cos(angleRad);
+        const y = starPos.y + distance * Math.sin(angleRad); 
+        const z = starPos.z; // Keep z same as star unless inclined orbit
+        
+        console.log(`🪐 AU conversion: ${au} AU → ${distance.toFixed(2)} units at ${(angleRad * 180 / Math.PI).toFixed(1)}° → (${x.toFixed(2)}, ${y.toFixed(2)}, ${z.toFixed(2)})`);
+        
+        return { x, y, z };
+    }
+    
+    calculatePlanetProperties(planet) {
+        // Extract planet properties with defaults
+        const radius = planet.planet_radius_earth || 1.0;
+        const mass = planet.planet_mass_earth || 1.0;
+        const temperature = planet.equilibrium_temperature || 288;
+        const isHabitable = planet.potentially_habitable || false;
+        const name = planet.name || 'Unknown';
+        
+        // Calculate visual radius (scale for visibility)
+        let visualRadius = Math.max(0.8, Math.min(4.0, radius * 1.5));
+        
+        // Determine planet type and base color based on size and mass
+        let planetType, baseColor;
+        
+        if (radius < 0.5) {
+            // Small rocky worlds (Mercury-like)
+            planetType = 'small_rocky';
+            baseColor = 0x8c7853; // Gray-brown
+        } else if (radius < 1.5) {
+            // Earth-like worlds
+            planetType = 'terrestrial';
+            baseColor = isHabitable ? 0x4a90e2 : 0xa0522d; // Blue if habitable, brown if not
+        } else if (radius < 4.0) {
+            // Super-Earths or small gas planets
+            planetType = 'super_earth';
+            baseColor = 0x87ceeb; // Sky blue
+        } else if (radius < 10.0) {
+            // Neptune-like ice giants
+            planetType = 'ice_giant';
+            baseColor = 0x4169e1; // Royal blue
+        } else {
+            // Jupiter-like gas giants
+            planetType = 'gas_giant';
+            baseColor = 0xd2691e; // Orange-brown (Jupiter-like)
+        }
+        
+        // Temperature-based color adjustment
+        let finalColor = baseColor;
+        if (temperature > 1000) {
+            // Very hot - red tint
+            finalColor = 0xff4500; // Orange-red
+        } else if (temperature > 500) {
+            // Hot - orange tint
+            finalColor = this.blendColors(baseColor, 0xff8c00, 0.6); // Blend with orange
+        } else if (temperature < 150) {
+            // Very cold - blue tint
+            finalColor = this.blendColors(baseColor, 0x4169e1, 0.4); // Blend with blue
+        }
+        
+        // Special handling for known planets
+        if (name === 'Earth') {
+            finalColor = 0x6b93d6; // Earth blue
+            visualRadius = 1.0;
+        } else if (name === 'Mars') {
+            finalColor = 0xcd5c5c; // Mars red
+            visualRadius = 0.8;
+        } else if (name === 'Jupiter') {
+            finalColor = 0xd2691e; // Jupiter orange
+            visualRadius = 3.5;
+        } else if (name === 'Saturn') {
+            finalColor = 0xfad5a5; // Saturn yellow
+            visualRadius = 3.0;
+        } else if (name === 'Neptune') {
+            finalColor = 0x4169e1; // Neptune blue
+            visualRadius = 2.2;
+        } else if (name === 'Uranus') {
+            finalColor = 0x4fd0e3; // Uranus cyan
+            visualRadius = 2.0;
+        } else if (name === 'Venus') {
+            finalColor = 0xffc649; // Venus yellow
+            visualRadius = 0.95;
+        } else if (name === 'Mercury') {
+            finalColor = 0x8c7853; // Mercury gray
+            visualRadius = 0.6;
+        }
+        
+        // Habitable worlds get a green tint
+        if (isHabitable && name !== 'Earth') {
+            finalColor = this.blendColors(finalColor, 0x32cd32, 0.3); // Blend with green
+        }
+        
+        // Calculate opacity based on planet type
+        let opacity = 0.9;
+        if (planetType === 'gas_giant' || planetType === 'ice_giant') {
+            opacity = 0.7; // Gas planets more translucent
+        }
+        
+        console.log(`🎨 Planet "${name}": ${planetType}, radius=${radius}R⊕ → visual=${visualRadius}, temp=${temperature}K, color=#${finalColor.toString(16)}`);
+        
+        return {
+            radius: visualRadius,
+            color: finalColor,
+            opacity: opacity,
+            type: planetType,
+            temperature: temperature,
+            isHabitable: isHabitable
+        };
+    }
+    
+    blendColors(color1, color2, ratio) {
+        // Extract RGB components
+        const r1 = (color1 >> 16) & 0xff;
+        const g1 = (color1 >> 8) & 0xff;
+        const b1 = color1 & 0xff;
+        
+        const r2 = (color2 >> 16) & 0xff;
+        const g2 = (color2 >> 8) & 0xff;
+        const b2 = color2 & 0xff;
+        
+        // Blend colors
+        const r = Math.round(r1 * (1 - ratio) + r2 * ratio);
+        const g = Math.round(g1 * (1 - ratio) + g2 * ratio);
+        const b = Math.round(b1 * (1 - ratio) + b2 * ratio);
+        
+        return (r << 16) | (g << 8) | b;
+    }
+
     createFictionalExoplanets(fictionalPlanets) {
         console.log('🔴 Creating fictional exoplanets:', fictionalPlanets ? fictionalPlanets.length : 0);
+        
+        // LOG ALL FICTIONAL EXOPLANET DATA
+        console.log('📊 FICTIONAL EXOPLANETS DATA ANALYSIS:');
+        console.log('==========================================');
+        
+        if (fictionalPlanets && fictionalPlanets.length > 0) {
+            console.log(`📈 Total fictional exoplanets received: ${fictionalPlanets.length}`);
+            
+            // Log first 5 complete entries
+            console.log('📋 First 5 fictional exoplanets (full data):');
+            fictionalPlanets.slice(0, 5).forEach((planet, i) => {
+                console.log(`${i + 1}. "${planet.name || 'Unknown'}"`, planet);
+            });
+            
+            // Analyze coordinate availability
+            const withDirectCoords = fictionalPlanets.filter(p => p.x !== undefined && p.y !== undefined && p.z !== undefined);
+            const withoutDirectCoords = fictionalPlanets.filter(p => p.x === undefined || p.y === undefined || p.z === undefined);
+            
+            console.log(`📍 Direct coordinate analysis:`);
+            console.log(`   - With direct coordinates: ${withDirectCoords.length}`);
+            console.log(`   - Without direct coordinates: ${withoutDirectCoords.length}`);
+            
+            // Analyze star_id availability
+            const withStarId = fictionalPlanets.filter(p => p.star_id);
+            const withoutStarId = fictionalPlanets.filter(p => !p.star_id);
+            
+            console.log(`🌟 Star ID analysis:`);
+            console.log(`   - With star_id: ${withStarId.length}`);
+            console.log(`   - Without star_id: ${withoutStarId.length}`);
+            
+            if (withStarId.length > 0) {
+                console.log('✅ Sample planets WITH star_id:');
+                withStarId.slice(0, 5).forEach(p => {
+                    console.log(`   - ${p.name}: star_id=${p.star_id}, host_star="${p.host_star || 'N/A'}"`);
+                });
+            }
+            
+            // Analyze orbital data
+            const withOrbitalData = fictionalPlanets.filter(p => p.semi_major_axis);
+            console.log(`🪐 Orbital data analysis:`);
+            console.log(`   - With semi_major_axis: ${withOrbitalData.length}`);
+            
+            if (withOrbitalData.length > 0) {
+                console.log('✅ Sample planets WITH orbital data:');
+                withOrbitalData.slice(0, 5).forEach(p => {
+                    console.log(`   - ${p.name}: ${p.semi_major_axis} AU, period=${p.orbital_period} days`);
+                });
+            }
+            
+            // Check for duplicates
+            const nameStarPairs = fictionalPlanets.map(p => `${p.name}_${p.star_id}`);
+            const uniquePairs = [...new Set(nameStarPairs)];
+            const duplicateCount = nameStarPairs.length - uniquePairs.length;
+            
+            console.log(`🔄 Duplicate analysis:`);
+            console.log(`   - Total entries: ${fictionalPlanets.length}`);
+            console.log(`   - Unique name+star combinations: ${uniquePairs.length}`);
+            console.log(`   - Duplicates to remove: ${duplicateCount}`);
+            
+            if (duplicateCount > 0) {
+                const duplicateNames = [];
+                const seen = new Set();
+                fictionalPlanets.forEach(p => {
+                    const key = `${p.name}_${p.star_id}`;
+                    if (seen.has(key)) {
+                        duplicateNames.push(p.name);
+                    } else {
+                        seen.add(key);
+                    }
+                });
+                console.log(`🔄 Duplicate planet names: ${[...new Set(duplicateNames)].join(', ')}`);
+            }
+            
+        } else {
+            console.log('❌ No fictional exoplanet data received');
+        }
+        
+        console.log('==========================================');
         
         this.clearFictionalExoplanets();
         const scale = 100; // Match star scale
         
         if (fictionalPlanets && fictionalPlanets.length > 0) {
+            // Remove duplicates based on name and star_id, and filter out Sol system planets
+            const uniquePlanets = [];
+            const seen = new Set();
+            const solSystemPlanetNames = ['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'];
+            let solPlanetsRemoved = 0;
+            
+            fictionalPlanets.forEach(planet => {
+                // Skip Sol system planets that are already created as real planets
+                if (solSystemPlanetNames.includes(planet.name)) {
+                    console.log(`🌞 Removing Sol system planet from fictional data: "${planet.name}"`);
+                    solPlanetsRemoved++;
+                    return;
+                }
+                
+                const key = `${planet.name}_${planet.star_id}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniquePlanets.push(planet);
+                } else {
+                    console.log(`🔄 Removing duplicate fictional planet: "${planet.name}" at star ${planet.star_id}`);
+                }
+            });
+            
+            console.log(`📊 Filtering summary: ${fictionalPlanets.length} original → ${solPlanetsRemoved} Sol planets removed → ${uniquePlanets.length} unique fictional planets`);
+            
             let createdCount = 0;
             let skippedCount = 0;
+            const createdFictionalPlanets = []; // Track created planets for duplicate checking
             
-            fictionalPlanets.forEach((planet, i) => {
-                // Skip fictional planets without coordinates
-                if (planet.x === undefined || planet.y === undefined || planet.z === undefined) {
-                    console.warn(`⚠️ Skipping fictional planet "${planet.name || 'Unknown'}" - missing coordinates`);
+            uniquePlanets.forEach((planet, i) => {
+                // Find host star
+                const hostStar = this.currentStars.find(star => star.id === planet.star_id);
+                if (!hostStar) {
+                    console.warn(`⚠️ Skipping fictional planet "${planet.name || 'Unknown'}" - no host star found (star_id: ${planet.star_id})`);
                     skippedCount++;
                     return;
                 }
                 
-                // Create glowing red sphere - INCREASED radius for visibility
-                const geometry = new THREE.SphereGeometry(2.0, 32, 32); // Increased to 2.0 for better visibility
+                // Scale star position for starmap
+                const starPos = { 
+                    x: hostStar.x * scale, 
+                    y: hostStar.y * scale, 
+                    z: hostStar.z * scale 
+                };
+                
+                console.log(`🔴 Processing fictional planet "${planet.name}"`);
+                console.log(`🌟 Host star "${hostStar.name || hostStar.fictional_name}" at: (${starPos.x}, ${starPos.y}, ${starPos.z})`);
+                console.log(`🔴 Planet orbital data:`, {
+                    semi_major_axis: planet.semi_major_axis,
+                    orbital_period: planet.orbital_period,
+                    orbital_angle: planet.orbital_angle,
+                    planet_radius_earth: planet.planet_radius_earth
+                });
+                
+                // Ensure orbital data for animation (add defaults if missing)
+                planet.orbit = planet.semi_major_axis || 1.0; // Orbital radius in AU
+                planet.period = planet.orbital_period || 365; // Orbital period in days
+                planet.star_id = planet.star_id; // Ensure star_id is available
+                
+                // Get orbital parameters
+                const au = planet.orbit;
+                const angleDeg = planet.orbital_angle || (i * (360 / uniquePlanets.length)); // Distribute evenly if no angle
+                const angleRad = angleDeg * (Math.PI / 180); // Convert degrees to radians
+                
+                console.log(`🪐 Orbital setup: ${au} AU, ${planet.period} days period, initial angle ${angleDeg}°`);
+                
+                // Convert AU to 3D position using proper orbital mechanics (initial position)
+                const position = this.convertAUtoPosition(au, angleRad, starPos);
+                
+                let x = position.x;
+                let y = position.y;
+                let z = position.z;
+                
+                // Create sphere with enhanced size and color based on planet properties
+                const planetProperties = this.calculatePlanetProperties(planet);
+                const geometry = new THREE.SphereGeometry(planetProperties.radius, 32, 32);
                 const material = new THREE.MeshBasicMaterial({
-                    color: 0xff0000, // Glowing red
+                    color: planetProperties.color,
                     transparent: true,
-                    opacity: 0.8
+                    opacity: planetProperties.opacity
                 });
                 
                 const planetMesh = new THREE.Mesh(geometry, material);
-                planetMesh.position.set(
-                    planet.x * scale,
-                    planet.y * scale,
-                    planet.z * scale
+                planetMesh.position.set(x, y, z); // Initial position already scaled in convertAUtoPosition
+                
+                // Check for duplicate positions before adding
+                const duplicates = this.checkForDuplicatePositions(
+                    { position: planetMesh.position, name: planet.name },
+                    createdFictionalPlanets,
+                    1.5 // Threshold for fictional exoplanets
                 );
+                
+                if (duplicates.length > 0) {
+                    const newPosition = this.resolveDuplicatePosition(
+                        { position: planetMesh.position, name: planet.name },
+                        duplicates,
+                        'fictional exoplanet'
+                    );
+                    planetMesh.position.set(newPosition.x, newPosition.y, newPosition.z);
+                    
+                    // Update x, y, z for orbit ring creation
+                    x = newPosition.x;
+                    y = newPosition.y;
+                    z = newPosition.z;
+                }
+                
+                // Store orbital data for animation
                 planetMesh.userData.fictionalPlanetData = planet;
+                planetMesh.userData.planetData = {
+                    star_id: planet.star_id,
+                    orbit: planet.orbit, // AU
+                    period: planet.period, // days
+                    initialAngle: angleRad, // Initial orbital angle
+                    hostStar: hostStar // Reference to host star
+                };
                 planetMesh.name = `FictionalPlanet_${planet.name || i}`;
                 
                 this.fictionalExoplanetGroup.add(planetMesh);
                 
-                // Create orbit ring - DOUBLED radius for visibility
-                this.createOrbitRing(planet, scale, 2.0); // Doubled orbit radius
+                // Create visual orbit path
+                const orbitRadius = Math.min(au * 5, 100); // Same scale as convertAUtoPosition
+                const orbitGeometry = new THREE.RingGeometry(orbitRadius - 0.02, orbitRadius + 0.02, 64);
+                const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0x444444, 
+                    transparent: true, 
+                    opacity: 0.2,
+                    side: THREE.DoubleSide
+                });
+                const orbitPath = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                orbitPath.position.set(starPos.x, starPos.y, starPos.z);
+                orbitPath.rotation.x = Math.PI / 2; // Flat orbit plane
+                orbitPath.name = `OrbitPath_${planet.name || i}`;
                 
-                console.log(`🔴 Created fictional exoplanet: "${planet.name || 'Unknown'}" at position (${planet.x * scale}, ${planet.y * scale}, ${planet.z * scale})`);
+                this.fictionalExoplanetGroup.add(orbitPath);
+                
+                // Track created planet for duplicate checking
+                createdFictionalPlanets.push({ position: planetMesh.position, name: planet.name });
+                
+                console.log(`🎨 Created fictional exoplanet: "${planet.name || 'Unknown'}" (${planetProperties.type}) at position (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`);
                 createdCount++;
             });
             
             console.log(`📊 Fictional exoplanet creation summary: ${createdCount} created, ${skippedCount} skipped (missing coordinates)`);
+            console.log(`✅ Fictional exoplanet duplicate check complete: ${createdFictionalPlanets.length} planets positioned`);
+            
+            console.log(`✅ Fictional exoplanet system created: ${uniquePlanets.length} unique glowing red planets with orbits`);
+            
+            // FINAL STATISTICS SUMMARY
+            console.log('📊 EXOPLANET SYSTEM SUMMARY:');
+            console.log('===============================');
+            console.log(`🌞 Sol System Planets: 8 (Mercury to Neptune)`);
+            console.log(`🪐 Real Exoplanets: ${this.exoplanets ? this.exoplanets.length : 0} loaded`);
+            console.log(`🔴 Fictional Exoplanets: ${uniquePlanets.length} unique created`);
+            console.log(`📍 Total Planetary Objects: ${8 + (this.exoplanets ? this.exoplanets.length : 0) + uniquePlanets.length}`);
+            console.log('===============================');
+            
+        } else {
+            console.log(`✅ Fictional exoplanet system created: 0 planets (no data available)`);
         }
-        
-        console.log(`✅ Fictional exoplanet system created: ${fictionalPlanets ? fictionalPlanets.length : 0} glowing red planets with orbits`);
-        console.log(`🔴 FICTIONAL PLANET SIZES: 2.0 units (increased), orbit radius: 2.0 units (doubled), glowing red`);
+        console.log(`🎨 FICTIONAL PLANET RENDERING: Size based on radius, colors by type/temperature, habitable worlds have green tint`);
+        console.log(`🎨 COLOR CODING: Small rocky (gray-brown) → Terrestrial (blue/brown) → Super-Earth (sky blue) → Ice Giant (royal blue) → Gas Giant (orange)`);
+        console.log(`🌡️ TEMPERATURE EFFECTS: Very hot (>1000K) = red, Hot (>500K) = orange tint, Cold (<150K) = blue tint`);
+        console.log(`🌍 SPECIAL: Habitable worlds = green tint, Sol system planets = accurate colors`);
     }
     
     createOrbitRing(planet, scale, orbitRadius) {
@@ -1007,26 +1496,61 @@ class ThreeJSStarmap {
     }
     
     getPlanetColor(planet) {
-        // Enhanced planet coloring based on type
-        if (planet.type) {
-            switch (planet.type.toLowerCase()) {
+        // Enhanced planet coloring based on type and properties
+        
+        // Check for planetary type first
+        const planetType = planet.type || planet.physical_properties?.planet_type;
+        if (planetType) {
+            switch (planetType.toLowerCase()) {
                 case 'terrestrial':
                 case 'rocky':
-                    return 0x8B4513; // Brown for terrestrial
+                case 'super earth':
+                    return new THREE.Color(0x8B4513); // Brown for terrestrial
                 case 'gas_giant':
                 case 'gas giant':
-                    return 0xDAA520; // Golden for gas giants
+                case 'jupiter-like':
+                    return new THREE.Color(0xDAA520); // Golden for gas giants
                 case 'ice_giant':
                 case 'ice giant':
-                    return 0x4682B4; // Steel blue for ice giants
+                case 'neptune-like':
+                case 'neptune like':
+                case 'mini-neptune':
+                    return new THREE.Color(0x4682B4); // Steel blue for ice giants
                 case 'water_world':
                 case 'ocean':
-                    return 0x006994; // Deep blue for water worlds
+                    return new THREE.Color(0x006994); // Deep blue for water worlds
+                case 'desert':
+                    return new THREE.Color(0xCD853F); // Sandy brown for desert
+                case 'frozen':
+                case 'ice':
+                    return new THREE.Color(0xB0E0E6); // Powder blue for frozen
+                case 'volcanic':
+                    return new THREE.Color(0xFF4500); // Orange red for volcanic
                 default:
-                    return 0x4ecdc4; // Cyan for unknown/exoplanets
+                    break; // Fall through to other checks
             }
         }
-        return 0x4ecdc4; // Default cyan
+        
+        // Check for habitability
+        const isHabitable = planet.potentially_habitable || 
+                           planet.habitability?.potentially_habitable === 'True';
+        if (isHabitable) {
+            return new THREE.Color(0x2196F3); // Blue for habitable
+        }
+        
+        // Check temperature
+        const temp = planet.equilibrium_temperature || 
+                    planet.physical_properties?.equilibrium_temperature_k;
+        if (temp) {
+            if (temp > 373) {
+                return new THREE.Color(0xFF5722); // Red for hot
+            } else if (temp < 273) {
+                return new THREE.Color(0x9C27B0); // Purple for cold
+            }
+        }
+        
+        // Default colors
+        return new THREE.Color(0x4ecdc4); // Cyan for unknown/exoplanets
     }
     
     clearExoplanets() {
@@ -1157,7 +1681,45 @@ class ThreeJSStarmap {
         if (this.controls) {
             this.controls.update();
         }
+        
+        // Animate fictional exoplanets in their orbits
+        this.animateFictionalExoplanets();
+        
         this.render();
+    }
+    
+    animateFictionalExoplanets() {
+        if (!this.fictionalExoplanetGroup) return;
+        
+        const time = Date.now() * 0.0001; // Slow rotation based on real time
+        const scale = 100; // Match starmap scale
+        
+        this.fictionalExoplanetGroup.children.forEach(child => {
+            // Only animate planet meshes, not orbit paths
+            if (child.name && child.name.startsWith('FictionalPlanet_')) {
+                const planetData = child.userData.planetData;
+                if (planetData && planetData.hostStar) {
+                    const hostStar = planetData.hostStar;
+                    const orbitRadius = planetData.orbit * 0.5; // Same scale as convertAUtoPosition
+                    const period = planetData.period || 365; // Period in days
+                    
+                    // Calculate current orbital angle
+                    const angularVelocity = (2 * Math.PI) / period; // Radians per day
+                    const currentAngle = planetData.initialAngle + (time * angularVelocity * 10); // Speed up 10x for visibility
+                    
+                    // Calculate new position
+                    const starPos = {
+                        x: hostStar.x * scale,
+                        y: hostStar.y * scale,
+                        z: hostStar.z * scale
+                    };
+                    
+                    child.position.x = starPos.x + orbitRadius * Math.cos(currentAngle);
+                    child.position.y = starPos.y; // Keep y same as star (flat orbit)
+                    child.position.z = starPos.z + orbitRadius * Math.sin(currentAngle);
+                }
+            }
+        });
     }
     
     render() {

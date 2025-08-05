@@ -229,6 +229,12 @@ class StarmapApp {
             displaylogo: false
         };
         
+        // Check if Plotly is available before using it
+        if (typeof Plotly === 'undefined') {
+            console.warn('⚠️ Plotly is not loaded - skipping Plotly starmap creation');
+            return;
+        }
+        
         Plotly.newPlot('starmap', [trace], layout, config).then(() => {
             // Add click event listener
             document.getElementById('starmap').on('plotly_click', (data) => {
@@ -347,6 +353,11 @@ class StarmapApp {
     showStarDetails(star) {
         const panel = document.getElementById('starDetails');
         const content = document.getElementById('starDetailsContent');
+        
+        if (!panel || !content) {
+            console.warn('Star details panel elements not found');
+            return;
+        }
         
         // Handle the API response structure
         const starName = star.names?.fictional_name || star.names?.primary_name || star.name || 'Unknown Star';
@@ -1089,6 +1100,8 @@ class StarmapApp {
     createExoplanetTraces(exoplanets, type) {
         const traces = [];
         
+        console.log(`Creating ${type} exoplanet traces for ${exoplanets.length} planets`);
+        
         // Group exoplanets by their host star
         const exoplanetsByHost = {};
         exoplanets.forEach(planet => {
@@ -1097,7 +1110,8 @@ class StarmapApp {
                 hostId = planet.star_id;
             } else {
                 // For real exoplanets, match by star name
-                hostId = this.findStarIdByName(planet.host_star.name);
+                const hostStarName = typeof planet.host_star === 'string' ? planet.host_star : planet.host_star?.name;
+                hostId = this.findStarIdByName(hostStarName);
             }
             
             if (hostId) {
@@ -1105,12 +1119,21 @@ class StarmapApp {
                     exoplanetsByHost[hostId] = [];
                 }
                 exoplanetsByHost[hostId].push(planet);
+            } else {
+                console.warn(`No host star found for ${type} planet ${planet.name}`);
             }
         });
         
+        console.log(`Grouped ${type} planets by host star:`, Object.keys(exoplanetsByHost).map(id => `${id}: ${exoplanetsByHost[id].length} planets`));
+        
         Object.keys(exoplanetsByHost).forEach(hostId => {
             const hostStar = this.currentStars.find(star => star.id === parseInt(hostId));
-            if (!hostStar) return;
+            if (!hostStar) {
+                console.warn(`Host star with ID ${hostId} not found in currentStars for ${type} planets`);
+                return;
+            }
+            
+            console.log(`Processing ${exoplanetsByHost[hostId].length} ${type} planets for star ${hostStar.name || hostStar.fictional_name} (ID: ${hostId})`);
             
             const planets = exoplanetsByHost[hostId];
             
@@ -1123,9 +1146,9 @@ class StarmapApp {
                     orbitDistance = planet.orbital_properties.semi_major_axis_au || 1;
                 }
                 
-                // Scale orbit radius for visualization - much smaller scale to not interfere with star positions
-                // Use logarithmic scaling to handle large orbital distances
-                const orbitRadius = 0.1 + (Math.log(orbitDistance + 1) * 0.05); // Much smaller scale
+                // Scale orbit radius for visualization - keep planets close enough to be visible
+                // Use smaller scaling that keeps planets near their stars in the starmap view
+                const orbitRadius = Math.min(orbitDistance * 0.05, 1.0); // 0.05 parsecs per AU, max 1 parsec
                 const orbitPoints = [];
                 
                 // Create circular orbit points
@@ -1138,9 +1161,9 @@ class StarmapApp {
                     orbitPoints.push({x, y, z});
                 }
                 
-                // Determine planet color based on properties
+                // Determine planet color based on properties and type
                 let planetColor = '#4CAF50'; // Default green
-                let planetName, planetRadius, planetMass, planetPeriod, isHabitable;
+                let planetName, planetRadius, planetMass, planetPeriod, isHabitable, planetType;
                 
                 if (type === 'fictional') {
                     planetName = planet.name;
@@ -1148,8 +1171,49 @@ class StarmapApp {
                     planetMass = planet.planet_mass_earth;
                     planetPeriod = planet.orbital_period;
                     isHabitable = planet.potentially_habitable;
+                    planetType = planet.planet_type;
                     
-                    if (isHabitable) {
+                    // Color by planetary type first, then by habitability/temperature
+                    if (planetType) {
+                        switch (planetType.toLowerCase()) {
+                            case 'terrestrial':
+                            case 'rocky':
+                                planetColor = '#8B4513'; // Brown for terrestrial
+                                break;
+                            case 'gas_giant':
+                            case 'gas giant':
+                                planetColor = '#DAA520'; // Golden for gas giants
+                                break;
+                            case 'ice_giant':
+                            case 'ice giant':
+                                planetColor = '#4682B4'; // Steel blue for ice giants
+                                break;
+                            case 'water_world':
+                            case 'ocean':
+                                planetColor = '#006994'; // Deep blue for water worlds
+                                break;
+                            case 'desert':
+                                planetColor = '#CD853F'; // Sandy brown for desert
+                                break;
+                            case 'frozen':
+                            case 'ice':
+                                planetColor = '#B0E0E6'; // Powder blue for frozen
+                                break;
+                            case 'volcanic':
+                                planetColor = '#FF4500'; // Orange red for volcanic
+                                break;
+                            default:
+                                if (isHabitable) {
+                                    planetColor = '#2196F3'; // Blue for habitable
+                                } else if (planet.equilibrium_temperature > 373) {
+                                    planetColor = '#FF5722'; // Red for hot
+                                } else if (planet.equilibrium_temperature < 273) {
+                                    planetColor = '#9C27B0'; // Purple for cold
+                                } else {
+                                    planetColor = '#4CAF50'; // Green for unknown fictional
+                                }
+                        }
+                    } else if (isHabitable) {
                         planetColor = '#2196F3'; // Blue for habitable
                     } else if (planet.equilibrium_temperature > 373) {
                         planetColor = '#FF5722'; // Red for hot
@@ -1162,8 +1226,29 @@ class StarmapApp {
                     planetMass = planet.physical_properties.mass_earth;
                     planetPeriod = planet.orbital_properties.period_days;
                     isHabitable = planet.habitability.potentially_habitable === 'True';
+                    planetType = planet.physical_properties.planet_type;
                     
-                    if (isHabitable) {
+                    // Color by planetary type first for real exoplanets
+                    if (planetType) {
+                        switch (planetType.toLowerCase()) {
+                            case 'terrestrial':
+                            case 'super earth':
+                            case 'rocky':
+                                planetColor = '#CD853F'; // Sandy brown for terrestrial/super earth
+                                break;
+                            case 'neptune-like':
+                            case 'neptune like':
+                            case 'mini-neptune':
+                                planetColor = '#4682B4'; // Steel blue for neptune-like
+                                break;
+                            case 'gas giant':
+                            case 'jupiter-like':
+                                planetColor = '#DAA520'; // Golden for gas giants
+                                break;
+                            default:
+                                planetColor = '#FFC107'; // Yellow for other real exoplanets
+                        }
+                    } else if (isHabitable) {
                         planetColor = '#2196F3'; // Blue for habitable
                     } else if (planet.physical_properties.equilibrium_temperature_k > 373) {
                         planetColor = '#FF5722'; // Red for hot

@@ -57,6 +57,14 @@ class ThreeJSStarmap {
             this.raycaster = new THREE.Raycaster();
             this.mouse = new THREE.Vector2();
             
+            // Dynamic scaling system
+            this.lastCameraDistance = 0;
+            this.scalingThresholds = {
+                far: 15000,    // Very zoomed out - maximum planet scaling
+                medium: 8000,  // Medium zoom - moderate scaling  
+                near: 3000     // Close zoom - realistic scaling
+            };
+            
             this.setupScene();
             this.setupCamera();
             this.setupRenderer();
@@ -594,7 +602,7 @@ class ThreeJSStarmap {
             const center = nation.center_point || this.getStarCenter(nation.capital_star_id); // Fetch coords if needed
             if (!center) return;
 
-            const geometry = new THREE.SphereGeometry((nation.radius || 25) * scale, 32, 32); // Reduced radius by half for better visibility
+            const geometry = new THREE.SphereGeometry((nation.radius || 25) * scale / 3, 32, 32); // Reduced radius by 2/3rds for better visibility
             const material = new THREE.MeshBasicMaterial({
                 color: nation.color || 0x00ff00,
                 transparent: true,
@@ -607,10 +615,10 @@ class ThreeJSStarmap {
             sphere.name = `NationSphere_${nation.name || nation.id}`;
             this.nationsGroup.add(sphere);
             
-            console.log(`🏛️ Created nation sphere: "${nation.name}" at (${(center.x * scale).toFixed(1)}, ${(center.y * scale).toFixed(1)}, ${(center.z * scale).toFixed(1)}) radius: ${((nation.radius || 25) * scale).toFixed(1)}`);
+            console.log(`🏛️ Created nation sphere: "${nation.name}" at (${(center.x * scale).toFixed(1)}, ${(center.y * scale).toFixed(1)}, ${(center.z * scale).toFixed(1)}) radius: ${((nation.radius || 25) * scale / 3).toFixed(1)}`);
         });
         
-        console.log(`✅ Created ${data.length} nation spheres (radius 25 * ${scale}, wireframe, translucent)`);
+        console.log(`✅ Created ${data.length} nation spheres (radius 25 * ${scale} / 3, wireframe, translucent)`);
     }
 
     getStarCenter(starId) {
@@ -915,6 +923,11 @@ class ThreeJSStarmap {
             };
             
             planetMesh.position.set(initialPosition.x, initialPosition.y, initialPosition.z);
+            
+            // Store original properties for adaptive scaling
+            planetMesh.userData.originalRadius = planet.size;
+            planetMesh.userData.originalOpacity = 0.9;
+            
             planetMesh.userData.planetData = {
                 name: planet.name,
                 system: 'Sol',
@@ -923,6 +936,22 @@ class ThreeJSStarmap {
                 category: 'Solar System Planet'
             };
             planetMesh.name = `SolarPlanet_${planet.name}`;
+            
+            // Create enlarged invisible click target for Sol system planets
+            const clickTargetGeometry = new THREE.SphereGeometry(Math.max(planet.size * 2.5, 3.0), 8, 8);
+            const clickTargetMaterial = new THREE.MeshBasicMaterial({ 
+                transparent: true, 
+                opacity: 0.0,
+                visible: false, // Ensure completely invisible
+                side: THREE.DoubleSide
+            });
+            const clickTarget = new THREE.Mesh(clickTargetGeometry, clickTargetMaterial);
+            clickTarget.position.copy(planetMesh.position);
+            clickTarget.userData = planetMesh.userData; // Share userData
+            clickTarget.name = `ClickTarget_${planet.name}`;
+            clickTarget.userData.isPlanetClickTarget = true;
+            // Store original radius for click target scaling
+            clickTarget.userData.originalRadius = Math.max(planet.size * 2.5, 3.0);
             
             // Check for duplicate positions
             const duplicates = this.checkForDuplicatePositions(
@@ -941,6 +970,7 @@ class ThreeJSStarmap {
             }
             
             this.exoplanetGroup.add(planetMesh);
+            this.exoplanetGroup.add(clickTarget); // Add click target
             createdSolarPlanets.push({ position: planetMesh.position, name: planet.name });
             console.log(`🪐 Created solar system planet: "${planet.name}" at position (${planetMesh.position.x.toFixed(1)}, ${planetMesh.position.y.toFixed(1)}, ${planetMesh.position.z.toFixed(1)})`);
         });
@@ -976,7 +1006,29 @@ class ThreeJSStarmap {
                 planet.userData.exoplanetData = exoplanet;
                 planet.name = `Exoplanet_${exoplanet.name || i}`;
                 
+                // Store original properties for adaptive scaling
+                planet.userData.originalRadius = 1.2;
+                planet.userData.originalOpacity = 0.8;
+                
+                // Create enlarged invisible click target for better interaction
+                const clickTargetRadius = Math.max(1.2 * 2, 3.0);
+                const clickTargetGeometry = new THREE.SphereGeometry(clickTargetRadius, 8, 8);
+                const clickTargetMaterial = new THREE.MeshBasicMaterial({ 
+                    transparent: true, 
+                    opacity: 0.0,
+                    visible: false, // Ensure completely invisible
+                    side: THREE.DoubleSide
+                });
+                const clickTarget = new THREE.Mesh(clickTargetGeometry, clickTargetMaterial);
+                clickTarget.position.copy(planet.position);
+                clickTarget.userData = planet.userData; // Share userData
+                clickTarget.name = `ClickTarget_${exoplanet.name || i}`;
+                clickTarget.userData.isPlanetClickTarget = true;
+                // Store original radius for click target scaling
+                clickTarget.userData.originalRadius = clickTargetRadius;
+                
                 this.exoplanetGroup.add(planet);
+                this.exoplanetGroup.add(clickTarget); // Add click target
                 console.log(`🪐 Created exoplanet: "${exoplanet.name || 'Unknown'}" at position (${exoplanet.x * scale}, ${exoplanet.y * scale}, ${exoplanet.z * scale})`);
                 createdCount++;
             });
@@ -1213,6 +1265,143 @@ class ThreeJSStarmap {
         
         return (r << 16) | (g << 8) | b;
     }
+    
+    calculateAdaptivePlanetScale(baseRadius, cameraDistance) {
+        // Calculate adaptive scaling based on camera distance
+        let scaleFactor = 1.0;
+        
+        if (cameraDistance > this.scalingThresholds.far) {
+            // Very far - scale up significantly for visibility
+            scaleFactor = 4.0;
+        } else if (cameraDistance > this.scalingThresholds.medium) {
+            // Medium distance - moderate scaling
+            const ratio = (cameraDistance - this.scalingThresholds.medium) / 
+                         (this.scalingThresholds.far - this.scalingThresholds.medium);
+            scaleFactor = 1.0 + (3.0 * ratio); // Scale from 1x to 4x
+        } else if (cameraDistance > this.scalingThresholds.near) {
+            // Close to medium - slight scaling
+            const ratio = (cameraDistance - this.scalingThresholds.near) / 
+                         (this.scalingThresholds.medium - this.scalingThresholds.near);
+            scaleFactor = 1.0 + (1.0 * ratio); // Scale from 1x to 2x
+        }
+        // else: Very close - use base scale (1.0)
+        
+        return Math.max(0.5, Math.min(5.0, baseRadius * scaleFactor));
+    }
+    
+    updatePlanetVisibility() {
+        // Get current camera distance from origin
+        const cameraDistance = this.camera.position.distanceTo(this.controls.target);
+        
+        // Only update if camera moved significantly
+        if (Math.abs(cameraDistance - this.lastCameraDistance) < 500) {
+            return;
+        }
+        
+        this.lastCameraDistance = cameraDistance;
+        
+        // Update fictional exoplanets scaling
+        this.fictionalExoplanetGroup.children.forEach(child => {
+            if (child.userData && child.userData.originalRadius) {
+                const newScale = this.calculateAdaptivePlanetScale(
+                    child.userData.originalRadius, 
+                    cameraDistance
+                );
+                child.scale.setScalar(newScale / child.userData.originalRadius);
+                
+                // Update opacity based on distance for better visibility
+                if (child.material) {
+                    const baseOpacity = child.userData.originalOpacity || 0.9;
+                    if (cameraDistance > this.scalingThresholds.medium) {
+                        child.material.opacity = Math.min(1.0, baseOpacity + 0.2);
+                    } else {
+                        child.material.opacity = baseOpacity;
+                    }
+                }
+            } else if (child.userData && child.userData.isOrbitRing) {
+                // Handle orbit rings - make them even more subtle when zoomed in
+                if (child.material) {
+                    const baseOpacity = child.userData.originalOpacity || 0.05;
+                    if (cameraDistance < this.scalingThresholds.near) {
+                        // Very close - hide orbit rings completely
+                        child.material.opacity = 0.0;
+                    } else if (cameraDistance < this.scalingThresholds.medium) {
+                        // Medium distance - very subtle
+                        child.material.opacity = baseOpacity * 0.5;
+                    } else {
+                        // Far - show at base opacity
+                        child.material.opacity = baseOpacity;
+                    }
+                }
+            }
+        });
+        
+        // Update Sol system and real exoplanets scaling
+        this.exoplanetGroup.children.forEach(child => {
+            if (child.userData && child.userData.originalRadius) {
+                const newScale = this.calculateAdaptivePlanetScale(
+                    child.userData.originalRadius, 
+                    cameraDistance
+                );
+                child.scale.setScalar(newScale / child.userData.originalRadius);
+                
+                // Update opacity
+                if (child.material) {
+                    const baseOpacity = child.userData.originalOpacity || 0.9;
+                    if (cameraDistance > this.scalingThresholds.medium) {
+                        child.material.opacity = Math.min(1.0, baseOpacity + 0.1);
+                    } else {
+                        child.material.opacity = baseOpacity;
+                    }
+                }
+            }
+        });
+        
+        // Update zoom indicator UI
+        this.updateZoomIndicator(cameraDistance);
+        
+        console.log(`🔍 Updated planet visibility for camera distance: ${cameraDistance.toFixed(0)} units`);
+    }
+    
+    updateZoomIndicator(cameraDistance) {
+        const indicator = document.getElementById('zoom-indicator');
+        if (!indicator) return;
+        
+        // Show indicator when Three.js view is active
+        const threejsContainer = document.getElementById('threejs-container');
+        const isVisible = threejsContainer && threejsContainer.style.display !== 'none';
+        
+        if (isVisible) {
+            indicator.style.display = 'block';
+            
+            // Update distance
+            document.getElementById('camera-distance').textContent = `${cameraDistance.toFixed(0)} units`;
+            
+            // Calculate current scale factor
+            let scaleFactor = 1.0;
+            let viewMode = 'Close';
+            
+            if (cameraDistance > this.scalingThresholds.far) {
+                scaleFactor = 4.0;
+                viewMode = 'Very Far';
+            } else if (cameraDistance > this.scalingThresholds.medium) {
+                const ratio = (cameraDistance - this.scalingThresholds.medium) / 
+                             (this.scalingThresholds.far - this.scalingThresholds.medium);
+                scaleFactor = 1.0 + (3.0 * ratio);
+                viewMode = 'Far';
+            } else if (cameraDistance > this.scalingThresholds.near) {
+                const ratio = (cameraDistance - this.scalingThresholds.near) / 
+                             (this.scalingThresholds.medium - this.scalingThresholds.near);
+                scaleFactor = 1.0 + (1.0 * ratio);
+                viewMode = 'Medium';
+            }
+            
+            document.getElementById('planet-scale').textContent = `${scaleFactor.toFixed(1)}x`;
+            document.getElementById('view-mode').textContent = viewMode;
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
 
     createFictionalExoplanets(fictionalPlanets) {
         console.log('🔴 Creating fictional exoplanets:', fictionalPlanets ? fictionalPlanets.length : 0);
@@ -1384,6 +1573,26 @@ class ThreeJSStarmap {
                 const planetMesh = new THREE.Mesh(geometry, material);
                 planetMesh.position.set(x, y, z); // Initial position already scaled in convertAUtoPosition
                 
+                // Store original properties for adaptive scaling
+                planetMesh.userData.originalRadius = planetProperties.radius;
+                planetMesh.userData.originalOpacity = planetProperties.opacity;
+                
+                // Create enlarged invisible click target for better interaction
+                const clickTargetGeometry = new THREE.SphereGeometry(Math.max(planetProperties.radius * 2, 4.0), 8, 8);
+                const clickTargetMaterial = new THREE.MeshBasicMaterial({ 
+                    transparent: true, 
+                    opacity: 0.0,
+                    visible: false, // Ensure completely invisible
+                    side: THREE.DoubleSide
+                });
+                const clickTarget = new THREE.Mesh(clickTargetGeometry, clickTargetMaterial);
+                clickTarget.position.copy(planetMesh.position);
+                clickTarget.userData = planetMesh.userData; // Share userData
+                clickTarget.name = `ClickTarget_${planet.name || i}`;
+                clickTarget.userData.isPlanetClickTarget = true;
+                // Store original radius for click target scaling
+                clickTarget.userData.originalRadius = Math.max(planetProperties.radius * 2, 4.0);
+                
                 // Check for duplicate positions before adding
                 const duplicates = this.checkForDuplicatePositions(
                     { position: planetMesh.position, name: planet.name },
@@ -1417,22 +1626,29 @@ class ThreeJSStarmap {
                 planetMesh.name = `FictionalPlanet_${planet.name || i}`;
                 
                 this.fictionalExoplanetGroup.add(planetMesh);
+                this.fictionalExoplanetGroup.add(clickTarget); // Add click target
                 
-                // Create visual orbit path
-                const orbitRadius = Math.min(au * 5, 100); // Same scale as convertAUtoPosition
-                const orbitGeometry = new THREE.RingGeometry(orbitRadius - 0.02, orbitRadius + 0.02, 64);
-                const orbitMaterial = new THREE.MeshBasicMaterial({ 
-                    color: 0x444444, 
-                    transparent: true, 
-                    opacity: 0.2,
-                    side: THREE.DoubleSide
-                });
-                const orbitPath = new THREE.Mesh(orbitGeometry, orbitMaterial);
-                orbitPath.position.set(starPos.x, starPos.y, starPos.z);
-                orbitPath.rotation.x = Math.PI / 2; // Flat orbit plane
-                orbitPath.name = `OrbitPath_${planet.name || i}`;
-                
-                this.fictionalExoplanetGroup.add(orbitPath);
+                // Create very subtle orbit path (optional - can be disabled)
+                if (false && au > 2.0) { // DISABLED: Only show orbit rings for distant planets
+                    const orbitRadius = Math.min(au * 5, 100); // Same scale as convertAUtoPosition
+                    const orbitGeometry = new THREE.RingGeometry(orbitRadius - 0.01, orbitRadius + 0.01, 32);
+                    const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                        color: 0x333333, // Darker gray
+                        transparent: true, 
+                        opacity: 0.05, // Much more subtle
+                        side: THREE.DoubleSide
+                    });
+                    const orbitPath = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                    orbitPath.position.set(starPos.x, starPos.y, starPos.z);
+                    orbitPath.rotation.x = Math.PI / 2; // Flat orbit plane
+                    orbitPath.name = `OrbitPath_${planet.name || i}`;
+                    
+                    // Store original properties for scaling
+                    orbitPath.userData.originalOpacity = 0.05;
+                    orbitPath.userData.isOrbitRing = true;
+                    
+                    this.fictionalExoplanetGroup.add(orbitPath);
+                }
                 
                 // Track created planet for duplicate checking
                 createdFictionalPlanets.push({ position: planetMesh.position, name: planet.name });
@@ -1682,6 +1898,9 @@ class ThreeJSStarmap {
             this.controls.update();
         }
         
+        // Update planet visibility based on camera distance
+        this.updatePlanetVisibility();
+        
         // Animate fictional exoplanets in their orbits
         this.animateFictionalExoplanets();
         
@@ -1695,7 +1914,7 @@ class ThreeJSStarmap {
         const scale = 100; // Match starmap scale
         
         this.fictionalExoplanetGroup.children.forEach(child => {
-            // Only animate planet meshes, not orbit paths
+            // Only animate planet meshes, not orbit paths or click targets
             if (child.name && child.name.startsWith('FictionalPlanet_')) {
                 const planetData = child.userData.planetData;
                 if (planetData && planetData.hostStar) {
@@ -1714,9 +1933,20 @@ class ThreeJSStarmap {
                         z: hostStar.z * scale
                     };
                     
-                    child.position.x = starPos.x + orbitRadius * Math.cos(currentAngle);
-                    child.position.y = starPos.y; // Keep y same as star (flat orbit)
-                    child.position.z = starPos.z + orbitRadius * Math.sin(currentAngle);
+                    const newPosition = {
+                        x: starPos.x + orbitRadius * Math.cos(currentAngle),
+                        y: starPos.y, // Keep y same as star (flat orbit)
+                        z: starPos.z + orbitRadius * Math.sin(currentAngle)
+                    };
+                    
+                    child.position.set(newPosition.x, newPosition.y, newPosition.z);
+                    
+                    // Update corresponding click target position
+                    const clickTargetName = `ClickTarget_${child.userData.fictionalPlanetData?.name}`;
+                    const clickTarget = this.fictionalExoplanetGroup.children.find(c => c.name === clickTargetName);
+                    if (clickTarget) {
+                        clickTarget.position.copy(child.position);
+                    }
                 }
             }
         });

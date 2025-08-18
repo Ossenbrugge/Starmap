@@ -55,7 +55,10 @@ jobs:
     
     - name: Run unit tests with pytest
       run: |
+        export PYTHONPATH="$PWD:$PYTHONPATH"
         python tests/run_tests.py coverage --verbose
+      env:
+        PYTHONPATH: ${{ github.workspace }}
     
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

@@ -1,0 +1,157 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r tests/requirements.txt
+    
+    - name: Initialize database
+      run: |
+        chmod +x migrate_to_montydb.sh
+        ./migrate_to_montydb.sh
+    
+    - name: Run full test suite
+      run: |
+        python tests/run_tests.py all --report
+    
+    - name: Run performance tests
+      run: |
+        python tests/run_tests.py --performance
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel
+    
+    - name: Build package
+      run: |
+        python -m build
+    
+    - name: Create release bundle
+      run: |
+        mkdir -p release
+        cp -r dist/* release/
+        cp README.md LICENSE CONTRIBUTING.md DEVELOPMENT.md release/
+        cp -r tests/ release/
+        cp -r templates/ release/
+        cp requirements.txt release/
+        cp app_montydb.py release/
+        cp migrate_to_montydb.sh release/
+        tar -czf starmap-${{ github.ref_name }}.tar.gz release/
+    
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-bundle
+        path: starmap-${{ github.ref_name }}.tar.gz
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: |
+          starmap/starmap:latest
+          starmap/starmap:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  github-release:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Needed for changelog generation
+    
+    - name: Download release bundle
+      uses: actions/download-artifact@v3
+      with:
+        name: release-bundle
+    
+    - name: Generate changelog
+      run: |
+        echo "## Changes in ${{ github.ref_name }}" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        git log --oneline --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> CHANGELOG.md || echo "- Initial release" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## Installation" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "1. Download and extract the release bundle" >> CHANGELOG.md
+        echo "2. Follow the installation instructions in README.md" >> CHANGELOG.md
+        echo "3. Run \`./migrate_to_montydb.sh\` to initialize the database" >> CHANGELOG.md
+        echo "4. Start the application with \`python app_montydb.py\`" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "## Docker" >> CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        echo "\`\`\`bash" >> CHANGELOG.md
+        echo "docker run -p 8080:8080 starmap/starmap:${{ github.ref_name }}" >> CHANGELOG.md
+        echo "\`\`\`" >> CHANGELOG.md
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: starmap-${{ github.ref_name }}.tar.gz
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: [test, build, docker, github-release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Notify success
+      run: |
+        echo "✅ Release ${{ github.ref_name }} completed successfully!"
+        echo "📦 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        echo "🐳 Docker Image: starmap/starmap:${{ github.ref_name }}"

@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.11
     
     - name: Install dependencies
       run: |
@@ -30,23 +30,29 @@ jobs:
     
     - name: Run full test suite
       run: |
-        python tests/run_tests.py all --report
+        export PYTHONPATH="$PWD:$PYTHONPATH"
+        python tests/run_tests.py all --verbose
+      env:
+        PYTHONPATH: ${{ github.workspace }}
     
     - name: Run performance tests
       run: |
-        python tests/run_tests.py --performance
+        export PYTHONPATH="$PWD:$PYTHONPATH"
+        python tests/run_tests.py performance --verbose
+      env:
+        PYTHONPATH: ${{ github.workspace }}
 
   build:
     needs: test
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
-    - name: Set up Python 3.9
-      uses: actions/setup-python@v4
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
       with:
-        python-version: 3.9
+        python-version: 3.11
     
     - name: Install build dependencies
       run: |
@@ -70,7 +76,7 @@ jobs:
         tar -czf starmap-${{ github.ref_name }}.tar.gz release/
     
     - name: Upload release artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: release-bundle
         path: starmap-${{ github.ref_name }}.tar.gz
@@ -80,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
@@ -107,12 +113,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0  # Needed for changelog generation
     
     - name: Download release bundle
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: release-bundle
     

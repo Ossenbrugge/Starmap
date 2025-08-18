@@ -53,22 +53,23 @@ jobs:
     
     - name: Run type checking
       run: |
-        mypy app.py auth.py --ignore-missing-imports --no-strict-optional
+        mypy app.py auth.py --ignore-missing-imports --no-strict-optional --explicit-package-bases
       continue-on-error: true
     
     - name: Run unit tests
       run: |
-        python -m pytest tests/ -v --tb=short --junit-xml=test-results.xml
+        export PYTHONPATH="$PWD:$PYTHONPATH"
+        python tests/run_tests.py unit --verbose
+      env:
+        PYTHONPATH: ${{ github.workspace }}
     
     - name: Run tests with coverage
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: |
-        python -m pytest tests/ \
-          --cov=. \
-          --cov-report=xml \
-          --cov-report=html \
-          --cov-report=term-missing \
-          --junit-xml=test-results-coverage.xml
+        export PYTHONPATH="$PWD:$PYTHONPATH"
+        python tests/run_tests.py coverage --verbose
+      env:
+        PYTHONPATH: ${{ github.workspace }}
     
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'

@@ -5,7 +5,7 @@ Test MontyDB update operations
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.config import initialize_database, get_database
 

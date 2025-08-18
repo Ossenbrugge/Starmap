@@ -51,10 +51,12 @@ def test_session_auth():
         print(f"   ❌ API access failed: {response.status_code}")
         return None
 
-def test_jwt_auth(session):
+def test_jwt_auth():
     """Test JWT-based authentication"""
     print("\n🎫 Testing JWT-Based Authentication")
     print("=" * 50)
+    
+    session = requests.Session()
     
     # 1. Generate JWT token
     print("1. Generating JWT token...")

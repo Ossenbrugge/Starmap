@@ -4,6 +4,10 @@ Performance Test: JSON vs MontyDB
 Compare query performance between the old JSON system and new MontyDB system
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import time
 from contextlib import contextmanager
 

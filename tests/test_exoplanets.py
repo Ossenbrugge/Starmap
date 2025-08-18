@@ -5,7 +5,7 @@ Test script to verify exoplanet data loading
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from database.config import initialize_database
 from models.exoplanet_model_db import ExoplanetModelDB

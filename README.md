@@ -7,8 +7,8 @@ A 3D interactive starmap for the **Felgenland Saga** universe, featuring real as
 The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, where human civilization has expanded to form competing nations and trade networks. This starmap brings that universe to life with:
 
 - **Real astronomical data** from Gaia, Hipparcos, and NASA catalogs
-- **Fictional political nations** with territories and capitals
-- **Trade routes** connecting major systems
+- **Fictional political nations** with territories and capitals![alt text](screenshots/nations_bubble.png)
+- **Trade routes** connecting major systems![alt text](screenshots/Universe_octants.png)
 - **Enhanced planetary systems** including habitable worlds and capitals
 
 ## ✨ Features
@@ -36,15 +36,15 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
 - **Dynamic Cache Management** - Instant updates when adding new content
 - **RESTful API** - Complete CRUD operations for all entity types (requires authentication)
 
-### Security & Authentication
+### Security & Authentication![alt text](screenshots/login.png)
 - **Flask-Login Integration** - Session-based authentication for web interface
 - **JWT Token Support** - API access tokens for external applications
 - **Protected API Endpoints** - All data modification endpoints require authentication
 - **User Management** - Built-in user system with configurable credentials
 
 ### Visualization & Interface
-- **Interactive 3D Visualization** with political overlays
-- **Real-time Search** and advanced filtering
+- **Interactive 3D Visualization** with political overlays![alt text](screenshots/Universe_octants.png)
+- **Real-time Search** and advanced filtering![alt text](screenshots/Sol_system.png)
 - **Modern Responsive UI** with space-themed design
 - **Secure Login Interface** - Space-themed authentication portal
 

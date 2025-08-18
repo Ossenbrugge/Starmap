@@ -22,13 +22,13 @@ def run_command(cmd, description=""):
     
     try:
         result = subprocess.run(cmd, cwd=project_root, check=True, capture_output=False)
-        print(f"✅ SUCCESS: {description}")
+        print(f"[PASS] SUCCESS: {description}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"❌ FAILED: {description} (exit code: {e.returncode})")
+        print(f"[FAIL] FAILED: {description} (exit code: {e.returncode})")
         return False
     except FileNotFoundError as e:
-        print(f"❌ ERROR: Command not found: {e}")
+        print(f"[ERROR] ERROR: Command not found: {e}")
         return False
 
 def run_unit_tests():
@@ -89,10 +89,10 @@ def run_security_tests():
         # Don't fail on security warnings, just report them
         try:
             subprocess.run(cmd, cwd=project_root, check=False)
-            print(f"✅ COMPLETED: {desc}")
+            print(f"[DONE] COMPLETED: {desc}")
             results.append(True)
         except Exception as e:
-            print(f"⚠️  WARNING: {desc} failed: {e}")
+            print(f"[WARN] WARNING: {desc} failed: {e}")
             results.append(True)  # Don't fail the build
     
     return all(results)
@@ -112,19 +112,19 @@ def run_all_tests():
     
     results = {}
     for name, test_func in tests:
-        print(f"\n🧪 Starting: {name}")
+        print(f"\n[TEST] Starting: {name}")
         results[name] = test_func()
     
     # Print summary
     print("\n" + "="*60)
-    print("📊 TEST SUMMARY")
+    print("[SUMMARY] TEST SUMMARY")
     print("="*60)
     
     passed = 0
     total = len(results)
     
     for test_name, result in results.items():
-        status = "✅ PASS" if result else "❌ FAIL"
+        status = "[PASS]" if result else "[FAIL]"
         print(f"{test_name:<20} {status}")
         if result:
             passed += 1
@@ -153,7 +153,7 @@ def main():
     os.environ["STARMAP_SECRET_KEY"] = "test-secret-key"
     os.environ["FLASK_ENV"] = "testing"
     
-    print(f"🧪 Starmap Test Runner")
+    print(f"[TEST] Starmap Test Runner")
     print(f"Project Root: {project_root}")
     print(f"Test Type: {args.test_type}")
     

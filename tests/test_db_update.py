@@ -10,11 +10,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from database.config import initialize_database, get_database
 
 def main():
-    print("🧪 Testing MontyDB update operations...")
+    print("[TEST] Testing MontyDB update operations...")
     
     # Initialize database
     if not initialize_database():
-        print("❌ Failed to initialize database")
+        print("[FAIL] Failed to initialize database")
         return
     
     db = get_database()

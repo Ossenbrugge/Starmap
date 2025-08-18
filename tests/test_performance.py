@@ -63,11 +63,11 @@ def test_montydb_performance():
     with timer("MontyDB: Trade network analysis"):
         analysis = trade_model.get_trade_network_analysis()
     
-    print(f"✅ MontyDB Results: {len(stars)} stars, {len(nations)} nations, {len(routes)} routes")
+    print(f"[PASS] MontyDB Results: {len(stars)} stars, {len(nations)} nations, {len(routes)} routes")
 
 def test_json_performance():
     """Test JSON system performance"""
-    print("\n🗃️  Testing JSON Performance")
+    print("\n[JSON] Testing JSON Performance")
     print("-" * 40)
     
     # Initialize JSON database
@@ -89,7 +89,7 @@ def test_json_performance():
     with timer("JSON: Load all trade routes"):
         routes = json_db.get_trade_routes()
     
-    print(f"✅ JSON Results: {len(stars)} stars, {len(nations)} nations, {len(routes)} routes")
+    print(f"[PASS] JSON Results: {len(stars)} stars, {len(nations)} nations, {len(routes)} routes")
 
 def main():
     """Run performance comparison"""
@@ -102,9 +102,9 @@ def main():
     # Test JSON
     test_json_performance()
     
-    print("\n📊 Performance Summary")
+    print("\n[PERF] Performance Summary")
     print("-" * 40)
-    print("✅ MontyDB provides:")
+    print("[PASS] MontyDB provides:")
     print("  • Indexed queries for faster coordinate searches")
     print("  • Database-level filtering vs in-memory operations")
     print("  • Better memory efficiency with lazy loading")

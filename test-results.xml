@@ -1,4 +1,20 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="6.432" timestamp="2025-08-18T10:03:01.092286-05:00" hostname="EricsMacStudio.localdomain"><testcase classname="tests.test_api_auth" name="test_session_auth" time="0.057" /><testcase classname="tests.test_api_auth" name="test_jwt_auth" time="0.000"><failure message="NameError: name 'session' is not defined">tests/test_api_auth.py:61: in test_jwt_auth
-    response = session.post(f"{BASE_URL}/api/auth/token",
-              ^^^^^^^
-E   NameError: name 'session' is not defined</failure></testcase><testcase classname="tests.test_exoplanets" name="test_exoplanets" time="0.012" /><testcase classname="tests.test_performance" name="test_montydb_performance" time="5.635" /><testcase classname="tests.test_performance" name="test_json_performance" time="0.664" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="6.786" timestamp="2025-08-18T13:28:06.711155-05:00" hostname="EricsMacStudio.localdomain"><testcase classname="tests.test_api_auth" name="test_session_auth" time="0.063" /><testcase classname="tests.test_api_auth" name="test_jwt_auth" time="0.007"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">venv/lib/python3.12/site-packages/requests/models.py:976: in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/json/__init__.py:346: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/json/decoder.py:338: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/json/decoder.py:356: in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+tests/test_api_auth.py:67: in test_jwt_auth
+    token_data = response.json()
+                 ^^^^^^^^^^^^^^^
+venv/lib/python3.12/site-packages/requests/models.py:980: in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="tests.test_exoplanets" name="test_exoplanets" time="0.018" /><testcase classname="tests.test_performance" name="test_montydb_performance" time="5.890" /><testcase classname="tests.test_performance" name="test_json_performance" time="0.668" /></testsuite></testsuites>

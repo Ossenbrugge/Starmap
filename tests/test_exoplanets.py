@@ -11,11 +11,11 @@ from database.config import initialize_database
 from models.exoplanet_model_db import ExoplanetModelDB
 
 def test_exoplanets():
-    print("🧪 Testing exoplanet data loading...")
+    print("[TEST] Testing exoplanet data loading...")
     
     # Initialize database
     if not initialize_database():
-        print("❌ Failed to initialize database")
+        print("[FAIL] Failed to initialize database")
         return
     
     # Initialize exoplanet model
@@ -25,13 +25,13 @@ def test_exoplanets():
     try:
         print("🔄 Migrating exoplanet data...")
         exoplanet_model.migrate_from_json()
-        print("✅ Migration completed")
+        print("[PASS] Migration completed")
         
         # Test the data retrieval
         real_exoplanets = exoplanet_model.get_exoplanets()
         fictional_exoplanets = exoplanet_model.get_fictional_exoplanets()
         
-        print(f"📊 Results:")
+        print(f"[DATA] Results:")
         print(f"  Real exoplanets: {len(real_exoplanets)}")
         print(f"  Fictional exoplanets: {len(fictional_exoplanets)}")
         
@@ -44,12 +44,12 @@ def test_exoplanets():
             for planet in sol_planets:
                 print(f"    - {planet['name']} ({planet['letter']})")
         else:
-            print("❌ No Sol system planets found")
+            print("[WARN] No Sol system planets found")
         
-        print("✅ Test completed successfully")
+        print("[PASS] Test completed successfully")
         
     except Exception as e:
-        print(f"❌ Error during test: {e}")
+        print(f"[ERROR] Error during test: {e}")
         import traceback
         traceback.print_exc()
 

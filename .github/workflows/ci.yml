@@ -51,7 +51,7 @@ jobs:
     
     - name: Type checking with mypy
       run: |
-        mypy app.py auth.py --ignore-missing-imports --no-strict-optional
+        mypy app.py auth.py --ignore-missing-imports --no-strict-optional --explicit-package-bases
     
     - name: Run unit tests with pytest
       run: |

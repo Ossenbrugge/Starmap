@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "title": "Galactic Octants from Sol",
+    "description": "Eight octants of galactic space centered on Sol (0,0,0), extending to 30 parsecs. Each octant represents one of the eight possible combinations of positive/negative X, Y, Z coordinates.",
+    "version": "3.1",
+    "last_updated": "2025-07-17",
+    "coordinate_system": "Cartesian coordinates (parsecs from Sol)",
+    "origin": "Sol (0, 0, 0)",
+    "max_radius": 30
+  },
+  "regions": [
+    {
+      "name": "Capella Region",
+      "short_name": "Capella",
+      "description": "Galactic region centered on Capella (magnitude 0.08), the brightest star in this octant. Coreward Spinward Above - The first galactic octant extending in positive X, Y, and Z directions from Sol.",
+      "x_range": [
+        0,
+        30
+      ],
+      "y_range": [
+        0,
+        30
+      ],
+      "z_range": [
+        0,
+        30
+      ],
+      "center_point": [
+        15.0,
+        15.0,
+        15.0
+      ],
+      "color": [
+        255,
+        99,
+        132
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 1,
+      "classification": "Galactic Octant",
+      "brightest_star": "Capella",
+      "brightest_star_id": 24549,
+      "brightest_star_magnitude": 0.08,
+      "original_name": "Fomalhaut Region"
+    },
+    {
+      "name": "Procyon Region",
+      "short_name": "Procyon",
+      "description": "Galactic region centered on Procyon (magnitude 0.40), the brightest star in this octant. Rimward Spinward Above - The second galactic octant extending in negative X, positive Y and Z directions from Sol.",
+      "x_range": [
+        -30,
+        0
+      ],
+      "y_range": [
+        0,
+        30
+      ],
+      "z_range": [
+        0,
+        30
+      ],
+      "center_point": [
+        -15.0,
+        15.0,
+        15.0
+      ],
+      "color": [
+        54,
+        162,
+        235
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 2,
+      "classification": "Galactic Octant",
+      "brightest_star": "Procyon",
+      "brightest_star_id": 37173,
+      "brightest_star_magnitude": 0.4,
+      "original_name": "Procyon Region"
+    },
+    {
+      "name": "Arcturus Region",
+      "short_name": "Arcturus",
+      "description": "Galactic region centered on Arcturus (magnitude -0.05), the brightest star in this octant. Rimward Anti-Spinward Above - The third galactic octant extending in negative X and Y, positive Z directions from Sol.",
+      "x_range": [
+        -30,
+        0
+      ],
+      "y_range": [
+        -30,
+        0
+      ],
+      "z_range": [
+        0,
+        30
+      ],
+      "center_point": [
+        -15.0,
+        -15.0,
+        15.0
+      ],
+      "color": [
+        255,
+        205,
+        86
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 3,
+      "classification": "Galactic Octant",
+      "brightest_star": "Arcturus",
+      "brightest_star_id": 69451,
+      "brightest_star_magnitude": -0.05,
+      "original_name": "Arcturus Region"
+    },
+    {
+      "name": "Vega Region",
+      "short_name": "Vega",
+      "description": "Galactic region centered on Vega (magnitude 0.03), the brightest star in this octant. Coreward Anti-Spinward Above - The fourth galactic octant extending in positive X, negative Y, positive Z directions from Sol.",
+      "x_range": [
+        0,
+        30
+      ],
+      "y_range": [
+        -30,
+        0
+      ],
+      "z_range": [
+        0,
+        30
+      ],
+      "center_point": [
+        15.0,
+        -15.0,
+        15.0
+      ],
+      "color": [
+        75,
+        192,
+        192
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 4,
+      "classification": "Galactic Octant",
+      "brightest_star": "Vega",
+      "brightest_star_id": 90979,
+      "brightest_star_magnitude": 0.03,
+      "original_name": "Fomalhaut Region"
+    },
+    {
+      "name": "Achernar Region",
+      "short_name": "Achernar",
+      "description": "Galactic region centered on Achernar (magnitude 0.45), the brightest star in this octant. Coreward Spinward Below - The fifth galactic octant extending in positive X and Y, negative Z directions from Sol.",
+      "x_range": [
+        0,
+        30
+      ],
+      "y_range": [
+        0,
+        30
+      ],
+      "z_range": [
+        -30,
+        0
+      ],
+      "center_point": [
+        15.0,
+        15.0,
+        -15.0
+      ],
+      "color": [
+        153,
+        102,
+        255
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 5,
+      "classification": "Galactic Octant",
+      "brightest_star": "Achernar",
+      "brightest_star_id": 7574,
+      "brightest_star_magnitude": 0.45,
+      "original_name": "Fomalhaut Region"
+    },
+    {
+      "name": "Sirius Region",
+      "short_name": "Sirius",
+      "description": "Galactic region centered on Sirius (magnitude -1.44), the brightest star in this octant. Rimward Spinward Below - The sixth galactic octant extending in negative X, positive Y, negative Z directions from Sol.",
+      "x_range": [
+        -30,
+        0
+      ],
+      "y_range": [
+        0,
+        30
+      ],
+      "z_range": [
+        -30,
+        0
+      ],
+      "center_point": [
+        -15.0,
+        15.0,
+        -15.0
+      ],
+      "color": [
+        255,
+        159,
+        64
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 6,
+      "classification": "Galactic Octant",
+      "brightest_star": "Sirius",
+      "brightest_star_id": 32263,
+      "brightest_star_magnitude": -1.44,
+      "original_name": "Sirius Region"
+    },
+    {
+      "name": "Rigil Kentaurus Region",
+      "short_name": "Rigil Kentaurus",
+      "description": "Galactic region centered on Rigil Kentaurus (magnitude -0.01), the brightest star in this octant. Rimward Anti-Spinward Below - The seventh galactic octant extending in negative X, Y, and Z directions from Sol.",
+      "x_range": [
+        -30,
+        0
+      ],
+      "y_range": [
+        -30,
+        0
+      ],
+      "z_range": [
+        -30,
+        0
+      ],
+      "center_point": [
+        -15.0,
+        -15.0,
+        -15.0
+      ],
+      "color": [
+        201,
+        203,
+        207
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 7,
+      "classification": "Galactic Octant",
+      "brightest_star": "Rigil Kentaurus",
+      "brightest_star_id": 71456,
+      "brightest_star_magnitude": -0.01,
+      "original_name": "Rigil Kentaurus Region"
+    },
+    {
+      "name": "Fomalhaut Region",
+      "short_name": "Fomalhaut",
+      "description": "Galactic region centered on Fomalhaut (magnitude 1.17), the brightest star in this octant. Coreward Anti-Spinward Below - The eighth galactic octant extending in positive X, negative Y and Z directions from Sol.",
+      "x_range": [
+        0,
+        30
+      ],
+      "y_range": [
+        -30,
+        0
+      ],
+      "z_range": [
+        -30,
+        0
+      ],
+      "center_point": [
+        15.0,
+        -15.0,
+        -15.0
+      ],
+      "color": [
+        255,
+        99,
+        255
+      ],
+      "established": "Galactic Survey Era",
+      "diameter": 60,
+      "octant_number": 8,
+      "classification": "Galactic Octant",
+      "brightest_star": "Fomalhaut",
+      "brightest_star_id": 113008,
+      "brightest_star_magnitude": 1.17,
+      "original_name": "Fomalhaut Region"
+    }
+  ]
+}

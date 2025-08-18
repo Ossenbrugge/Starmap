@@ -175,25 +175,25 @@ class TradeRouteModelDB:
             all_routes = list(self.trade_routes.find())
             
             # Route types distribution
-            route_types = {}
+            route_types: dict[str, int] = {}
             for route in all_routes:
                 rt = route.get('route_type', 'Unknown')
                 route_types[rt] = route_types.get(rt, 0) + 1
             
             # Nation control analysis
-            nation_control = {}
+            nation_control: dict[str, int] = {}
             for route in all_routes:
                 nation = route['control']['controlling_nation']
                 nation_control[nation] = nation_control.get(nation, 0) + 1
             
             # Cargo type analysis
-            cargo_analysis = {}
+            cargo_analysis: dict[str, int] = {}
             for route in all_routes:
                 for cargo in route['logistics']['cargo_types']:
                     cargo_analysis[cargo] = cargo_analysis.get(cargo, 0) + 1
             
             # Hub analysis (most connected stars)
-            hub_connections = {}
+            hub_connections: dict[int, int] = {}
             for route in all_routes:
                 from_star = route['endpoints']['from']['star_id']
                 to_star = route['endpoints']['to']['star_id']

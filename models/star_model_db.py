@@ -237,7 +237,7 @@ class StarModelDB:
         distance_limit = 30.0
         
         # Build query
-        query = {
+        query: Dict[str, Any] = {
             'coordinates.dist': {'$lte': distance_limit}
         }
         

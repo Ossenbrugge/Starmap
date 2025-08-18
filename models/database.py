@@ -13,7 +13,7 @@ class Database:
     
     def __init__(self, data_path: str = 'data'):
         self.data_path = data_path
-        self._cache = {}
+        self._cache: Dict[str, Any] = {}
         self._load_all_data()
     
     def _load_all_data(self):

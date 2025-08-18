@@ -3,8 +3,8 @@ API Controller for Starmap V2
 Handles all API endpoints with clean response formatting
 """
 
-from flask import jsonify, request
-from typing import Dict, List, Any
+from flask import jsonify, request, Response
+from typing import Dict, List, Any, Tuple, Union
 from handlers import StarHandler, ExoplanetHandler, NationHandler, TradeRouteHandler
 
 class APIController:
@@ -19,7 +19,7 @@ class APIController:
         self.nation_handler = NationHandler()
         self.trade_route_handler = TradeRouteHandler()
     
-    def _success_response(self, data: Any, message: str = None) -> Dict:
+    def _success_response(self, data: Any, message: str = None) -> Response:
         """Create standardized success response"""
         response = {
             'success': True,
@@ -33,7 +33,7 @@ class APIController:
         json_response.headers['Expires'] = '0'
         return json_response
     
-    def _error_response(self, error: str, status_code: int = 400) -> Dict:
+    def _error_response(self, error: str, status_code: int = 400) -> Tuple[Response, int]:
         """Create standardized error response"""
         return jsonify({
             'success': False,

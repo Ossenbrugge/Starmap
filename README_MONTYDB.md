@@ -1,8 +1,15 @@
-# Starmap MontyDB Migration Guide
+# Starmap MontyDB Enhanced Features Guide
+
+> **📚 Documentation Guide**  
+> - For **Quick Start and User Guide**: See [README.md](README.md)  
+> - For **Technical Architecture**: See [README_V2.md](README_V2.md)  
+> - For **MontyDB Features**: This document
 
 ## Overview
 
-This guide documents the migration of the Starmap application from CSV/JSON file-based data storage to a MontyDB embedded database system. This migration provides significant performance improvements, better data integrity, and enhanced scalability for managing stellar data.
+This guide documents the MontyDB enhanced features available in the Starmap application. MontyDB provides optional advanced database capabilities on top of the base JSON storage system, offering significant performance improvements, better data integrity, and enhanced scalability for managing stellar data.
+
+**Note**: MontyDB features are now integrated into the main `app.py` and automatically enabled when MontyDB dependencies are available. The application gracefully falls back to JSON-based storage if MontyDB is not available.
 
 ## Key Improvements
 
@@ -266,12 +273,11 @@ query = {
 
 ### Starting the Application
 ```bash
-# Use new MontyDB version
-python app_montydb.py
+# MontyDB features are automatically enabled in main app
+python app.py
 
-# Or use migration script
-./migrate_to_montydb.sh
-python app_montydb.py
+# MontyDB features will be used if available, otherwise falls back to JSON
+# Check logs for: "✅ Enhanced features initialized with MontyDB"
 ```
 
 ### Adding New Stars
@@ -360,11 +366,11 @@ with open('stars_backup.json', 'w') as f:
 ### Recovery
 ```bash
 # Restore from backup
-rm -rf ./starmap_db
-cp -r ./backup_starmap_db_20240101 ./starmap_db
+rm -rf ./data/starmap_db
+cp -r ./backup_starmap_db_20240101 ./data/starmap_db
 
-# Or re-run migration
-./migrate_to_montydb.sh
+# Or re-initialize database (will recreate from JSON files)
+python app.py  # MontyDB will auto-initialize from data/ files
 ```
 
 ## Future Enhancements

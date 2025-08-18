@@ -8,22 +8,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Comprehensive test suite with 300+ test methods
+- Comprehensive test suite with 300+ test methods organized in tests/ folder
 - Performance benchmarking and stress testing
 - CI/CD pipeline with GitHub Actions
 - Docker containerization support
 - Development environment documentation
 - Contribution guidelines and development setup
+- Integrated Flask-Login authentication with JWT support in main app.py
 
 ### Changed
 - Improved documentation structure with cross-references
 - Enhanced API error handling and validation
 - Optimized database queries and indexing
+- **BREAKING**: Merged security features from app_secure.py into main app.py
+- **BREAKING**: All API endpoints now require authentication (except public utility endpoints)
+- All test files moved to tests/ directory for better organization
 
 ### Fixed
 - Performance improvements in large dataset handling
 - Memory usage optimization
 - Database connection stability
+
+### Removed
+- app_secure.py (features merged into app.py)
 
 ## [0.1.0-alpha] - 2024-01-XX
 

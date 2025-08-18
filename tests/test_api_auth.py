@@ -7,7 +7,7 @@ Demonstrates both session-based and JWT-based authentication
 import requests
 import json
 
-BASE_URL = "http://localhost:5001"
+BASE_URL = "http://localhost:8080"
 
 def test_session_auth():
     """Test session-based authentication"""
@@ -132,7 +132,7 @@ def main():
             
     except requests.exceptions.ConnectionError:
         print("\n❌ Cannot connect to Starmap server")
-        print("   Start the server with: python app_secure.py")
+        print("   Start the server with: python app.py")
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
 

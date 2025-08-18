@@ -1,6 +1,11 @@
 # Starmap - Felgenland Saga (Technical Documentation)
 
-A comprehensive 3D interactive starmap application for the Felgenland Saga universe, built with modern Flask architecture and featuring real astronomical data enhanced with fictional political entities.
+> **📚 Documentation Guide**  
+> - For **Quick Start and User Guide**: See [README.md](README.md)  
+> - For **Technical Architecture**: This document  
+> - For **MontyDB Features**: See [README_MONTYDB.md](README_MONTYDB.md)
+
+A comprehensive 3D interactive starmap application for the Felgenland Saga universe, built with modern Flask architecture, integrated authentication, and featuring real astronomical data enhanced with fictional political entities.
 
 ## 🚀 Quick Start
 
@@ -14,20 +19,39 @@ python app.py
 
 The app will be available at `http://localhost:8080`
 
+**Authentication required**: Login with `admin` / `felgenland_secure_2025` or `starmap_admin` / `galactic_command_auth`
+
 ## 📁 Project Structure
 
 ```
 starmap/
-├── app.py                    # Main Flask application - Felgenland Saga
+├── app.py                    # Main Flask application with integrated auth
+├── auth.py                   # Authentication system (Flask-Login + JWT)
 ├── controllers/              # API controllers
 │   └── api_controller.py     # RESTful API endpoints
-├── models/                   # Data models
-│   └── database.py           # JSON-based database with caching
+├── models/                   # Data models (hybrid JSON + MontyDB)
+│   ├── database.py           # JSON-based database with caching
+│   ├── star_model_db.py      # MontyDB star model (optional)
+│   ├── nation_model_db.py    # MontyDB nation model (optional)
+│   └── ...                   # Other MontyDB models
+├── database/                 # MontyDB configuration (optional)
+│   └── config.py             # Database initialization
+├── handlers/                 # Entity management handlers
+│   ├── star_handler.py       # Star CRUD operations
+│   ├── nation_handler.py     # Nation CRUD operations
+│   └── ...                   # Other entity handlers
 ├── static/                   # Frontend assets
 │   ├── css/starmap.css       # Space-themed styles
-│   └── js/starmap.js         # 3D visualization JavaScript
+│   └── js/                   # 3D visualization JavaScript
+│       ├── starmap.js        # Plotly.js version
+│       └── starmap-threejs.js # Three.js version
 ├── templates/                # HTML templates
-│   └── starmap.html          # Main starmap interface
+│   ├── starmap.html          # Main starmap interface
+│   └── login.html            # Authentication interface
+├── tests/                    # Test suite (organized)
+│   ├── test_api_auth.py      # Authentication tests
+│   ├── test_performance.py   # Performance tests
+│   └── ...                   # Other test files
 ├── data/                     # All data files (consolidated)
 │   ├── stars.json            # 24,676 real stars from Gaia/Hipparcos
 │   ├── nations.json          # 5 political nations with territories
@@ -35,8 +59,9 @@ starmap/
 │   ├── exoplanets.json       # 425 real exoplanets (NASA archive)
 │   ├── fictional_stars.csv   # 1 fictional star (Tiefe-Grenze Tor)
 │   ├── exoplanet_catalog_*.csv # 41 fictional planets + real data
-│   └── stellar_regions.json  # Galactic octants (30 parsec scale)
-└── _cleanup_backup/          # Legacy files (safe to delete)
+│   ├── stellar_regions.json  # Galactic octants (30 parsec scale)
+│   └── starmap.db/           # MontyDB database files (optional)
+└── backup_*/                 # Data backups from migrations
 ```
 
 ## ✨ Core Features
@@ -48,18 +73,21 @@ starmap/
 - **Enhanced planetary systems** for major political capitals
 
 ### Interactive Starmap
-- **3D WebGL visualization** with Plotly.js rendering
+- **3D WebGL visualization** with Three.js/Plotly.js rendering options
 - **Real-time navigation** with mouse controls
 - **Advanced filtering** by magnitude, spectral type, distance
 - **Political overlays** showing nation territories and borders
 - **Trade route visualization** with economic and military networks
 - **Stellar regions** displaying galactic octants and directions
+- **Secure access** with user authentication
 
 ### Data Management
-- **JSON-based database** with in-memory caching for performance
-- **RESTful API** with standardized response formatting
+- **Hybrid database** system (JSON + optional MontyDB)
+- **RESTful API** with authentication and standardized responses
 - **Real vs fictional classification** for all astronomical objects
 - **Search functionality** with fuzzy matching algorithms
+- **CRUD operations** for fictional entities with proper validation
+- **Performance caching** for frequently accessed data
 
 ## 🏛️ Political Nations
 
@@ -98,14 +126,25 @@ starmap/
 
 ## 🔌 API Architecture
 
-### Core Endpoints
+### Protected Endpoints (Require Authentication)
 - `GET /api/stars` - Filtered star data with political associations
 - `GET /api/star/{id}` - Detailed star info including planets
 - `GET /api/nations` - Political entities with territories and capitals
 - `GET /api/trade-routes` - Economic and military route networks
-- `GET /api/fictional-exoplanets` - Enhanced planetary systems
-- `GET /api/stellar-regions` - Galactic octants and regions
 - `GET /api/search` - Star search with fuzzy matching
+- `POST /api/fictional/*` - CRUD operations for fictional entities
+
+### Public Endpoints
+- `GET /api/fictional-exoplanets` - Enhanced planetary systems
+- `GET /api/exoplanets` - Real exoplanet data
+- `GET /api/stellar-regions` - Galactic octants and regions
+- `GET /api/galactic-directions` - Navigation references
+- `GET /api/stats` - Basic database statistics
+
+### Authentication Endpoints
+- `POST /login` - User login with session management
+- `GET /logout` - User logout
+- `POST /api/auth/token` - JWT token generation for API access
 
 ### Response Format
 ```json
@@ -156,8 +195,16 @@ starmap/
 
 ## 🧹 Development History
 
-### Cleanup Summary
-This version represents a major consolidation:
+### Latest Updates (v0.0.1+)
+This version represents a major consolidation and security enhancement:
+- ✅ **Integrated authentication** with Flask-Login and JWT support
+- ✅ **Merged security features** from separate secure version
+- ✅ **Organized test suite** in dedicated `tests/` directory
+- ✅ **Enhanced API protection** with authentication requirements
+- ✅ **Hybrid database support** with optional MontyDB features
+- ✅ **Updated documentation** for current architecture
+
+### Previous Cleanup Summary
 - ✅ **Removed legacy V1 architecture** and duplicate files
 - ✅ **Consolidated all data** to single `/data` directory
 - ✅ **Streamlined to single Flask app** with clean MVC pattern
@@ -167,12 +214,13 @@ This version represents a major consolidation:
 - ✅ **Fixed real vs fictional classification** for all astronomical objects
 
 ### Current State
-- **Single application** with no legacy dependencies
-- **Clean codebase** following modern Python/Flask patterns
+- **Single unified application** with integrated security
+- **Clean, secure codebase** following modern Python/Flask patterns
 - **Complete universe data** for Felgenland Saga setting
-- **Production-ready** with error handling and optimization
+- **Production-ready** with authentication, error handling, and optimization
+- **Organized test suite** for quality assurance
 
-Legacy files are safely stored in `_cleanup_backup/` and can be deleted once satisfied with the cleanup.
+Legacy files and backups are preserved for rollback if needed.
 
 ---
 

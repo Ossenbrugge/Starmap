@@ -34,12 +34,19 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
 - **Real-time Data Validation** - Ensures data integrity and cross-references
 - **Automatic Coordinate Calculation** - 3D positioning from astronomical data
 - **Dynamic Cache Management** - Instant updates when adding new content
-- **RESTful API** - Complete CRUD operations for all entity types
+- **RESTful API** - Complete CRUD operations for all entity types (requires authentication)
+
+### Security & Authentication
+- **Flask-Login Integration** - Session-based authentication for web interface
+- **JWT Token Support** - API access tokens for external applications
+- **Protected API Endpoints** - All data modification endpoints require authentication
+- **User Management** - Built-in user system with configurable credentials
 
 ### Visualization & Interface
 - **Interactive 3D Visualization** with political overlays
 - **Real-time Search** and advanced filtering
 - **Modern Responsive UI** with space-themed design
+- **Secure Login Interface** - Space-themed authentication portal
 
 ## 🚀 Quick Start
 
@@ -55,10 +62,21 @@ The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, 
 
 3. **Open your browser to:** http://localhost:8080
 
+4. **Login with default credentials:**
+   - Username: `admin` / Password: `felgenland_secure_2025`
+   - Username: `starmap_admin` / Password: `galactic_command_auth`
+   
+   **⚠️ Change these passwords in production!**
+
 ---
 
 ## 📚 Documentation Navigation
 
+### Core Documentation
+- **[README_V2.md](README_V2.md)** - Technical architecture and implementation details
+- **[README_MONTYDB.md](README_MONTYDB.md)** - MontyDB enhanced features guide
+
+### Detailed Guides
 - **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation with examples
 - **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Detailed handler implementation guide
 - **[DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)** - Data management workflows and comparison
@@ -171,31 +189,64 @@ See **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** for complete hand
 
 ## 🛠️ Architecture
 
-- **Backend**: Flask with clean MVC architecture
-- **Database**: JSON-based with in-memory caching for performance
-- **Frontend**: Modern JavaScript with Plotly.js for 3D visualization
+- **Backend**: Flask with clean MVC architecture and integrated authentication
+- **Database**: Hybrid system with JSON-based storage + optional MontyDB for enhanced features
+- **Frontend**: Modern JavaScript with Three.js for 3D visualization
 - **UI**: Bootstrap 5 with custom space-themed styling
+- **Security**: Flask-Login with JWT token support for API access
 
 ```
 starmap/
-├── app.py                    # Main Flask application
+├── app.py                    # Main Flask application with integrated auth
+├── auth.py                   # Authentication system (Flask-Login + JWT)
 ├── controllers/              # API controllers
-├── models/                   # Data models and database
+├── models/                   # Data models and database layers
+├── handlers/                 # Entity management handlers
+├── database/                 # MontyDB configuration (optional)
 ├── static/                   # Frontend assets (CSS, JS)
-├── templates/                # HTML templates
+├── templates/                # HTML templates (starmap + login)
+├── tests/                    # Organized test suite
 └── data/                     # All data files (stars, nations, planets)
 ```
 
 ## 🔌 API Endpoints
 
+### Authentication Required
 - `GET /api/stars` - Get filtered star data
 - `GET /api/star/{id}` - Get detailed star information with planets
 - `GET /api/nations` - Get all political nations
 - `GET /api/trade-routes` - Get trade and military routes
 - `GET /api/search` - Search stars by name
+- `POST /api/fictional/stars` - Add fictional stars
+- `POST /api/fictional/nations` - Add fictional nations
+- `POST /api/fictional/trade-routes` - Add trade routes
+- `GET /api/network-analysis` - Get trade network analysis
+
+### Public Access
 - `GET /api/fictional-exoplanets` - Get fictional planetary systems
+- `GET /api/exoplanets` - Get real exoplanet data
 - `GET /api/stellar-regions` - Get galactic regions
-- `GET /api/stats` - Get database statistics
+- `GET /api/galactic-directions` - Get navigation references
+- `GET /api/stats` - Get basic database statistics
+
+### Authentication
+- `POST /login` - Session-based login
+- `POST /api/auth/token` - Generate JWT tokens
+- `GET /logout` - Logout
+
+## 🧪 Testing
+
+Run the test suite from the tests directory:
+
+```bash
+# Run authentication tests (requires server to be running)
+python tests/test_api_auth.py
+
+# Run all tests
+python -m pytest tests/
+```
+
+**Note**: Authentication tests require the server to be running on localhost:8080
 
 ## 🎮 Controls
 
@@ -230,6 +281,14 @@ The starmap covers a **30 parsec sphere** around Sol, representing the practical
 - **Efficient spatial filtering** for large star catalogs
 - **Optimized search algorithms** with fuzzy matching
 - **Responsive design** for desktop and mobile devices
+
+## 📋 Current Status
+
+**Version**: v0.0.1+  
+**Status**: Development with integrated security  
+**Features**: ✅ Authentication, ✅ 3D Visualization, ✅ API Protection, ✅ Test Suite  
+**Database**: Hybrid JSON + optional MontyDB  
+**Security**: Flask-Login + JWT tokens  
 
 ---
 

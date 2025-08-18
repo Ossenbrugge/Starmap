@@ -54,9 +54,7 @@ jobs:
         mypy app.py auth.py --ignore-missing-imports --no-strict-optional --explicit-package-bases
     
     - name: Run unit tests with pytest
-      run: |
-        export PYTHONPATH="$PWD:$PYTHONPATH"
-        python tests/run_tests.py coverage --verbose
+      run: python tests/run_tests.py coverage --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
     

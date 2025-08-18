@@ -29,16 +29,12 @@ jobs:
         ./migrate_to_montydb.sh
     
     - name: Run full test suite
-      run: |
-        export PYTHONPATH="$PWD:$PYTHONPATH"
-        python tests/run_tests.py all --verbose
+      run: python tests/run_tests.py all --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
     
     - name: Run performance tests
-      run: |
-        export PYTHONPATH="$PWD:$PYTHONPATH"
-        python tests/run_tests.py performance --verbose
+      run: python tests/run_tests.py performance --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
 
@@ -158,6 +154,6 @@ jobs:
     steps:
     - name: Notify success
       run: |
-        echo "✅ Release ${{ github.ref_name }} completed successfully!"
-        echo "📦 GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-        echo "🐳 Docker Image: starmap/starmap:${{ github.ref_name }}"
+        echo "[SUCCESS] Release ${{ github.ref_name }} completed successfully!"
+        echo "[RELEASE] GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+        echo "[DOCKER] Docker Image: starmap/starmap:${{ github.ref_name }}"

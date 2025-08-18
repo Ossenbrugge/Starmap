@@ -57,17 +57,13 @@ jobs:
       continue-on-error: true
     
     - name: Run unit tests
-      run: |
-        export PYTHONPATH="$PWD:$PYTHONPATH"
-        python tests/run_tests.py unit --verbose
+      run: python tests/run_tests.py unit --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
     
     - name: Run tests with coverage
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
-      run: |
-        export PYTHONPATH="$PWD:$PYTHONPATH"
-        python tests/run_tests.py coverage --verbose
+      run: python tests/run_tests.py coverage --verbose
       env:
         PYTHONPATH: ${{ github.workspace }}
     

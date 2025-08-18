@@ -6,7 +6,7 @@ Flask==3.0.0
 Werkzeug==3.0.1
 montydb==2.5.3
 Flask-Login==0.6.3
-PyJWT==2.10.1
+PyJWT==2.9.0
 pandas>=2.0.0
 
 # Testing framework and utilities
@@ -34,8 +34,8 @@ safety>=2.3.0
 coverage[toml]>=7.0.0
 codecov>=2.1.0
 
-# Documentation testing
-pytest-doctest>=0.2.0
+# Documentation testing (built into pytest)
+# pytest-doctest>=0.2.0  # Not needed - doctest is built into pytest
 
 # Environment management
 python-dotenv>=1.0.0
@@ -45,11 +45,11 @@ httpx>=0.24.0
 responses>=0.23.0
 
 # Database testing utilities
-pytest-postgresql>=4.1.0 ; platform_system != "Windows"
-pytest-sqlite>=0.1.0
+# pytest-postgresql>=4.1.0 ; platform_system != "Windows"  # Not needed for MontyDB
+# pytest-sqlite>=0.1.0  # Package doesn't exist, using built-in sqlite3
 
 # Parallel testing
-pytest-parallel>=0.1.0
+# pytest-parallel>=0.1.0  # Use pytest-xdist instead
 
 # Test reporting
 pytest-html>=3.1.0

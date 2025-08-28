@@ -52,9 +52,8 @@ class RepositoryCache:
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics"""
         total_items = len(self.cache)
-        expired_items = sum(1 for item in self.cache.values()
-                          if time.time() - item['timestamp'] >= item['ttl']
-                          else 0)
+        expired_items = sum(1 if time.time() - item['timestamp'] >= item['ttl'] else 0
+                          for item in self.cache.values())
 
         # Clean up expired items
         for key in list(self.cache.keys()):

@@ -140,6 +140,9 @@ debug_output/
 profiling/
 benchmarks/
 
+# Legacy Code Directory
+legacy/
+
 # Temporary Files Created by Scripts
 setup_log.txt
 migration_log.txt

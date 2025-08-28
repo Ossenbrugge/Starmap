@@ -1,20 +1,54 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="6.786" timestamp="2025-08-18T13:28:06.711155-05:00" hostname="EricsMacStudio.localdomain"><testcase classname="tests.test_api_auth" name="test_session_auth" time="0.063" /><testcase classname="tests.test_api_auth" name="test_jwt_auth" time="0.007"><failure message="requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)">venv/lib/python3.12/site-packages/requests/models.py:976: in json
-    return complexjson.loads(self.text, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-../../../.pyenv/versions/3.12.10/lib/python3.12/json/__init__.py:346: in loads
-    return _default_decoder.decode(s)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-../../../.pyenv/versions/3.12.10/lib/python3.12/json/decoder.py:338: in decode
-    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-../../../.pyenv/versions/3.12.10/lib/python3.12/json/decoder.py:356: in raw_decode
-    raise JSONDecodeError("Expecting value", s, err.value) from None
-E   json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="5" time="6.673" timestamp="2025-08-28T16:21:55.368535-05:00" hostname="EricsMacStudio.localdomain"><testcase classname="tests.test_api_auth" name="test_session_auth" time="0.005"><failure message="requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/stars?count_limit=1 (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x1125f06b0&gt;: Failed to establish a new connection: [Errno 61] Connection refused'))">../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connection.py:198: in _new_conn
+    sock = connection.create_connection(
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/util/connection.py:85: in create_connection
+    raise err
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/util/connection.py:73: in create_connection
+    sock.connect(sa)
+E   ConnectionRefusedError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connectionpool.py:787: in urlopen
+    response = self._make_request(
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connectionpool.py:493: in _make_request
+    conn.request(
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connection.py:445: in request
+    self.endheaders()
+../../../.pyenv/versions/3.12.10/lib/python3.12/http/client.py:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+../../../.pyenv/versions/3.12.10/lib/python3.12/http/client.py:1093: in _send_output
+    self.send(msg)
+../../../.pyenv/versions/3.12.10/lib/python3.12/http/client.py:1037: in send
+    self.connect()
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connection.py:276: in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connection.py:213: in _new_conn
+    raise NewConnectionError(
+E   urllib3.exceptions.NewConnectionError: &lt;urllib3.connection.HTTPConnection object at 0x1125f06b0&gt;: Failed to establish a new connection: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/requests/adapters.py:667: in send
+    resp = conn.urlopen(
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/connectionpool.py:841: in urlopen
+    retries = retries.increment(
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/urllib3/util/retry.py:519: in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/stars?count_limit=1 (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x1125f06b0&gt;: Failed to establish a new connection: [Errno 61] Connection refused'))
 
 During handling of the above exception, another exception occurred:
-tests/test_api_auth.py:67: in test_jwt_auth
-    token_data = response.json()
-                 ^^^^^^^^^^^^^^^
-venv/lib/python3.12/site-packages/requests/models.py:980: in json
-    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
-E   requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)</failure></testcase><testcase classname="tests.test_exoplanets" name="test_exoplanets" time="0.018" /><testcase classname="tests.test_performance" name="test_montydb_performance" time="5.890" /><testcase classname="tests.test_performance" name="test_json_performance" time="0.668" /></testsuite></testsuites>
+tests/test_api_auth.py:22: in test_session_auth
+    response = session.get(f"{BASE_URL}/api/stars?count_limit=1")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/requests/sessions.py:602: in get
+    return self.request("GET", url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/requests/sessions.py:589: in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/requests/sessions.py:703: in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../.pyenv/versions/3.12.10/lib/python3.12/site-packages/requests/adapters.py:700: in send
+    raise ConnectionError(e, request=request)
+E   requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/stars?count_limit=1 (Caused by NewConnectionError('&lt;urllib3.connection.HTTPConnection object at 0x1125f06b0&gt;: Failed to establish a new connection: [Errno 61] Connection refused'))</failure></testcase><testcase classname="tests.test_api_auth" name="test_jwt_auth" time="0.002" /><testcase classname="tests.test_exoplanets" name="test_exoplanets" time="0.029" /><testcase classname="tests.test_performance" name="test_montydb_performance" time="5.781" /><testcase classname="tests.test_performance" name="test_json_performance" time="0.737" /></testsuite></testsuites>

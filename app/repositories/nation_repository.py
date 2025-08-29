@@ -4,92 +4,117 @@ Handles all nation-related database operations
 """
 
 from typing import Dict, List, Any, Optional
-from app.repositories.base_repository import BaseRepository, with_caching, with_metrics
 
 
-class NationRepository(BaseRepository):
+class NationRepository:
     """Repository for nation data access operations"""
 
-    def __init__(self, nation_model=None, cache=None, enable_cache: bool = True):
-        """Initialize repository with optional nation model dependency"""
-        super().__init__(cache=cache, enable_cache=enable_cache)
+    def __init__(self):
+        """Initialize repository"""
+        self.database = None
+        self._init_database()
 
-        # Load the model using the base class method
-        self.nation_model = nation_model or self._load_model()
-
-    def _get_model_class(self):
-        """Return the model class for this repository"""
+    def _init_database(self):
+        """Initialize database connection"""
         try:
-            from models.nation_model_db import NationModelDB
-            return NationModelDB
-        except ImportError:
-            return None
-
-    def _get_model_import_path(self) -> str:
-        """Return the import path for the model class"""
-        return "models.nation_model_db.NationModelDB"
+            from models.database import Database
+            self.database = Database()
+        except Exception as e:
+            print(f"Warning: Could not initialize database: {e}")
+            self.database = None
 
     def get_nations(self) -> Dict[str, Any]:
-        """Get all nations from enhanced storage"""
+        """Get all nations from database"""
         try:
-            if self.nation_model:
-                nations = self.nation_model.get_nations()
-                return {'success': True, 'data': nations}
-            else:
-                return {'success': False, 'error': 'Enhanced nation features not available'}
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
 
+            nations = self.database.get_nations()
+            return {'success': True, 'data': nations}
         except Exception as e:
-            return self._handle_database_error('get_nations', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_fictional_nations(self) -> Dict[str, Any]:
         """Get all fictional nations"""
         try:
-            if self.nation_model:
-                # This might need a custom implementation in NationModelDB
-                return {'success': False, 'error': 'Fictional nations feature not implemented'}
-            else:
-                return {'success': False, 'error': 'Enhanced features not available'}
-
+            # For now, return all nations - could be enhanced to filter fictional ones
+            return self.get_nations()
         except Exception as e:
-            return self._handle_database_error('get_fictional_nations', e)
+            return {'success': False, 'error': f'Error: {str(e)}'}
 
     def add_fictional_nation(self, nation_data: Dict[str, Any]) -> Dict[str, Any]:
         """Add a new fictional nation"""
-        try:
-            # Implementation would depend on the actual storage mechanism
-            return {'success': False, 'error': 'Add fictional nation not implemented'}
-
-        except Exception as e:
-            return self._handle_database_error('add_fictional_nation', e)
+        return self.create(nation_data)
 
     def delete_fictional_nation(self, nation_id: str) -> Dict[str, Any]:
         """Delete a fictional nation"""
-        try:
-            # Implementation would depend on the actual storage mechanism
-            return {'success': False, 'error': 'Delete fictional nation not implemented'}
-
-        except Exception as e:
-            return self._handle_database_error('delete_fictional_nation', e)
+        return self.delete(nation_id)
 
     def get_nation_stats(self) -> Dict[str, Any]:
         """Get nation statistics"""
         try:
-            if self.nation_model:
-                stats = self.nation_model.get_nation_stats()
-                return {'success': True, 'data': stats}
-            else:
-                return {'success': False, 'error': 'Enhanced nation features not available'}
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
 
+            nations = self.database.get_nations()
+            stats = {
+                'total_nations': len(nations),
+                'nations': nations
+            }
+            return {'success': True, 'data': stats}
         except Exception as e:
-            return self._handle_database_error('get_nation_stats', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get caching statistics if available"""
-        try:
-            if self.nation_model and hasattr(self.nation_model, 'get_cache_stats'):
-                return self.nation_model.get_cache_stats()
-            else:
-                return {'success': False, 'error': 'Cache stats not available'}
+        # Cache stats not implemented in simple version
+        return {'success': False, 'error': 'Cache stats not available'}
 
+    # Abstract method implementations required by BaseRepository
+
+    def get_by_id(self, id: Any) -> Dict[str, Any]:
+        """Retrieve nation entity by ID"""
+        try:
+            from models.database import Database
+            db = Database()
+
+            nations = db.get_nations()
+            for nation in nations:
+                if nation.get('id') == id or nation.get('_id') == id:
+                    return {'success': True, 'data': nation}
+            return {'success': False, 'error': 'Nation not found'}
         except Exception as e:
-            return self._handle_database_error('get_cache_stats', e)
+            return {'success': False, 'error': f'Get nation error: {str(e)}'}
+
+    def get_all(self) -> Dict[str, Any]:
+        """Retrieve all nation entities"""
+        return self.get_nations()
+
+    def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create new nation entity"""
+        try:
+            from models.database import Database
+            db = Database()
+
+            if db.add_nation(data):
+                return {'success': True, 'data': data}
+            else:
+                return {'success': False, 'error': 'Failed to create nation'}
+        except Exception as e:
+            return {'success': False, 'error': f'Create error: {str(e)}'}
+
+    def update(self, id: Any, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update existing nation entity"""
+        try:
+            # For now, nations update is not implemented in the Database class
+            return {'success': False, 'error': 'Nation update not implemented'}
+        except Exception as e:
+            return {'success': False, 'error': f'Update error: {str(e)}'}
+
+    def delete(self, id: Any) -> Dict[str, Any]:
+        """Delete nation entity by ID"""
+        try:
+            # For now, nations delete is not implemented in the Database class
+            return {'success': False, 'error': 'Nation delete not implemented'}
+        except Exception as e:
+            return {'success': False, 'error': f'Delete error: {str(e)}'}

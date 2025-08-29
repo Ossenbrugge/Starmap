@@ -50,6 +50,19 @@ def error_response(
     _add_standard_headers(response)
     return response
 
+def create_response(
+    data: Any = None,
+    success: bool = True,
+    message: Optional[str] = None,
+    error: Optional[str] = None,
+    status_code: int = 200
+) -> Response:
+    """Create standardized response (backward compatibility function)"""
+    if success:
+        return success_response(data, message, status_code=status_code)
+    else:
+        return error_response(error or 'An error occurred', status_code)
+
 def _add_standard_headers(response: Response) -> None:
     """Add standard headers to all responses"""
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'

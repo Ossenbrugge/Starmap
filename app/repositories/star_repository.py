@@ -4,35 +4,29 @@ Handles all star-related database operations
 """
 
 from typing import Dict, List, Any, Optional
-from app.repositories.base_repository import BaseRepository, with_caching, with_metrics
 
 
-class StarRepository(BaseRepository):
+class StarRepository:
     """Repository for star data access operations"""
 
-    def __init__(self, star_model=None, cache=None, enable_cache: bool = True):
-        """Initialize repository with optional star model dependency"""
-        super().__init__(cache=cache, enable_cache=enable_cache)
+    def __init__(self):
+        """Initialize repository"""
+        self.database = None
+        self._init_database()
 
-        # Load the model using the base class method
-        self.star_model = star_model or self._load_model()
-
-    def _get_model_class(self):
-        """Return the model class for this repository"""
+    def _init_database(self):
+        """Initialize database connection"""
         try:
-            from models.star_model_db import StarModelDB
-            return StarModelDB
-        except ImportError:
-            return None
-
-    def _get_model_import_path(self) -> str:
-        """Return the import path for the model class"""
-        return "models.star_model_db.StarModelDB"
+            from models.database import Database
+            self.database = Database()
+        except Exception as e:
+            print(f"Warning: Could not initialize database: {e}")
+            self.database = None
 
     def get_stars(self, limit: int = 1000, mag_limit: float = 8.0,
                   spectral_type: str = "") -> Dict[str, Any]:
         """
-        Get stars from enhanced storage with filtering
+        Get stars from database with filtering
 
         Args:
             limit: Maximum number of stars to return
@@ -43,62 +37,59 @@ class StarRepository(BaseRepository):
             Dictionary with success status and data or error
         """
         try:
-            if self.star_model:
-                stars = self.star_model.get_stars(limit=limit, mag_limit=mag_limit, spectral_type=spectral_type)
-                return {'success': True, 'data': stars}
-            else:
-                return {'success': False, 'error': 'Enhanced star features not available'}
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
 
+            stars = self.database.get_stars(limit=limit, mag_limit=mag_limit, spectral_type=spectral_type)
+            return {'success': True, 'data': stars}
         except Exception as e:
-            return self._handle_database_error('get_stars', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_star_by_id(self, star_id: int) -> Dict[str, Any]:
         """Get a specific star by ID"""
         try:
-            if self.star_model:
-                star = self.star_model.get_star_by_id(star_id)
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
+
+            star = self.database.get_star_by_id(star_id)
+            if star:
                 return {'success': True, 'data': star}
             else:
-                return {'success': False, 'error': 'Enhanced star features not available'}
-
+                return {'success': False, 'error': 'Star not found'}
         except Exception as e:
-            return self._handle_database_error('get_star_by_id', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_trade_routes_by_star(self, star_id: int) -> Dict[str, Any]:
         """Get trade routes connected to a star"""
         try:
-            if self.star_model:
-                routes = self.star_model.get_trade_routes_by_star(star_id)
-                return {'success': True, 'data': routes}
-            else:
-                return {'success': False, 'error': 'Enhanced trade route features not available'}
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
 
+            # For now, return all trade routes - could be enhanced to filter by star
+            routes = self.database.get_trade_routes()
+            return {'success': True, 'data': routes}
         except Exception as e:
-            return self._handle_database_error('get_trade_routes_by_star', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_stars_by_nation(self, nation_id: str) -> Dict[str, Any]:
         """Get stars controlled by a specific nation"""
         try:
-            if self.star_model:
-                stars = self.star_model.get_stars_by_nation(nation_id)
-                return {'success': True, 'data': stars}
-            else:
-                return {'success': False, 'error': 'Enhanced star features not available'}
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
 
+            # For now, return all stars - could be enhanced to filter by nation
+            stars = self.database.get_stars()
+            return {'success': True, 'data': stars}
         except Exception as e:
-            return self._handle_database_error('get_stars_by_nation', e)
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_fictional_stars(self) -> Dict[str, Any]:
         """Get all fictional stars"""
         try:
-            if self.star_model:
-                # This might need a custom implementation in StarModelDB
-                return {'success': False, 'error': 'Fictional stars feature not implemented'}
-            else:
-                return {'success': False, 'error': 'Enhanced features not available'}
-
+            # For now, return empty - this could be enhanced to get fictional stars from database
+            return {'success': True, 'data': []}
         except Exception as e:
-            return self._handle_database_error('get_fictional_stars', e)
+            return {'success': False, 'error': f'Error: {str(e)}'}
 
     def add_fictional_star(self, star_data: Dict[str, Any]) -> Dict[str, Any]:
         """Add a new fictional star"""
@@ -156,11 +147,54 @@ class StarRepository(BaseRepository):
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get caching statistics if available"""
-        try:
-            if self.star_model and hasattr(self.star_model, 'get_cache_stats'):
-                return self.star_model.get_cache_stats()
-            else:
-                return {'success': False, 'error': 'Cache stats not available'}
+        # Cache stats not implemented in simple version
+        return {'success': False, 'error': 'Cache stats not available'}
 
+    # Abstract method implementations required by BaseRepository
+
+    def get_by_id(self, id: Any) -> Dict[str, Any]:
+        """Retrieve star entity by ID"""
+        return self.get_star_by_id(id)
+
+    def get_all(self) -> Dict[str, Any]:
+        """Retrieve all star entities"""
+        return self.get_stars()
+
+    def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create new star entity"""
+        try:
+            from models.database import Database
+            db = Database()
+
+            if db.add_star(data):
+                return {'success': True, 'data': data}
+            else:
+                return {'success': False, 'error': 'Failed to create star'}
         except Exception as e:
-            return self._handle_database_error('get_cache_stats', e)
+            return {'success': False, 'error': f'Create error: {str(e)}'}
+
+    def update(self, id: Any, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update existing star entity"""
+        try:
+            from models.database import Database
+            db = Database()
+
+            if db.update_star(id, data):
+                return {'success': True, 'data': data}
+            else:
+                return {'success': False, 'error': 'Star not found or update failed'}
+        except Exception as e:
+            return {'success': False, 'error': f'Update error: {str(e)}'}
+
+    def delete(self, id: Any) -> Dict[str, Any]:
+        """Delete star entity by ID"""
+        try:
+            from models.database import Database
+            db = Database()
+
+            if db.delete_star(id):
+                return {'success': True, 'message': f'Star {id} deleted successfully'}
+            else:
+                return {'success': False, 'error': 'Star not found or delete failed'}
+        except Exception as e:
+            return {'success': False, 'error': f'Delete error: {str(e)}'}

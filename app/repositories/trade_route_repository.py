@@ -4,14 +4,25 @@ Handles all trade route-related database operations
 """
 
 from typing import Dict, List, Any, Optional
-from app.repositories.base_repository import BaseRepository, with_caching, with_metrics
+from app.repositories.base_repository import AbstractBaseRepository
+
+# Import trade route model and availability check
+try:
+    from models.trade_route_model_db import TradeRouteModelDB
+    TRADE_ROUTE_MODEL_AVAILABLE = True
+    print("✅ TradeRouteModelDB imported successfully")
+except ImportError as e:
+    print(f"⚠️ TradeRouteModelDB unavailable: {e}")
+    TradeRouteModelDB = None
+    TRADE_ROUTE_MODEL_AVAILABLE = False
 
 
-class TradeRouteRepository(BaseRepository):
+class TradeRouteRepository(AbstractBaseRepository):
     """Repository for trade route data access operations"""
 
-    def __init__(self, trade_route_model: Optional[TradeRouteModelDB] = None):
+    def __init__(self, trade_route_model=None):
         """Initialize repository with optional trade route model dependency"""
+        super().__init__()
         self.trade_route_model = trade_route_model
         if trade_route_model is None and TRADE_ROUTE_MODEL_AVAILABLE:
             self.trade_route_model = TradeRouteModelDB()
@@ -80,3 +91,65 @@ class TradeRouteRepository(BaseRepository):
 
         except Exception as e:
             return {'success': False, 'error': f'Error getting cache stats: {str(e)}'}
+
+    # Required abstract methods from AbstractBaseRepository
+
+    def get_by_id(self, id: Any) -> Dict[str, Any]:
+        """Retrieve trade route by ID"""
+        try:
+            if self.trade_route_model and TRADE_ROUTE_MODEL_AVAILABLE:
+                route = self.trade_route_model.get_route_by_id(str(id))
+                if route:
+                    return {'success': True, 'data': route}
+                else:
+                    return {'success': False, 'error': f'Trade route {id} not found'}
+            else:
+                return {'success': False, 'error': 'Enhanced trade route features not available'}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
+
+    def get_all(self) -> Dict[str, Any]:
+        """Retrieve all trade routes"""
+        return self.get_trade_routes()
+
+    def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create new trade route"""
+        try:
+            if self.trade_route_model and TRADE_ROUTE_MODEL_AVAILABLE:
+                success = self.trade_route_model.add_route(data)
+                if success:
+                    return {'success': True, 'data': data}
+                else:
+                    return {'success': False, 'error': 'Failed to create trade route'}
+            else:
+                return {'success': False, 'error': 'Enhanced trade route features not available'}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
+
+    def update(self, id: Any, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Update existing trade route"""
+        try:
+            if self.trade_route_model and TRADE_ROUTE_MODEL_AVAILABLE:
+                success = self.trade_route_model.update_route(str(id), data)
+                if success:
+                    return {'success': True, 'data': data}
+                else:
+                    return {'success': False, 'error': 'Failed to update trade route'}
+            else:
+                return {'success': False, 'error': 'Enhanced trade route features not available'}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
+
+    def delete(self, id: Any) -> Dict[str, Any]:
+        """Delete trade route by ID"""
+        try:
+            if self.trade_route_model and TRADE_ROUTE_MODEL_AVAILABLE:
+                success = self.trade_route_model.delete_route(str(id))
+                if success:
+                    return {'success': True, 'message': f'Trade route {id} deleted'}
+                else:
+                    return {'success': False, 'error': 'Failed to delete trade route'}
+            else:
+                return {'success': False, 'error': 'Enhanced trade route features not available'}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}

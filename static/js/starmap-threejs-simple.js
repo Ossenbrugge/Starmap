@@ -10,6 +10,7 @@ class ThreeJSStarmap {
         this.starField = null;
         this.currentStars = [];
         this.animationId = null;
+        this.keys = {};
 
         if (typeof THREE === 'undefined') {
             console.error('❌ Three.js not loaded');
@@ -78,7 +79,7 @@ class ThreeJSStarmap {
     }
 
     setupRenderer() {
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
         this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
         this.renderer.domElement.style.position = 'absolute';
         this.renderer.domElement.style.top = '0';
@@ -345,6 +346,81 @@ class ThreeJSStarmap {
                 }
             });
         }
+
+        this.setupKeyboardNavigation();
+    }
+
+    setupKeyboardNavigation() {
+        document.addEventListener('keydown', (e) => {
+            // Ignore WASD when the user is typing in an input or textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            this.keys[e.code] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            this.keys[e.code] = false;
+        });
+    }
+
+    processKeyboardInput() {
+        if (!this.camera || !this.controls) return;
+
+        // Speed scales with distance from target so it feels natural at any zoom level
+        const dist  = this.camera.position.distanceTo(this.controls.target);
+        const speed = dist * 0.02;
+
+        const forward = new THREE.Vector3()
+            .subVectors(this.controls.target, this.camera.position)
+            .normalize();
+        const worldUp = new THREE.Vector3(0, 1, 0);
+        const right   = new THREE.Vector3().crossVectors(forward, worldUp).normalize();
+        const up      = new THREE.Vector3().crossVectors(right, forward).normalize();
+
+        let moved = false;
+
+        if (this.keys['KeyW'] || this.keys['ArrowUp']) {
+            this.camera.position.addScaledVector(forward, speed);
+            this.controls.target.addScaledVector(forward, speed);
+            moved = true;
+        }
+        if (this.keys['KeyS'] || this.keys['ArrowDown']) {
+            this.camera.position.addScaledVector(forward, -speed);
+            this.controls.target.addScaledVector(forward, -speed);
+            moved = true;
+        }
+        if (this.keys['KeyA'] || this.keys['ArrowLeft']) {
+            this.camera.position.addScaledVector(right, -speed);
+            this.controls.target.addScaledVector(right, -speed);
+            moved = true;
+        }
+        if (this.keys['KeyD'] || this.keys['ArrowRight']) {
+            this.camera.position.addScaledVector(right, speed);
+            this.controls.target.addScaledVector(right, speed);
+            moved = true;
+        }
+        if (this.keys['KeyQ']) {
+            this.camera.position.addScaledVector(up, speed);
+            this.controls.target.addScaledVector(up, speed);
+            moved = true;
+        }
+        if (this.keys['KeyE']) {
+            this.camera.position.addScaledVector(up, -speed);
+            this.controls.target.addScaledVector(up, -speed);
+            moved = true;
+        }
+
+        if (moved && this.controls.update) this.controls.update();
+    }
+
+    takeScreenshot() {
+        // Force a render so the buffer is current, then export
+        this.render();
+        const dataURL = this.renderer.domElement.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = `starmap-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     onMouseClick(event) {
@@ -956,6 +1032,8 @@ class ThreeJSStarmap {
 
     animate() {
         this.animationId = requestAnimationFrame(() => this.animate());
+
+        this.processKeyboardInput();
 
         if (this.controls && this.controls.update) {
             this.controls.update();

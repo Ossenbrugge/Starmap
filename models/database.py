@@ -26,7 +26,8 @@ class Database:
     """
 
     def __init__(self, data_dir: str = "data"):
-        db_path = os.path.join(data_dir, "starmap.sqlite")
+        # Always use the path anchored to this file so the app can be started from any CWD.
+        db_path = _DB_PATH
         if not os.path.exists(db_path):
             raise FileNotFoundError(
                 f"SQLite database not found at '{db_path}'. "
@@ -250,6 +251,29 @@ class Database:
 
     # ── Nations ───────────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _enrich_nation(nation: Dict, territories: List[Dict]) -> Dict:
+        """Add nested compatibility fields so the template and Three.js get the
+        same rich structure that nations.json originally provided."""
+        color = nation.get("color") or "#888888"
+        nation["color"] = color
+        nation["_id"] = nation["id"]
+        nation["territories"] = [t["star_id"] for t in territories]
+        # Nested fields consumed by the frontend
+        nation["appearance"] = {
+            "color": color,
+            "border_color": color,
+        }
+        nation["government"] = {
+            "type": nation.get("government_type") or "",
+        }
+        nation["capital"] = {
+            "system": nation.get("full_name", "").replace("The ", "") or nation["name"],
+            "star_id": nation.get("capital_star_id"),
+            "planet": "",
+        }
+        return nation
+
     def get_nations(self) -> List[Dict]:
         nations = self._q("SELECT * FROM nations")
         for nation in nations:
@@ -257,8 +281,7 @@ class Database:
                 "SELECT star_id FROM nation_territories WHERE nation_id = ?",
                 (nation["id"],),
             )
-            nation["territories"] = [t["star_id"] for t in territories]
-            nation["color"] = nation.get("color") or "#888888"
+            self._enrich_nation(nation, territories)
         return nations
 
     def get_nation_by_id(self, nation_id: str) -> Optional[Dict]:
@@ -268,8 +291,7 @@ class Database:
                 "SELECT star_id FROM nation_territories WHERE nation_id = ?",
                 (nation_id,),
             )
-            nation["territories"] = [t["star_id"] for t in territories]
-            nation["color"] = nation.get("color") or "#888888"
+            self._enrich_nation(nation, territories)
         return nation
 
     def add_nation(self, nation_data: Dict) -> bool:

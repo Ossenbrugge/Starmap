@@ -23,7 +23,9 @@ def get_fictional_stars() -> Dict[str, Any]:
     """Get all fictional stars - public for overlay functionality"""
     try:
         result: Dict[str, Any] = star_service.get_fictional_stars()
-        return result
+        if result.get('success'):
+            return success_response(result['data'], count=len(result['data']))
+        return error_response(result.get('error', 'Failed to retrieve fictional stars'), 500)
 
     except Exception as e:
         logger.error(f"Error getting fictional stars: {e}")

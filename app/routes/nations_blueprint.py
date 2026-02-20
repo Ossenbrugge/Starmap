@@ -24,7 +24,9 @@ def get_nations() -> Dict[str, Any]:
     """Get all nations with their basic information"""
     try:
         result: Dict[str, Any] = nation_service.get_all_nations()
-        return result
+        if result.get('success'):
+            return success_response(result['data'], count=len(result['data']))
+        return error_response(result.get('error', 'Failed to retrieve nations'), 500)
 
     except Exception as e:
         logger.error(f"Error in get_nations: {e}")

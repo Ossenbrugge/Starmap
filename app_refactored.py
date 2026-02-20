@@ -71,7 +71,12 @@ def create_app():
         return auth_manager.get_user(user_id)
 
     # Pre-load the database singleton so all services share it
-    get_database()
+    try:
+        get_database()
+    except FileNotFoundError as exc:
+        print(f"❌ Cannot start: {exc}")
+        print("Run 'python scripts/migrate_to_sqlite.py' first.")
+        raise SystemExit(1)
 
     # ── Register route layers ────────────────────────────────────────────────
     print("Initializing Clean Architecture Routes with Blueprints...")

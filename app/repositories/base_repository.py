@@ -4,7 +4,7 @@ Abstract base class for all repository implementations with proper database conn
 """
 
 import abc
-from typing import Any, Dict, List, Optional, Tuple, Type, Union, Callable
+from typing import Any, Dict, List, Optional, Callable
 from contextlib import contextmanager
 import time
 from dataclasses import dataclass

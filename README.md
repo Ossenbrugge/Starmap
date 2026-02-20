@@ -1,295 +1,217 @@
-# Starmap - Felgenland Saga
+# Starmap — Felgenland Saga
 
-A 3D interactive starmap for the **Felgenland Saga** universe, featuring real astronomical data enhanced with fictional political entities, trade networks, and planetary systems.
-
-## 🌌 Universe Overview
-
-The **Felgenland Saga** is set in a region of space within 30 parsecs of Earth, where human civilization has expanded to form competing nations and trade networks. This starmap brings that universe to life with:
-
-- **Real astronomical data** from Gaia, Hipparcos, and NASA catalogs
-- **Fictional political nations** with territories and capitals![alt text](screenshots/nations_bubble.png)
-- **Trade routes** connecting major systems![alt text](screenshots/Universe_octants.png)
-- **Enhanced planetary systems** including habitable worlds and capitals
-
-## ✨ Features
-
-### Core Universe
-- **24,676 Real Stars** with accurate astronomical data from multiple catalogs
-- **5 Major Nations** controlling territories across human space:
-  - **Terran Directorate** - Earth-centered authoritarian republic
-  - **Felgenland Union** - Trade federation with Eclipse Festival culture
-  - **Protelani Republic** - Ultra-capitalist republic on Protelan moon
-  - **Dorsai Republic** - Elite military training specialists
-  - **Pentothian Trade Conglomerate** - Neutral reptilian traders
-- **18 Trade Routes** connecting capitals and resource systems
-- **41 Fictional Planets** across key star systems including:
-  - **Stahlburgh** - Capital of Felgenland Union (20 LMi system)
-  - **Protelan** - Protelani Republic capital moon (61 UMa system)
-  - **Pentothia Prime** - Reptilian trade hub (Groombridge 1618)
-  - **Valorgraemo** - Dorsai military academy world (Fomalhaut)
-- **425 Real Exoplanets** from NASA Exoplanet Archive
-
-### Content Creation & Management
-- **Fictional Entity Handlers** - Add new stars, planets, nations, and trade routes
-- **Real-time Data Validation** - Ensures data integrity and cross-references
-- **Automatic Coordinate Calculation** - 3D positioning from astronomical data
-- **Dynamic Cache Management** - Instant updates when adding new content
-- **RESTful API** - Complete CRUD operations for all entity types (requires authentication)
-
-### Security & Authentication![alt text](screenshots/login.png)
-- **Flask-Login Integration** - Session-based authentication for web interface
-- **JWT Token Support** - API access tokens for external applications
-- **Protected API Endpoints** - All data modification endpoints require authentication
-- **User Management** - Built-in user system with configurable credentials
-
-### Visualization & Interface
-- **Interactive 3D Visualization** with political overlays![alt text](screenshots/Universe_octants.png)
-- **Real-time Search** and advanced filtering![alt text](screenshots/Sol_system.png)
-- **Modern Responsive UI** with space-themed design
-- **Secure Login Interface** - Space-themed authentication portal
-
-## 🚀 Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Run the application:**
-   ```bash
-   python app.py
-   ```
-
-3. **Open your browser to:** http://localhost:8080
-
-4. **Login with default credentials:**
-   - Username: `admin` / Password: `felgenland_secure_2025`
-   - Username: `starmap_admin` / Password: `galactic_command_auth`
-   
-   **⚠️ Change these passwords in production!**
+An interactive 3D star map for the *Felgenland Saga* science-fiction universe. Real stellar data from the HYG catalogue is displayed alongside fictional nations, planetary systems, and trade networks from the setting.
 
 ---
 
-## 📚 Documentation Navigation
+## Universe overview
 
-### Core Documentation
-- **[README_V2.md](README_V2.md)** - Technical architecture and implementation details
-- **[README_MONTYDB.md](README_MONTYDB.md)** - MontyDB enhanced features guide
+The **Felgenland Saga** is set within 30 parsecs of Sol, where human civilisation has expanded to form competing nations:
 
-### Detailed Guides
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Complete API documentation with examples
-- **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** - Detailed handler implementation guide
-- **[DATA_MANAGEMENT_GUIDE.md](DATA_MANAGEMENT_GUIDE.md)** - Data management workflows and comparison
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development setup and contribution guide
-- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation navigation hub
+| Nation | Capital system | Notes |
+|---|---|---|
+| Terran Directorate | Sol | Earth-centred authoritarian republic |
+| Felgenland Union | Holsten Tor (20 LMi) | Trade federation; capital world Stahlburgh |
+| Protelani Republic | Protelan (61 UMa) | Ultra-capitalist republic |
+| Dorsai Republic | Fomalhaut | Elite military specialists |
+| Pentothian Trade Conglomerate | Pentothia Prime (Groombridge 1618) | Neutral reptilian traders |
+
+Key frontier systems include **Tiefe-Grenze Tor** (HD 86729), **Brandenburg Tor** (11 LMi), and **Greifen Tor** (55 Cancri / Copernicus).
 
 ---
 
-## 🛠️ API Reference
+## Features
 
-### Fictional Entity Management
+- **3D starmap** — Three.js with GPU ShaderMaterial LOD; 24,000+ stars
+- **WASD / arrow-key navigation** — fly the camera through space; Q/E for vertical; speed scales with zoom level
+- **Mouse controls** — orbit, zoom, pan (OrbitControls)
+- **Click stars** for a detail panel showing name, spectral class, distance, and nation
+- **Screenshot** — download the current view as a PNG (📷 button in Tools)
+- **A-Frame VR view** — optional WebXR mode
+- **Nation overlays** — colour-coded star ownership
+- **Fictional data** — custom stars, exoplanets, and galactic directions layered over real catalogue data
+- **REST API** — versioned JSON API (`/api/v1/`)
+- **JWT + session authentication** — protected write endpoints; read endpoints are public
 
-The Starmap includes handlers for managing fictional content through RESTful API endpoints:
+---
 
-#### Fictional Stars
-- `GET /api/fictional/stars` - Get all fictional stars
-- `POST /api/fictional/stars` - Add a new fictional star
-- `DELETE /api/fictional/stars/<star_id>` - Delete a fictional star
+## Setup
 
-**Example JSON for adding a fictional star:**
-```json
-{
-  "name": "New System Alpha",
-  "ra": 180.5,
-  "dec": 45.2,
-  "dist": 25.0,
-  "mag": 8.5,
-  "spect": "G2V",
-  "description": "A promising system for exploration"
-}
-```
+### Requirements
 
-#### Fictional Exoplanets
-- `GET /api/fictional/exoplanets` - Get all fictional exoplanets
-- `POST /api/fictional/exoplanets` - Add a new fictional exoplanet
-
-**Example JSON for adding a fictional exoplanet:**
-```json
-{
-  "name": "New World",
-  "host_star_id": 999998,
-  "orbital_period_days": 365.25,
-  "semi_major_axis_au": 1.0,
-  "radius_earth": 1.2,
-  "mass_earth": 1.1,
-  "description": "An Earth-like world"
-}
-```
-
-#### Fictional Nations
-- `GET /api/fictional/nations` - Get all fictional nations
-- `POST /api/fictional/nations` - Add a new fictional nation
-- `DELETE /api/fictional/nations/<nation_id>` - Delete a fictional nation
-
-**Example JSON for adding a fictional nation:**
-```json
-{
-  "name": "New Republic",
-  "full_name": "The New Republic of Outer Systems",
-  "government_type": "Federal Republic",
-  "capital_system": "New Capital",
-  "capital_star_id": 999997,
-  "territories": [999997, 999996],
-  "primary_color": "#FF6B35",
-  "description": "A frontier republic"
-}
-```
-
-#### Fictional Trade Routes
-- `GET /api/fictional/trade-routes` - Get all fictional trade routes
-- `POST /api/fictional/trade-routes` - Add a new fictional trade route
-- `DELETE /api/fictional/trade-routes/<route_id>` - Delete a fictional trade route
-
-**Example JSON for adding a fictional trade route:**
-```json
-{
-  "name": "New Trade Corridor",
-  "from_star_id": 999997,
-  "to_star_id": 999996,
-  "controlling_nation": "new_republic",
-  "route_type": "Commercial",
-  "cargo_types": ["Technology", "Raw Materials"],
-  "frequency": "Daily"
-}
-```
-
-### Handler Features
-
-- **Data Validation**: All handlers validate required fields and cross-references
-- **3D Coordinates**: Automatic calculation from astronomical data (RA/Dec/Distance)
-- **Cache Management**: Database cache automatically updates when new entities are added
-- **Error Handling**: Detailed error messages for validation failures
-- **File Management**: Handles both JSON and CSV file formats as needed
-
-See **[HANDLERS_DOCUMENTATION.md](HANDLERS_DOCUMENTATION.md)** for complete handler documentation.
-
-## 🏛️ Major Star Systems
-
-### Political Capitals
-- **Sol** (Terran Directorate) - Earth and the Solar System
-- **Holsten Tor** (20 LMi) - Felgenland Union capital with Stahlburgh world
-- **61 Ursae Majoris** - Protelani Republic capital with Protelan moon
-- **Fomalhaut** - Dorsai Republic with military training worlds
-- **Pentothia Prime** (Groombridge 1618) - Neutral reptilian trade hub
-
-### Key Frontier Systems
-- **Tiefe-Grenze Tor** (HD 86729) - Deep frontier gateway of Felgenland Union
-- **Brandenburg Tor** (11 LMi) - Manufacturing hub
-- **Griefen Tor** (55 Cancri) - Resource extraction center
-
-## 🛠️ Architecture
-
-- **Backend**: Flask with clean MVC architecture and integrated authentication
-- **Database**: Hybrid system with JSON-based storage + optional MontyDB for enhanced features
-- **Frontend**: Modern JavaScript with Three.js for 3D visualization
-- **UI**: Bootstrap 5 with custom space-themed styling
-- **Security**: Flask-Login with JWT token support for API access
-
-```
-starmap/
-├── app.py                    # Main Flask application with integrated auth
-├── auth.py                   # Authentication system (Flask-Login + JWT)
-├── controllers/              # API controllers
-├── models/                   # Data models and database layers
-├── handlers/                 # Entity management handlers
-├── database/                 # MontyDB configuration (optional)
-├── static/                   # Frontend assets (CSS, JS)
-├── templates/                # HTML templates (starmap + login)
-├── tests/                    # Organized test suite
-└── data/                     # All data files (stars, nations, planets)
-```
-
-## 🔌 API Endpoints
-
-### Authentication Required
-- `GET /api/stars` - Get filtered star data
-- `GET /api/star/{id}` - Get detailed star information with planets
-- `GET /api/nations` - Get all political nations
-- `GET /api/trade-routes` - Get trade and military routes
-- `GET /api/search` - Search stars by name
-- `POST /api/fictional/stars` - Add fictional stars
-- `POST /api/fictional/nations` - Add fictional nations
-- `POST /api/fictional/trade-routes` - Add trade routes
-- `GET /api/network-analysis` - Get trade network analysis
-
-### Public Access
-- `GET /api/fictional-exoplanets` - Get fictional planetary systems
-- `GET /api/exoplanets` - Get real exoplanet data
-- `GET /api/stellar-regions` - Get galactic regions
-- `GET /api/galactic-directions` - Get navigation references
-- `GET /api/stats` - Get basic database statistics
-
-### Authentication
-- `POST /login` - Session-based login
-- `POST /api/auth/token` - Generate JWT tokens
-- `GET /logout` - Logout
-
-## 🧪 Testing
-
-Run the test suite from the tests directory:
+- Python 3.12+
 
 ```bash
-# Run authentication tests (requires server to be running)
-python tests/test_api_auth.py
+pip install -r requirements.txt
+```
 
-# Run all tests
+### Database
+
+Star data lives in `data/starmap.sqlite`. If that file does not exist, migrate from the source CSV:
+
+```bash
+python scripts/migrate_to_sqlite.py
+```
+
+### Run
+
+```bash
+python app_refactored.py
+```
+
+Opens at `http://localhost:8080`.
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `STARMAP_SECRET_KEY` | (dev key) | Flask session + JWT signing key |
+| `STARMAP_PORT` | `8080` | Listening port |
+
+**Always set `STARMAP_SECRET_KEY` before deploying.**
+
+### Default login
+
+| Username | Password |
+|---|---|
+| `admin` | `felgenland_secure_2025` |
+| `starmap_admin` | `galactic_command_auth` |
+
+**Change these before deploying.**
+
+---
+
+## Project structure
+
+```
+app_refactored.py          Application entry point (factory pattern)
+auth.py                    AuthManager, User model, JWT helpers
+
+app/
+  config/                  Flask and auth configuration
+  middleware/              Auth and rate-limiting middleware
+  repositories/            Data access layer (SQLite)
+  routes/                  Flask blueprints — one per domain
+    stars_blueprint.py
+    nations_blueprint.py
+    fictional_blueprint.py
+    search_blueprint.py
+    stats_blueprint.py
+    stellar_regions_blueprint.py
+    trade_routes_blueprint.py
+    api_routes.py          Protected CRUD routes
+    auth_routes.py
+    web_routes.py
+  services/                Business logic layer
+  utils/                   Shared response helpers (success_response / error_response)
+
+models/
+  database.py              SQLite singleton (Database class, anchored to data/starmap.sqlite)
+
+static/js/
+  starmap-threejs-simple.js   Three.js starmap — sole JS entry point
+
+templates/
+  starmap.html             Single-page application shell
+
+scripts/
+  migrate_to_sqlite.py     One-time CSV → SQLite migration
+
+data/
+  starmap.sqlite           HYG star catalogue + fictional data
+  exoplanets.json          Exoplanet records
+```
+
+---
+
+## API reference
+
+All endpoints use the prefix `/api/v1/`. Requests to `/api/<path>` redirect to `/api/v1/<path>` (HTTP 301).
+
+### Public (no auth)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/stars` | Paginated star list (`limit`, `mag_limit`, `spectral_type`, `page`) |
+| GET | `/api/v1/stars/<id>` | Single star with trade-route summary |
+| GET | `/api/v1/fictional-stars` | All fictional stars |
+| GET | `/api/v1/fictional-exoplanets` | All fictional exoplanets |
+| GET | `/api/v1/nations` | All nations |
+| GET | `/api/v1/stats` | Dataset statistics |
+| GET | `/api/v1/galactic-directions` | Named galactic directions |
+| GET | `/api/v1/search?q=<query>` | Star search by name |
+| GET | `/health` | Health check |
+
+### Protected (JWT or session cookie)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v1/nations/<id>` | Nation detail |
+| GET | `/api/v1/nations/<id>/stars` | Stars controlled by a nation |
+| GET | `/api/v1/nations/<id>/territories` | Nation territory data |
+| POST | `/api/v1/fictional-stars` | Add a fictional star (`name`, `x`, `y`, `z` required) |
+| DELETE | `/api/v1/fictional-stars/<id>` | Delete a fictional star |
+| POST | `/api/v1/fictional-exoplanets` | Add a fictional exoplanet (`name`, `star_name`, `distance`, `period` required) |
+
+### Auth endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET/POST | `/login` | Session login |
+| GET | `/logout` | Session logout |
+| POST | `/api/auth/token` | Issue JWT token (session must be active) |
+
+**Using a JWT token:**
+
+```bash
+# Get a token
+curl -X POST http://localhost:8080/api/auth/token \
+     -b "session=<cookie>"
+
+# Authenticate a request
+curl http://localhost:8080/api/v1/nations/felgenland_union \
+     -H "Authorization: Bearer <token>"
+```
+
+---
+
+## Controls
+
+### 3D view
+
+| Input | Action |
+|---|---|
+| Left-drag | Orbit camera |
+| Right-drag / two-finger drag | Pan |
+| Scroll | Zoom |
+| W / Arrow Up | Fly forward |
+| S / Arrow Down | Fly back |
+| A / Arrow Left | Fly left |
+| D / Arrow Right | Fly right |
+| Q | Fly up |
+| E | Fly down |
+| Click a star | Show detail panel |
+
+Navigation speed scales with camera distance — fast when zoomed out, fine-grained when zoomed in.
+
+### Screenshot
+
+Click **📷 Screenshot** in the Tools panel to download the current view as a timestamped PNG.
+
+---
+
+## Data sources
+
+- **Stars** — HYG catalogue (Hipparcos, Yale Bright Star, Gliese/Jahreiß)
+- **Exoplanets** — NASA Exoplanet Archive
+- **Political data, trade routes, planetary systems** — original *Felgenland Saga* lore
+
+---
+
+## Testing
+
+```bash
 python -m pytest tests/
 ```
 
-**Note**: Authentication tests require the server to be running on localhost:8080
-
-## 🎮 Controls
-
-- **Mouse**: Rotate, zoom, and pan the 3D starmap
-- **Click**: Select stars for detailed information including planets
-- **Search**: Find specific stars or systems
-- **Filters**: Adjust magnitude, spectral type, and star count limits
-- **Overlays**: Toggle nations, trade routes, galactic regions, and directions
-- **Nations Legend**: View detailed information about political entities
-
-## 📊 Data Sources
-
-- **Real Stars**: Gaia DR3, Hipparcos, Henry Draper Catalog
-- **Exoplanets**: NASA Exoplanet Archive with confirmed discoveries
-- **Political Data**: Original Felgenland Saga universe lore
-- **Trade Networks**: Custom economic and military route systems
-- **Planetary Systems**: Mix of real confirmed planets and fictional worlds
-
-## 🎯 Universe Scope
-
-The starmap covers a **30 parsec sphere** around Sol, representing the practical limits of human expansion in the Felgenland Saga timeline. This includes:
-
-- **Most stars visible to the naked eye**
-- **All major nearby stellar neighbors**
-- **Key systems for interstellar civilization**
-- **Realistic travel distances for trade and politics**
-
-## ⚡ Performance Features
-
-- **In-memory data caching** for instant API responses
-- **WebGL-accelerated 3D rendering** with smooth navigation
-- **Efficient spatial filtering** for large star catalogs
-- **Optimized search algorithms** with fuzzy matching
-- **Responsive design** for desktop and mobile devices
-
-## 📋 Current Status
-
-**Version**: v0.0.1+  
-**Status**: Development with integrated security  
-**Features**: ✅ Authentication, ✅ 3D Visualization, ✅ API Protection, ✅ Test Suite  
-**Database**: Hybrid JSON + optional MontyDB  
-**Security**: Flask-Login + JWT tokens  
-
----
-
-*Part of the **Felgenland Saga** universe - explore the political intrigue, trade networks, and frontier conflicts that define human expansion among the stars.*
+Some tests require the server to be running on `localhost:8080`.

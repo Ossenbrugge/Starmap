@@ -3,7 +3,7 @@ Nation Service - Business Logic Layer
 Handles nation-related operations with clean separation of concerns
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from app.repositories.nation_repository import NationRepository
 
 

@@ -5,7 +5,7 @@ Flask-Login based authentication with JWT support
 
 import os
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -107,8 +107,8 @@ class AuthManager:
         """Generate JWT token for API access"""
         payload = {
             'user': user.to_dict(),
-            'exp': datetime.utcnow() + timedelta(hours=expires_in_hours),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now(timezone.utc) + timedelta(hours=expires_in_hours),
+            'iat': datetime.now(timezone.utc),
             'iss': 'starmap-auth'
         }
         return jwt.encode(payload, self.secret_key, algorithm='HS256')

@@ -3,7 +3,7 @@ Authentication route handlers
 Handles login, logout, and JWT token operations
 """
 
-from flask import request, redirect, url_for, flash, jsonify
+from flask import request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user
 from app.services.auth_service import auth_service
 from app.middleware.auth_middleware import api_auth_required

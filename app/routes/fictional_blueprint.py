@@ -3,8 +3,8 @@ Fictional Entities Blueprint - Modular API Routes
 Handles all fictional stars, planets, and entities in a dedicated blueprint.
 """
 
-from flask import Blueprint, request, jsonify
-from typing import Dict, List, Any, Optional
+from flask import Blueprint, request
+from typing import Dict, Any
 from app.services.star_service import StarService
 from app.middleware.auth_middleware import api_auth_required
 from app.utils.response_utils import success_response, error_response

@@ -4,7 +4,7 @@ Handles web page requests and static file serving
 """
 
 from flask import Blueprint, render_template, redirect, url_for
-from flask_login import login_required, current_user
+from flask_login import current_user
 
 # Create blueprint for web routes
 web_bp = Blueprint('web', __name__)

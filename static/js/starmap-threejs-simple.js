@@ -359,6 +359,10 @@ class ThreeJSStarmap {
         document.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
         });
+        // Clear all keys when the window loses focus to prevent stuck keys
+        window.addEventListener('blur', () => {
+            this.keys = {};
+        });
     }
 
     processKeyboardInput() {

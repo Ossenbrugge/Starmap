@@ -42,6 +42,9 @@ class Database:
         self._trade_routes = self._load_json_file("trade_routes.json", [])
         self._stellar_regions = self._load_json_file("stellar_regions.json", [])
         self._fictional_exoplanets = self._load_json_file("fictional_exoplanets.json", [])
+        
+        # Load fictional stars from CSV
+        self._fictional_stars = self._load_fictional_stars_csv()
 
         print("🎉 Database loaded successfully!")
 
@@ -86,6 +89,51 @@ class Database:
         except IOError as e:
             print(f"❌ Error saving {filename}: {e}")
 
+    def _load_fictional_stars_csv(self) -> List[Dict[str, Any]]:
+        """Load fictional stars from CSV file"""
+        import csv
+        
+        csv_path = os.path.join(self.data_dir, "fictional_stars.csv")
+        if not os.path.exists(csv_path):
+            print(f"❌ Fictional stars CSV not found: {csv_path}")
+            return []
+        
+        try:
+            fictional_stars = []
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # Convert CSV data to star format
+                    distance = float(row['dist']) if row['dist'] else 30.0
+                    if distance > 30.0:  # Distance limit
+                        continue
+                    
+                    star = {
+                        'id': int(row['id']),
+                        'name': row['proper'] if row['proper'] else f"HD {row['hd']}" if row['hd'] else f"Star {row['id']}",
+                        'fictional_name': row['proper'] if row['proper'] else None,
+                        'x': float(row['x']),
+                        'y': float(row['y']),
+                        'z': float(row['z']),
+                        'magnitude': float(row['mag']) if row['mag'] else 8.0,
+                        'spectral_class': row['spect'] if row['spect'] else 'G5V',
+                        'constellation': row['con'] if row['con'] else 'Unknown',
+                        'distance': distance,
+                        'is_fictional': True
+                    }
+                    fictional_stars.append(star)
+            
+            print(f"✅ Loaded {len(fictional_stars)} fictional stars from CSV")
+            return fictional_stars
+            
+        except Exception as e:
+            print(f"❌ Error loading fictional stars CSV: {e}")
+            return []
+
+    def get_fictional_stars(self) -> List[Dict[str, Any]]:
+        """Get all fictional stars"""
+        return self._fictional_stars if hasattr(self, '_fictional_stars') else []
+
     # Stars methods
     def get_stars(self, limit: int = 1000, mag_limit: float = 8.0,
                   spectral_type: str = "") -> List[Dict[str, Any]]:
@@ -123,11 +171,15 @@ class Database:
 
     def _get_star_magnitude(self, star: Dict[str, Any]) -> float:
         """Extract magnitude from star data"""
-        return star.get('magnitude', star.get('mag', 999))
+        # Handle nested structure from the actual data format
+        physical_props = star.get('physical_properties', {})
+        return physical_props.get('magnitude', star.get('magnitude', star.get('mag', 999)))
 
     def _get_star_spectral_class(self, star: Dict[str, Any]) -> str:
         """Extract spectral class from star data"""
-        return star.get('spectral_class', star.get('spect', ''))
+        # Handle nested structure from the actual data format
+        physical_props = star.get('physical_properties', {})
+        return physical_props.get('spectral_class', star.get('spectral_class', star.get('spect', '')))
 
     def get_star_by_id(self, star_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -141,7 +193,7 @@ class Database:
         """
         try:
             for star in self._stars:
-                if star.get('id') == star_id:
+                if star.get('_id') == star_id or star.get('id') == star_id:
                     return star
             return None
         except Exception as e:

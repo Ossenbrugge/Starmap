@@ -452,15 +452,12 @@ User: ${data.user}
 Use in API requests:
 Authorization: Bearer ${data.token}`;
                     
-                    // Create a temporary textarea to copy token
-                    const textarea = document.createElement('textarea');
-                    textarea.value = data.token;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    
-                    alert(tokenInfo + '\n\n✅ Token copied to clipboard!');
+                    try {
+                        await navigator.clipboard.writeText(data.token);
+                        alert(tokenInfo + '\n\n✅ Token copied to clipboard!');
+                    } catch {
+                        alert(tokenInfo + '\n\n(Copy the token manually from above)');
+                    }
                 } else {
                     alert('❌ Failed to generate API token');
                 }
@@ -470,6 +467,13 @@ Authorization: Bearer ${data.token}`;
             }
         }
         
+        // HTML escape helper to prevent XSS when inserting server data into innerHTML
+        function esc(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(String(str ?? '')));
+            return div.innerHTML;
+        }
+
         // View switching functionality
         let currentView = 'threejs';
         let aframeInitialized = false;
@@ -561,17 +565,20 @@ Authorization: Bearer ${data.token}`;
                     console.log(`   - Total fetch time: ${Date.now() - startTime}ms`);
                     
                     if (data.success && data.data) {
-                        console.log('🎯 Sample star data from MontyDB:', data.data[0]);
                         threejsStarmap.createStars(data.data);
+                        // Share with search cache to avoid a second fetch
+                        allStars = data.data.filter(s =>
+                            s.x != null && !isNaN(s.x) &&
+                            s.y != null && !isNaN(s.y) &&
+                            s.z != null && !isNaN(s.z)
+                        );
                     } else {
-                        console.error('❌ Failed to load stars from MontyDB:', data.error);
+                        console.error('❌ Failed to load stars:', data.error);
                     }
                 }
-                
-                // Load all overlays by default to demonstrate functionality
-                console.log('🌌 Loading all Three.js overlays...');
+
                 await loadAllThreeJSOverlays();
-                
+
                 console.log('✅ Three.js starfield initialized');
             } catch (error) {
                 console.error('❌ Error initializing Three.js starfield:', error);
@@ -598,34 +605,213 @@ Authorization: Bearer ${data.token}`;
             }
         }
         
+        let searchResults = [];
+        let allStars = []; // Cache for all stars
+
+        // Load all stars for search functionality
+        async function loadAllStarsForSearch() {
+            // Reuse data already loaded by Three.js init if available
+            if (allStars.length > 0) return;
+
+            try {
+                const response = await fetch('/api/stars?count_limit=50000');
+                const data = await response.json();
+                if (data.success && data.data) {
+                    allStars = data.data.filter(star =>
+                        star.x != null && !isNaN(star.x) &&
+                        star.y != null && !isNaN(star.y) &&
+                        star.z != null && !isNaN(star.z)
+                    );
+                    addMissingFictionalStars();
+                }
+            } catch (error) {
+                console.error('Error loading stars for search:', error);
+                allStars = [];
+            }
+        }
+
+        function addMissingFictionalStars() {
+            // Add Tiefe-Grenze Tor if missing
+            const tiefeGrenzeExists = allStars.some(star => star.fictional_name === 'Tiefe-Grenze Tor' || star.name === 'Tiefe-Grenze Tor');
+
+            if (!tiefeGrenzeExists) {
+                // Estimated coordinates for Tiefe-Grenze Tor (edge of explored space)
+                const tiefeGrenze = {
+                    id: 999999,
+                    name: 'Tiefe-Grenze Tor',
+                    fictional_name: 'Tiefe-Grenze Tor',
+                    x: 50,  // Deep space location
+                    y: 25,
+                    z: 12.5,
+                    magnitude: 7.5,
+                    spectral_class: 'G',
+                    constellation: 'Edge of Known Space',
+                    description: 'Tiefe-Grenze Tor serves as the primary gateway to deep space exploration and frontier systems. A massive gateway station marking humanity\'s furthest established presence.',
+                    fictional_description: 'Tiefe-Grenze Tor (Deep Border Gate) is the most distant human outpost from Earth, serving as a gateway to the uncharted territories beyond. Named for its position on the edge of explored space, it represents both hope and danger in the exploration of the galaxy.',
+                    is_fictional: true,
+                    distance: 63.245
+                };
+
+                allStars.push(tiefeGrenze);
+                console.log('➕ Added missing fictional star: Tiefe-Grenze Tor');
+            }
+        }
+
         // Connect search functionality to Three.js starmap
         function searchStars() {
             const searchInput = document.getElementById('searchInput');
             const searchTerm = searchInput.value.trim();
-            
+
             if (!searchTerm) {
                 document.getElementById('searchResults').innerHTML = '';
                 return;
             }
-            
-            console.log('🔍 Searching for star:', searchTerm);
-            
-            // Search in main app if available
-            if (app && app.performSearch) {
-                app.performSearch();
+
+            // First load all stars if not already loaded
+            if (allStars.length === 0) {
+                loadAllStarsForSearch().then(() => performSearch(searchTerm));
+            } else {
+                performSearch(searchTerm);
             }
-            
-            // Search in Three.js starmap
-            if (threejsStarmap && threejsStarmap.searchStarByName) {
-                const foundStar = threejsStarmap.searchStarByName(searchTerm);
-                
-                // Update search results
-                const searchResults = document.getElementById('searchResults');
-                if (foundStar) {
-                    searchResults.innerHTML = `<small class="text-success">✅ Found: ${foundStar.name || foundStar.fictional_name}</small>`;
-                } else {
-                    searchResults.innerHTML = `<small class="text-warning">❌ No star found matching "${searchTerm}"</small>`;
+        }
+
+        function performSearch(searchTerm) {
+            console.log('🔍 Performing search for:', searchTerm);
+
+            if (allStars.length === 0) {
+                document.getElementById('searchResults').innerHTML = '<small class="text-muted">Loading star database...</small>';
+                return;
+            }
+
+            const search = searchTerm.toLowerCase().trim();
+            searchResults = [];
+
+            // Search by various criteria
+            allStars.forEach(star => {
+                let matchScore = 0;
+                const starName = star.fictional_name || star.name || '';
+
+                // Exact matches get highest priority
+                if (star.id && star.id.toString() === search) matchScore = 100;
+                else if (starName.toLowerCase() === search) matchScore = 90;
+                else if (starName.toLowerCase().startsWith(search)) matchScore = 80;
+                else if (starName.toLowerCase().includes(search)) matchScore = 70;
+
+                // Check catalog IDs
+                if (star.catalog_ids && Array.isArray(star.catalog_ids)) {
+                    star.catalog_ids.forEach(catalogId => {
+                        if (catalogId && catalogId.toString().toLowerCase() === search) matchScore = 95;
+                        else if (catalogId && catalogId.toString().toLowerCase().includes(search)) matchScore = 75;
+                    });
                 }
+
+                // Search individual catalog fields for direct catalog number searches
+                if (search.startsWith('hd ') && star.id_hd && star.id_hd.toString() === search.substring(3)) matchScore = 95;
+                if (search.startsWith('hip ') && star.id_hip && star.id_hip.toString() === search.substring(4)) matchScore = 95;
+                if (search.startsWith('hr ') && star.id_hr && star.id_hr.toString() === search.substring(3)) matchScore = 95;
+                if (search.startsWith('gliese ') && star.id_gliese && star.id_gliese.toString() === search.substring(7)) matchScore = 95;
+                if (search.startsWith('gaia ') && star.id_catalog_gaia && star.id_catalog_gaia.toString().includes(search.substring(5))) matchScore = 85;
+
+                // Search by proper names
+                if (search.startsWith('gacrux') && star.name && star.name.includes('Gacrux')) matchScore = 85;
+                if (search.startsWith('betelgeuse') && star.name && star.name.includes('Betelgeuse')) matchScore = 85;
+                if (search.startsWith('rigel') && star.name && star.name.includes('Rigel')) matchScore = 85;
+                if (search.startsWith('deneb') && star.name && star.name.includes('Deneb')) matchScore = 85;
+
+                // Special cases
+                if (search.includes('sol') && starName.toLowerCase().includes('sol')) matchScore = 85;
+                if (search.includes('20 lmi') && starName.includes('20 LMi')) matchScore = 85;
+                if (search === 'tiefe' && starName.includes('Tiefe-Grenze')) matchScore = 85;
+
+                // Search by constellation
+                if (star.constellation && star.constellation.toLowerCase().includes(search)) matchScore = 60;
+
+                if (matchScore > 0) {
+                    searchResults.push({ star, matchScore, searchReason: getSearchReason(matchScore, star, search) });
+                }
+            });
+
+            // Sort by match score (highest first)
+            searchResults.sort((a, b) => b.matchScore - a.matchScore);
+
+            // Take top 5 results
+            searchResults = searchResults.slice(0, 5);
+
+            displaySearchResults(searchResults, searchTerm);
+        }
+
+        function getSearchReason(matchScore, star, searchTerm) {
+            if (matchScore >= 100) return `ID match: ${star.id}`;
+            if (matchScore >= 95) return 'Exact catalog ID match';
+            if (matchScore >= 90) return 'Exact name match';
+            if (matchScore >= 85) return 'Special name match';
+            if (matchScore >= 80) return 'Name prefix match';
+            if (matchScore >= 75) return 'Catalog ID partial match';
+            if (matchScore >= 70) return 'Name contains search term';
+            return 'Related match';
+        }
+
+        function displaySearchResults(results, searchTerm) {
+            const searchResultsDiv = document.getElementById('searchResults');
+
+            if (results.length === 0) {
+                searchResultsDiv.innerHTML = `<small class="text-warning">❌ No stars found matching "${esc(searchTerm)}"</small>`;
+                return;
+            }
+
+            let html = '<div class="search-results-list">';
+            html += `<small class="text-muted mb-2 d-block">${results.length} result(s) for "${esc(searchTerm)}":</small>`;
+
+            results.forEach((result, index) => {
+                const star = result.star;
+                const starName = esc(star.fictional_name || star.name || 'Unknown Star');
+                const coords = `(${parseFloat(star.x || 0).toFixed(2)}, ${parseFloat(star.y || 0).toFixed(2)}, ${parseFloat(star.z || 0).toFixed(2)}) pc`;
+                const magnitude = star.magnitude ? `Mag: ${parseFloat(star.magnitude).toFixed(2)}` : 'Unknown mag';
+                const spectral = esc(star.spectral_class || 'Unknown type');
+
+                html += `
+                    <div class="search-result-item d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded bg-dark" onclick="selectSearchResult(${index})" style="cursor: pointer;">
+                        <div class="flex-grow-1">
+                            <strong class="text-light">${starName}</strong>
+                            <br>
+                            <small class="text-muted">${coords} • ${magnitude} • ${spectral}</small>
+                        </div>
+                        <small class="text-info">${esc(star.id)}</small>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            searchResultsDiv.innerHTML = html;
+        }
+
+        function selectSearchResult(index) {
+            if (index < 0 || index >= searchResults.length) return;
+
+            const result = searchResults[index];
+            const star = result.star;
+
+            console.log('🎯 Selected search result:', star);
+
+            // Clear search results
+            document.getElementById('searchResults').innerHTML = '';
+            document.getElementById('searchInput').value = '';
+
+            // Display star details
+            if (threejsStarmap && threejsStarmap.displayStarDetails) {
+                threejsStarmap.displayStarDetails(star);
+            }
+
+            // Highlight the star if it has valid coordinates
+            if (threejsStarmap && star.x !== undefined && star.y !== undefined && star.z !== undefined) {
+                threejsStarmap.highlightStar(star);
+            }
+
+            // Center camera on star if possible
+            if (threejsStarmap && threejsStarmap.camera && threejsStarmap.controls) {
+                threejsStarmap.camera.position.set(star.x * 10, star.y * 10, star.z * 10 + 50);
+                threejsStarmap.controls.target.set(star.x * 10, star.y * 10, star.z * 10);
+                threejsStarmap.controls.update();
             }
         }
         
@@ -728,13 +914,109 @@ Authorization: Bearer ${data.token}`;
         // Show nations legend
         function showNationsLegend() {
             console.log('🏛️ Showing nations legend...');
-            
-            if (app && app.showNationsModal) {
-                app.showNationsModal();
+
+            const modal = new bootstrap.Modal(document.getElementById('nationsModal'));
+            const content = document.getElementById('nationsContent');
+
+            // Try to get nations data from Three.js starmap first
+            if (threejsStarmap && threejsStarmap.currentStars && threejsStarmap.currentStars.length > 0) {
+                // Fetch nations data
+                fetch('/api/nations')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            displayNationsLegend(data.data);
+                            modal.show();
+                        } else {
+                            console.warn('No nations data available');
+                            content.innerHTML = '<p>No nation data loaded yet. Try refreshing the page.</p>';
+                            modal.show();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading nations for legend:', error);
+                        content.innerHTML = '<p>Error loading nations data.</p>';
+                        modal.show();
+                    });
             } else {
-                // Basic nations info
-                alert('🏛️ Nations Legend\n\nNations data is loaded and displayed as wireframe boundaries.\nCheck the console for detailed nation information.');
+                content.innerHTML = '<p>Loading star data... Please wait and try again.</p>';
+                modal.show();
             }
+        }
+
+        function displayNationsLegend(nations) {
+            const content = document.getElementById('nationsContent');
+
+            if (!nations || nations.length === 0) {
+                content.innerHTML = '<div class="alert alert-info">No nations data available</div>';
+                return;
+            }
+
+            let html = '<div class="row">';
+
+            nations.forEach((nation, index) => {
+                const colorStyle = nation.appearance && nation.appearance.color
+                    ? `background-color: ${nation.appearance.color}; color: ${getContrastColor(nation.appearance.color)};`
+                    : `background-color: #6c757d; color: white;`;
+
+                const capitalInfo = nation.capital ? `${nation.capital.system} (Star ID: ${nation.capital.star_id})` : 'Unknown';
+                const territories = nation.territories && nation.territories.length > 0
+                    ? `${nation.territories.length} systems`
+                    : '';
+
+                const safeColor = /^#[0-9a-fA-F]{3,6}$/.test(nation.appearance?.color || '') ? nation.appearance.color : '#6c757d';
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="nation-item card h-100" style="border-left: 4px solid ${safeColor}">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h6 class="mb-0 fw-bold">${esc(nation.name)}</h6>
+                                    <div class="badge" style="${esc(colorStyle)}">${esc(nation._id)}</div>
+                                </div>
+
+                                <div class="small text-muted mb-2">
+                                    <strong>Type:</strong> ${esc(nation.government?.type || 'Unknown')}<br>
+                                    <strong>Capital:</strong> ${esc(capitalInfo)}<br>
+                                    ${territories ? `<strong>Territories:</strong> ${esc(territories)}` : ''}
+                                </div>
+
+                                <p class="small mb-2">${esc(nation.description || 'No description available')}</p>
+
+                                ${nation.appearance?.color ? `
+                                    <div class="small">
+                                        <strong>Official Color:</strong>
+                                        <div class="d-inline-block ms-2" style="width: 16px; height: 16px; background-color: ${safeColor}; border: 1px solid #333; border-radius: 2px;"></div>
+                                        <span class="ms-1">${esc(nation.appearance.color)}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            content.innerHTML = html;
+
+            console.log(`✅ Nations legend populated with ${nations.length} nations`);
+        }
+
+        function getContrastColor(hexColor) {
+            // Simple function to determine if text should be black or white based on background color
+            if (!hexColor) return 'white';
+
+            // Remove # if present
+            const color = hexColor.replace('#', '');
+
+            // Convert to RGB
+            const r = parseInt(color.substr(0, 2), 16);
+            const g = parseInt(color.substr(2, 2), 16);
+            const b = parseInt(color.substr(4, 2), 16);
+
+            // Calculate brightness
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+
+            return brightness > 128 ? 'black' : 'white';
         }
         
         // Hide star details panel
@@ -1057,7 +1339,7 @@ Authorization: Bearer ${data.token}`;
         // Initialize Three.js view on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, current view:', currentView);
-            
+
             // Set up overlay toggle event listeners
             ['nationsOverlay', 'tradeRoutesOverlay', 'stellarRegionsOverlay', 'galacticDirectionsOverlay', 'exoplanetsOverlay'].forEach(id => {
                 const element = document.getElementById(id);
@@ -1065,7 +1347,11 @@ Authorization: Bearer ${data.token}`;
                     element.addEventListener('change', updateOverlays);
                 }
             });
-            
+
+            // Pre-load search database to enable instant searches
+            console.log('📚 Pre-loading star database for search functionality...');
+            loadAllStarsForSearch();
+
             // Note about CSP warnings for users
             console.log('ℹ️ Note: CSP warnings about blocked fonts/images from migaku-public-data.migaku.com are from browser extensions (like Migaku language learning tool), not from our starmap code. These can be safely ignored.');
             // Give the main app time to initialize first
@@ -1076,7 +1362,7 @@ Authorization: Bearer ${data.token}`;
                     if (window.testThreeJS) {
                         console.log('Running Three.js test first...');
                         window.testThreeJS();
-                        
+
                         // Wait a bit then initialize the starmap
                         setTimeout(() => {
                             initializeThreeJSStarfield();

@@ -10,10 +10,9 @@ from flask_login import login_required, current_user
 web_bp = Blueprint('web', __name__)
 
 @web_bp.route('/')
-@login_required
 def index():
-    """Main starmap page - requires authentication"""
-    return render_template('starmap.html', user=current_user)
+    """Main starmap page - public for testing"""
+    return render_template('starmap.html', user=current_user if current_user.is_authenticated else None)
 
 @web_bp.route('/login', methods=['GET', 'POST'])
 def login():

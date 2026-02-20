@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 """
 Refactored Starmap Application - Clean Architecture
-Phase 2 Complete: API Routes -> Services -> Repositories with Authentication & Rate Limiting
+Routes -> Services -> Repositories with Authentication & Rate Limiting
 """
 
 import sys
 import os
-# Add current directory to Python path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from flask import Flask
@@ -31,6 +30,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Singleton database instance shared across all repositories/services
+_database: Database = None
+
+def get_database() -> Database:
+    """Return the application-wide Database singleton."""
+    global _database
+    if _database is None:
+        _database = Database()
+    return _database
+
+
 def create_app():
     """Application factory pattern with clean architecture"""
     app = Flask(__name__)
@@ -38,11 +48,18 @@ def create_app():
     # Apply security configuration
     app.config.update(auth_config_module.auth_config)
 
+    # Apply security headers to every response
+    @app.after_request
+    def apply_security_headers(response):
+        for header, value in security_headers.items():
+            response.headers[header] = value
+        return response
+
     # Initialize Flask-Login
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = 'login'
-    login_manager.login_message = '🔒 Felgenland Security: Access to galactic data requires authentication.'
+    login_manager.login_message = 'Access to galactic data requires authentication.'
     login_manager.login_message_category = 'info'
 
     # User loader for Flask-Login
@@ -51,75 +68,86 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        """Load user for Flask-Login"""
         return auth_manager.get_user(user_id)
 
-    # Initialize database
-    database = Database()
+    # Pre-load the database singleton so all services share it
+    get_database()
 
-    # Register route blueprints - Clean Architecture Order
-    print("🚀 Initializing Clean Architecture Routes...")
-    init_auth_routes(app)  # Phase 1: Authentication
-    init_web_routes(app)   # Phase 2.1: Web Routes (HTML templates)
-    init_api_routes(app)   # Phase 2.2: API Endpoints
+    # ── Register route layers ────────────────────────────────────────────────
+    print("Initializing Clean Architecture Routes with Blueprints...")
 
-    # Add security headers to all responses
-    @app.after_request
-    def add_security_headers(response):
-        """Apply comprehensive security headers"""
-        for header, value in security_headers.items():
-            response.headers[header] = value
-        return response
+    # Authentication and web (HTML) routes
+    init_auth_routes(app)
+    init_web_routes(app)
 
-    # Error handlers with consistent JSON format
-    @app.errorhandler(401)
-    def unauthorized(error):
-        return {
-            'success': False,
-            'error': 'Unauthorized',
-            'message': 'Felgenland Security: Authentication required for galactic data access'
-        }, 401
+    # Protected CRUD API routes (api_routes.py → api_bp)
+    init_api_routes(app)
 
+    # Public read-only star routes
+    from app.routes.stars_blueprint import stars_bp
+    app.register_blueprint(stars_bp)
+
+    # Public read-only nation routes
+    from app.routes.nations_blueprint import nations_bp
+    app.register_blueprint(nations_bp)
+
+    # Public fictional entity routes
+    from app.routes.fictional_blueprint import fictional_bp
+    app.register_blueprint(fictional_bp)
+
+    # Public search routes
+    from app.routes.search_blueprint import search_bp
+    app.register_blueprint(search_bp)
+
+    # Stats and galactic directions
+    from app.routes.stats_blueprint import stats_bp
+    app.register_blueprint(stats_bp)
+
+    # Stellar regions
+    from app.routes.stellar_regions_blueprint import stellar_regions_bp
+    app.register_blueprint(stellar_regions_bp)
+
+    # Trade routes
+    from app.routes.trade_routes_blueprint import trade_routes_bp
+    app.register_blueprint(trade_routes_bp)
+
+    print("All blueprints registered successfully")
+
+    # ── Error handlers ───────────────────────────────────────────────────────
     @app.errorhandler(404)
     def not_found(error):
-        return {
-            'success': False,
-            'error': 'Endpoint not found'
-        }, 404
+        return {'success': False, 'error': 'Endpoint not found'}, 404
 
     @app.errorhandler(500)
     def server_error(error):
         logger.error(f"Internal server error: {error}")
-        return {
-            'success': False,
-            'error': 'Internal server error'
-        }, 500
+        return {'success': False, 'error': 'Internal server error'}, 500
 
     # Health check endpoint
     @app.route('/health')
     def health_check():
-        """Application health check"""
         return {
             'success': True,
             'status': 'healthy',
-            'architecture': 'Clean Architecture - Phase 2 Complete',
-            'layers': ['Routes', 'Services', 'Repositories'],
-            'features': ['Authentication', 'Authorization', 'Rate Limiting'],
             'timestamp': datetime.now().isoformat()
         }
 
     return app
 
-# Keep the original access for backwards compatibility
+
+# Application entry point
 app = create_app()
 
 if __name__ == '__main__':
-    print("🚀 Starting Refactored Starmap - Felgenland Saga")
-    print("✨ Clean Architecture: Routes → Services → Repositories")
-    print("🔐 Enhanced Authentication: Flask-Login + JWT + Rate Limiting")
-    print("🛡️ Security: Input Validation + Security Headers")
+    print("Starting Refactored Starmap - Felgenland Saga")
+    print("Clean Architecture: Routes -> Services -> Repositories")
 
-    print("🌐 Access at: http://localhost:8080")
-    print("🔑 Login required - use /login endpoint")
+    debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
+    port = int(os.environ.get('PORT', 8080))
 
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    if debug_mode:
+        print("WARNING: Running in DEBUG mode - do not use in production")
+
+    print(f"Access at: http://localhost:{port}")
+
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

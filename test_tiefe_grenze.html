@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiefe-grenze Tor Test</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #000; color: #fff; font-family: Arial, sans-serif; }
+        #threejs-container { width: 1000px; height: 700px; border: 1px solid #333; margin: 20px 0; }
+        .controls { margin: 10px 0; }
+        button { margin: 5px; padding: 10px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; }
+        button:hover { background: #555; }
+        #console { background: #111; padding: 10px; height: 250px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .info { background: #222; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Tiefe-grenze Tor Verification Test</h1>
+    
+    <div class="info">
+        <h3>Testing:</h3>
+        <ul>
+            <li><strong>Fictional Stars API:</strong> Loads Tiefe-grenze Tor (ID: 999999)</li>
+            <li><strong>Nations Overlay:</strong> Felgenland Union should encompass 4 stars including Tiefe-grenze Tor</li>
+            <li><strong>Territory Boundary:</strong> Should show a wireframe sphere encompassing all Felgenland stars</li>
+        </ul>
+    </div>
+    
+    <div class="controls">
+        <button onclick="testFictionalStars()">Test Fictional Stars</button>
+        <button onclick="testNationsData()">Test Nations Data</button>
+        <button onclick="startFullTest()">Start Full Test</button>
+        <button onclick="clearConsole()">Clear Console</button>
+    </div>
+    
+    <div id="threejs-container"></div>
+    <div id="console"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r160/three.min.js"></script>
+    <script type="module">
+        import { ThreeJSStarmap } from '/static/js/starmap-threejs-simple.js';
+        
+        let threejsStarmap = null;
+        let logMessages = [];
+        
+        function log(message) {
+            logMessages.push(`${new Date().toLocaleTimeString()}: ${message}`);
+            updateConsole();
+            console.log(message);
+        }
+        
+        function updateConsole() {
+            const consoleDiv = document.getElementById('console');
+            consoleDiv.innerHTML = logMessages.slice(-25).join('\n');
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        window.clearConsole = function() {
+            logMessages = [];
+            updateConsole();
+        };
+        
+        window.testFictionalStars = async function() {
+            log('🧪 Testing fictional stars API...');
+            try {
+                const response = await fetch('/api/fictional-stars');
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    const tiefeGrenze = data.data.find(star => star.id === 999999);
+                    if (tiefeGrenze) {
+                        log(`✅ Tiefe-grenze Tor found: ${tiefeGrenze.fictional_name}`);
+                        log(`   Coordinates: (${tiefeGrenze.x}, ${tiefeGrenze.y}, ${tiefeGrenze.z})`);
+                        log(`   Distance: ${tiefeGrenze.distance} pc`);
+                    } else {
+                        log('❌ Tiefe-grenze Tor not found in fictional stars');
+                    }
+                } else {
+                    log('❌ No fictional stars loaded');
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        };
+        
+        window.testNationsData = async function() {
+            log('🧪 Testing nations data...');
+            try {
+                const response = await fetch('/api/nations');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const felgenland = data.data.find(nation => nation._id === 'felgenland_union');
+                    if (felgenland) {
+                        log(`✅ Felgenland Union found with ${felgenland.territories.length} territories:`);
+                        log(`   Territories: [${felgenland.territories.join(', ')}]`);
+                        log(`   Should include 999999 (Tiefe-grenze Tor): ${felgenland.territories.includes(999999) ? '✅ YES' : '❌ NO'}`);
+                    } else {
+                        log('❌ Felgenland Union not found');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        };
+        
+        window.startFullTest = async function() {
+            log('🚀 Starting full Tiefe-grenze Tor test...');
+            
+            try {
+                // Initialize Three.js starmap
+                log('🌟 Initializing Three.js starmap...');
+                threejsStarmap = new ThreeJSStarmap();
+                
+                // Wait for stars to load
+                await new Promise(resolve => setTimeout(resolve, 3000));
+                
+                // Check if Tiefe-grenze Tor is in currentStars
+                const tiefeGrenze = threejsStarmap.currentStars.find(star => star.id === 999999);
+                if (tiefeGrenze) {
+                    log(`✅ Tiefe-grenze Tor found in starmap: ${tiefeGrenze.fictional_name || tiefeGrenze.name}`);
+                    log(`   Processed coordinates: (${tiefeGrenze.x}, ${tiefeGrenze.y}, ${tiefeGrenze.z})`);
+                } else {
+                    log('❌ Tiefe-grenze Tor not found in processed stars');
+                }
+                
+                // Load nations overlay
+                log('🏛️ Loading nations overlay...');
+                const nationsResult = await threejsStarmap.loadNations();
+                
+                if (nationsResult) {
+                    log(`✅ Nations overlay loaded with ${threejsStarmap.nationsGroup.children.length} elements`);
+                    
+                    // Check Felgenland territory
+                    log('🔍 Verifying Felgenland Union territory boundary...');
+                    const territoryElements = threejsStarmap.nationsGroup.children.filter(child => 
+                        child.userData && child.userData.type === 'nation_territory' && 
+                        child.userData.data && child.userData.data._id === 'felgenland_union'
+                    );
+                    
+                    if (territoryElements.length > 0) {
+                        const territory = territoryElements[0];
+                        const stars = territory.userData.stars || [];
+                        log(`✅ Felgenland territory found with ${stars.length} stars`);
+                        
+                        const hasTiefeGrenze = stars.some(star => star.id === 999999);
+                        log(`   Includes Tiefe-grenze Tor: ${hasTiefeGrenze ? '✅ YES' : '❌ NO'}`);
+                        
+                        stars.forEach(star => {
+                            const name = star.fictional_name || star.name;
+                            log(`   - ${star.id}: ${name} at (${star.x.toFixed(2)}, ${star.y.toFixed(2)}, ${star.z.toFixed(2)})`);
+                        });
+                    } else {
+                        log('❌ Felgenland Union territory boundary not found');
+                    }
+                } else {
+                    log('❌ Nations overlay failed to load');
+                }
+                
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`);
+            }
+        };
+        
+        // Auto-start API tests
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📋 Tiefe-grenze Tor Test Ready');
+            log('👆 Click "Start Full Test" to begin comprehensive testing');
+        });
+    </script>
+</body>
+</html>

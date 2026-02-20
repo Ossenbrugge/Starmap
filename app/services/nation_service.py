@@ -32,6 +32,10 @@ class NationService:
         except Exception as e:
             return {'success': False, 'error': f'Failed to retrieve nations: {str(e)}'}
 
+    def get_all_nations(self) -> Dict[str, Any]:
+        """Alias for get_nations to fix API compatibility"""
+        return self.get_nations()
+
     def get_fictional_nations(self) -> Dict[str, Any]:
         """Get all fictional nations"""
         try:
@@ -81,15 +85,55 @@ class NationService:
         except Exception as e:
             return {'success': False, 'error': f'Failed to add fictional nation: {str(e)}'}
 
+    def get_nation_by_id(self, nation_id: str) -> Dict[str, Any]:
+        """Get a specific nation by ID"""
+        try:
+            result = self.nation_repository.get_nation_by_id(nation_id)
+            if not result['success']:
+                return result
+            if not result.get('data'):
+                return {'success': False, 'error': 'Nation not found'}
+            return result
+        except Exception as e:
+            return {'success': False, 'error': f'Failed to retrieve nation: {str(e)}'}
+
+    def get_nation_stars(self, nation_id: str) -> Dict[str, Any]:
+        """Get all stars controlled by a specific nation"""
+        try:
+            from app.repositories.star_repository import StarRepository
+            star_repo = StarRepository()
+            result = star_repo.get_stars_by_nation(nation_id)
+            if not result['success']:
+                return result
+            return {'success': True, 'data': result['data']}
+        except Exception as e:
+            return {'success': False, 'error': f'Failed to retrieve nation stars: {str(e)}'}
+
+    def get_nation_territories(self, nation_id: str) -> Dict[str, Any]:
+        """Get territory information for a specific nation"""
+        try:
+            nation_result = self.get_nation_by_id(nation_id)
+            if not nation_result['success']:
+                return nation_result
+            nation = nation_result['data']
+            territories = nation.get('territories', [])
+            return {
+                'success': True,
+                'data': {
+                    'nation_id': nation_id,
+                    'territories': territories,
+                    'territory_count': len(territories)
+                }
+            }
+        except Exception as e:
+            return {'success': False, 'error': f'Failed to retrieve nation territories: {str(e)}'}
+
     def delete_fictional_nation(self, nation_id: str) -> Dict[str, Any]:
         """Delete a fictional nation"""
         try:
             result = self.nation_repository.delete_fictional_nation(nation_id)
-
             if result['success']:
                 return {'success': True, 'message': 'Fictional nation deleted successfully'}
-
             return result
-
         except Exception as e:
             return {'success': False, 'error': f'Failed to delete fictional nation: {str(e)}'}

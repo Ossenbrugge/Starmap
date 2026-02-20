@@ -3528,6 +3528,8 @@
         "dec": 0.0,
         "distance": 0.0,
         "discovery_method": "Fictional"
+    },
+    {
         "name": "Hansaburgh",
         "host_star": "Star 46945",
         "ra": 0.0,

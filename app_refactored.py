@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from flask import Flask
+from flask import Flask, redirect
 from flask_login import LoginManager
 import logging
 from datetime import datetime
@@ -122,6 +122,11 @@ def create_app():
     def server_error(error):
         logger.error(f"Internal server error: {error}")
         return {'success': False, 'error': 'Internal server error'}, 500
+
+    # Backwards-compat: redirect /api/* → /api/v1/*
+    @app.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+    def api_legacy_redirect(path):
+        return redirect(f'/api/v1/{path}', code=301)
 
     # Health check endpoint
     @app.route('/health')

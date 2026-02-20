@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-fictional_bp = Blueprint('fictional', __name__, url_prefix='/api')
+fictional_bp = Blueprint('fictional', __name__, url_prefix='/api/v1')
 
 # Initialize services
 star_service = StarService()

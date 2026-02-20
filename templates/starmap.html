@@ -428,7 +428,7 @@
         // Authentication functions
         async function generateApiToken() {
             try {
-                const response = await fetch('/api/auth/token', {
+                const response = await fetch('/api/v1/auth/token', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -548,7 +548,7 @@ Authorization: Bearer ${data.token}`;
                     const startTime = Date.now();
                     
                     // Fetch ALL stars (remove limits for full galaxy view)
-                    const response = await fetch('/api/stars?count_limit=50000&mag_limit=15');
+                    const response = await fetch('/api/v1/stars?count_limit=50000&mag_limit=15');
                     const fetchTime = Date.now() - startTime;
                     
                     console.log(`⏱️ MontyDB fetch took ${fetchTime}ms`);
@@ -614,7 +614,7 @@ Authorization: Bearer ${data.token}`;
             if (allStars.length > 0) return;
 
             try {
-                const response = await fetch('/api/stars?count_limit=50000');
+                const response = await fetch('/api/v1/stars?count_limit=50000');
                 const data = await response.json();
                 if (data.success && data.data) {
                     allStars = data.data.filter(star =>
@@ -921,7 +921,7 @@ Authorization: Bearer ${data.token}`;
             // Try to get nations data from Three.js starmap first
             if (threejsStarmap && threejsStarmap.currentStars && threejsStarmap.currentStars.length > 0) {
                 // Fetch nations data
-                fetch('/api/nations')
+                fetch('/api/v1/nations')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.data) {
@@ -1042,7 +1042,7 @@ Authorization: Bearer ${data.token}`;
                 
                 // Get star data (limit to 100 for performance)
                 console.log('📡 Fetching star data for A-Frame...');
-                const response = await fetch('/api/stars?count_limit=100&mag_limit=8');
+                const response = await fetch('/api/v1/stars?count_limit=100&mag_limit=8');
                 const data = await response.json();
                 
                 console.log('📊 A-Frame star data received:', data.success, data.data ? data.data.length : 0);
@@ -1237,7 +1237,7 @@ Authorization: Bearer ${data.token}`;
             try {
                 // Test with small, known dataset
                 console.log('🧪 BLITZ TEST: Fetching small star dataset (limit 50)...');
-                const response = await fetch('/api/stars?count_limit=50&mag_limit=6');
+                const response = await fetch('/api/v1/stars?count_limit=50&mag_limit=6');
                 const data = await response.json();
                 
                 if (data.success && data.data && data.data.length > 0) {

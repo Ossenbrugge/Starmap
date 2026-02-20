@@ -1,393 +1,365 @@
 """
-Database Models and Data Management
-Central database interface for the Starmap application
+Database - SQLite backend for Starmap.
+
+Run scripts/migrate_to_sqlite.py once to populate data/starmap.sqlite
+from the legacy JSON files.
 """
 
-import json
 import os
-from typing import Dict, List, Any, Optional
+import sqlite3
+from typing import Any, Dict, List, Optional
+
+_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "starmap.sqlite")
+
+
+def _row_factory(cursor, row):
+    """Return rows as plain dicts."""
+    cols = [d[0] for d in cursor.description]
+    return dict(zip(cols, row))
 
 
 class Database:
     """
-    Central database class that manages all data operations
-    using in-memory storage with file system persistence
+    SQLite-backed database.  All public methods preserve the same
+    signatures as the legacy in-memory version so the repository layer
+    needs no changes.
     """
 
     def __init__(self, data_dir: str = "data"):
-        """
-        Initialize the database with data directory
+        db_path = os.path.join(data_dir, "starmap.sqlite")
+        if not os.path.exists(db_path):
+            raise FileNotFoundError(
+                f"SQLite database not found at '{db_path}'. "
+                "Run 'python scripts/migrate_to_sqlite.py' first."
+            )
+        self._con = sqlite3.connect(db_path, check_same_thread=False)
+        self._con.row_factory = _row_factory
+        self._con.execute("PRAGMA journal_mode = WAL")
+        self._con.execute("PRAGMA foreign_keys = ON")
+        print(f"Database opened: {db_path}")
 
-        Args:
-            data_dir: Directory containing data files
-        """
-        self.data_dir = data_dir
-        self._ensure_data_dir()
-        self._load_all_data()
+    def _q(self, sql: str, params: tuple = ()) -> List[Dict]:
+        return self._con.execute(sql, params).fetchall()
 
-    def _ensure_data_dir(self):
-        """Ensure the data directory exists"""
-        if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
-            print(f"✅ Created data directory: {self.data_dir}")
+    def _one(self, sql: str, params: tuple = ()) -> Optional[Dict]:
+        return self._con.execute(sql, params).fetchone()
 
-    def _load_all_data(self):
-        """Load all data files into memory"""
-        print("📊 Loading database into memory...")
+    # ── Helpers ───────────────────────────────────────────────────────────────
 
-        # Load data with proper error handling
-        self._stars = self._load_json_file("stars.json", [])
-        self._exoplanets = self._load_json_file("exoplanets.json", [])
-        self._nations = self._load_json_file("nations.json", [])
-        self._trade_routes = self._load_json_file("trade_routes.json", [])
-        self._stellar_regions = self._load_json_file("stellar_regions.json", [])
-        self._fictional_exoplanets = self._load_json_file("fictional_exoplanets.json", [])
-        
-        # Load fictional stars from CSV
-        self._fictional_stars = self._load_fictional_stars_csv()
+    @staticmethod
+    def _star_to_dict(row: Dict) -> Dict:
+        """Normalise a DB row into the client-facing star shape."""
+        if row is None:
+            return {}
+        return {
+            "id": row.get("id"),
+            "_id": row.get("id"),
+            "name": row.get("proper_name") or row.get("fictional_name") or f"Star {row.get('id')}",
+            "proper_name": row.get("proper_name") or "",
+            "fictional_name": row.get("fictional_name") or "",
+            "fictional_description": row.get("fictional_description") or "",
+            "x": row.get("x") or 0.0,
+            "y": row.get("y") or 0.0,
+            "z": row.get("z") or 0.0,
+            "dist": row.get("dist"),
+            "ra": row.get("ra"),
+            "dec": row.get("dec"),
+            "magnitude": row.get("magnitude"),
+            "mag": row.get("magnitude"),
+            "absolute_magnitude": row.get("absolute_magnitude"),
+            "spectral_class": row.get("spectral_class") or "",
+            "spect": row.get("spectral_class") or "",
+            "color_index": row.get("color_index"),
+            "luminosity": row.get("luminosity"),
+            "constellation": row.get("constellation") or "",
+            "con": row.get("constellation") or "",
+            "hip": row.get("hip"),
+            "hd": row.get("hd"),
+            "nation_id": row.get("nation_id") or "",
+            "is_fictional": bool(row.get("is_fictional")),
+        }
 
-        print("🎉 Database loaded successfully!")
+    # ── Stars ─────────────────────────────────────────────────────────────────
 
-    def _load_json_file(self, filename: str, default_data: Any = None) -> Any:
-        """
-        Load JSON file with safe error handling
+    def get_stars(
+        self,
+        limit: int = 1000,
+        mag_limit: float = 8.0,
+        spectral_type: str = "",
+    ) -> List[Dict]:
+        """Return stars filtered by magnitude and/or spectral type."""
+        params: list = [mag_limit]
+        where = "magnitude IS NOT NULL AND magnitude <= ?"
 
-        Args:
-            filename: Name of the file to load
-            default_data: Default data to return if file doesn't exist or is invalid
+        if spectral_type:
+            where += " AND spectral_class LIKE ?"
+            params.append(f"{spectral_type}%")
 
-        Returns:
-            Parsed JSON data or default_data
-        """
-        filepath = os.path.join(self.data_dir, filename)
-        if not os.path.exists(filepath):
-            print(f"❌ File not found: {filepath}, using default")
-            return default_data if default_data is not None else {}
+        rows = self._q(
+            f"SELECT * FROM stars WHERE {where} ORDER BY magnitude LIMIT ?",
+            tuple(params) + (limit,),
+        )
+        return [self._star_to_dict(r) for r in rows]
 
+    def get_stars_paginated(
+        self,
+        page: int = 1,
+        limit: int = 1000,
+        mag_limit: float = 8.0,
+        spectral_type: str = "",
+        constellation: str = "",
+    ):
+        """Return (rows, total_count) for paginated star queries."""
+        params: list = [mag_limit]
+        where = "magnitude IS NOT NULL AND magnitude <= ?"
+
+        if spectral_type:
+            where += " AND spectral_class LIKE ?"
+            params.append(f"{spectral_type}%")
+
+        if constellation:
+            where += " AND constellation LIKE ?"
+            params.append(f"%{constellation}%")
+
+        total = self._one(
+            f"SELECT COUNT(*) AS cnt FROM stars WHERE {where}", tuple(params)
+        )["cnt"]
+
+        offset = (page - 1) * limit
+        rows = self._q(
+            f"SELECT * FROM stars WHERE {where} ORDER BY magnitude LIMIT ? OFFSET ?",
+            tuple(params) + (limit, offset),
+        )
+        return [self._star_to_dict(r) for r in rows], total
+
+    def get_star_by_id(self, star_id: int) -> Optional[Dict]:
+        row = self._one("SELECT * FROM stars WHERE id = ?", (star_id,))
+        return self._star_to_dict(row) if row else None
+
+    def search_stars(self, query: str, limit: int = 100) -> List[Dict]:
+        like = f"%{query}%"
+        rows = self._q(
+            """SELECT * FROM stars
+               WHERE proper_name LIKE ? OR fictional_name LIKE ?
+               LIMIT ?""",
+            (like, like, limit),
+        )
+        return [self._star_to_dict(r) for r in rows]
+
+    def get_stars_in_radius(
+        self, x: float, y: float, z: float, radius: float
+    ) -> List[Dict]:
+        """Return stars within `radius` parsecs of (x, y, z)."""
+        r2 = radius * radius
+        rows = self._q(
+            """SELECT *,
+                      ((x-?)*(x-?) + (y-?)*(y-?) + (z-?)*(z-?)) AS dist2
+               FROM stars
+               WHERE dist2 <= ?
+               ORDER BY dist2""",
+            (x, x, y, y, z, z, r2),
+        )
+        return [self._star_to_dict(r) for r in rows]
+
+    def add_star(self, star_data: Dict) -> bool:
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            print(f"✅ Loaded {filename}")
-            return data
-        except (json.JSONDecodeError, IOError) as e:
-            print(f"❌ Error loading {filename}: {e}, using default")
-            return default_data if default_data is not None else {}
-
-    def _save_json_file(self, filename: str, data: Any):
-        """
-        Save data to JSON file
-
-        Args:
-            filename: Name of the file to save
-            data: Data to save
-        """
-        filepath = os.path.join(self.data_dir, filename)
-        try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-            print(f"💾 Saved {filename}")
-        except IOError as e:
-            print(f"❌ Error saving {filename}: {e}")
-
-    def _load_fictional_stars_csv(self) -> List[Dict[str, Any]]:
-        """Load fictional stars from CSV file"""
-        import csv
-        
-        csv_path = os.path.join(self.data_dir, "fictional_stars.csv")
-        if not os.path.exists(csv_path):
-            print(f"❌ Fictional stars CSV not found: {csv_path}")
-            return []
-        
-        try:
-            fictional_stars = []
-            with open(csv_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    # Convert CSV data to star format
-                    distance = float(row['dist']) if row['dist'] else 30.0
-                    if distance > 30.0:  # Distance limit
-                        continue
-                    
-                    star = {
-                        'id': int(row['id']),
-                        'name': row['proper'] if row['proper'] else f"HD {row['hd']}" if row['hd'] else f"Star {row['id']}",
-                        'fictional_name': row['proper'] if row['proper'] else None,
-                        'x': float(row['x']),
-                        'y': float(row['y']),
-                        'z': float(row['z']),
-                        'magnitude': float(row['mag']) if row['mag'] else 8.0,
-                        'spectral_class': row['spect'] if row['spect'] else 'G5V',
-                        'constellation': row['con'] if row['con'] else 'Unknown',
-                        'distance': distance,
-                        'is_fictional': True
-                    }
-                    fictional_stars.append(star)
-            
-            print(f"✅ Loaded {len(fictional_stars)} fictional stars from CSV")
-            return fictional_stars
-            
-        except Exception as e:
-            print(f"❌ Error loading fictional stars CSV: {e}")
-            return []
-
-    def get_fictional_stars(self) -> List[Dict[str, Any]]:
-        """Get all fictional stars"""
-        return self._fictional_stars if hasattr(self, '_fictional_stars') else []
-
-    # Stars methods
-    def get_stars(self, limit: int = 1000, mag_limit: float = 8.0,
-                  spectral_type: str = "") -> List[Dict[str, Any]]:
-        """
-        Retrieve stars from database with optional filtering
-
-        Args:
-            limit: Maximum number of stars to return (default: 1000)
-            mag_limit: Magnitude limit filter (default: 8.0)
-            spectral_type: Spectral class filter (optional)
-
-        Returns:
-            List of star dictionaries
-        """
-        try:
-            filtered_stars = []
-
-            for star in self._stars:
-                # Apply magnitude filter
-                if self._get_star_magnitude(star) > mag_limit:
-                    continue
-
-                # Apply spectral type filter if specified
-                if spectral_type and spectral_type.lower() not in self._get_star_spectral_class(star).lower():
-                    continue
-
-                filtered_stars.append(star)
-
-            # Apply limit
-            return filtered_stars[:limit]
-
-        except Exception as e:
-            print(f"❌ Error getting stars: {e}")
-            return []
-
-    def _get_star_magnitude(self, star: Dict[str, Any]) -> float:
-        """Extract magnitude from star data"""
-        # Handle nested structure from the actual data format
-        physical_props = star.get('physical_properties', {})
-        return physical_props.get('magnitude', star.get('magnitude', star.get('mag', 999)))
-
-    def _get_star_spectral_class(self, star: Dict[str, Any]) -> str:
-        """Extract spectral class from star data"""
-        # Handle nested structure from the actual data format
-        physical_props = star.get('physical_properties', {})
-        return physical_props.get('spectral_class', star.get('spectral_class', star.get('spect', '')))
-
-    def get_star_by_id(self, star_id: int) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a specific star by ID
-
-        Args:
-            star_id: The star ID to find
-
-        Returns:
-            Star dictionary or None if not found
-        """
-        try:
-            for star in self._stars:
-                if star.get('_id') == star_id or star.get('id') == star_id:
-                    return star
-            return None
-        except Exception as e:
-            print(f"❌ Error getting star by ID {star_id}: {e}")
-            return None
-
-    def add_star(self, star_data: Dict[str, Any]) -> bool:
-        """
-        Add a new star to the database
-
-        Args:
-            star_data: Star data dictionary
-
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            self._stars.append(star_data)
-            self._save_json_file("stars.json", self._stars)
+            d = self._star_to_dict(star_data) if "id" not in star_data else star_data
+            self._con.execute(
+                """INSERT OR REPLACE INTO stars
+                   (id, proper_name, fictional_name, fictional_description,
+                    x, y, z, dist, ra, dec, magnitude, absolute_magnitude,
+                    spectral_class, color_index, luminosity,
+                    constellation, nation_id, is_fictional)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    star_data.get("id") or star_data.get("_id"),
+                    star_data.get("proper_name") or star_data.get("name") or "",
+                    star_data.get("fictional_name") or "",
+                    star_data.get("fictional_description") or "",
+                    star_data.get("x") or 0.0,
+                    star_data.get("y") or 0.0,
+                    star_data.get("z") or 0.0,
+                    star_data.get("dist"),
+                    star_data.get("ra"),
+                    star_data.get("dec"),
+                    star_data.get("magnitude") or star_data.get("mag"),
+                    star_data.get("absolute_magnitude"),
+                    star_data.get("spectral_class") or star_data.get("spect") or "",
+                    star_data.get("color_index"),
+                    star_data.get("luminosity"),
+                    star_data.get("constellation") or "",
+                    star_data.get("nation_id") or "",
+                    1 if star_data.get("is_fictional") else 0,
+                ),
+            )
+            self._con.commit()
             return True
         except Exception as e:
-            print(f"❌ Error adding star: {e}")
+            print(f"add_star error: {e}")
             return False
 
-    def update_star(self, star_id: int, star_data: Dict[str, Any]) -> bool:
-        """
-        Update an existing star
-
-        Args:
-            star_id: ID of the star to update
-            star_data: Updated star data
-
-        Returns:
-            True if successful, False otherwise
-        """
+    def update_star(self, star_id: int, star_data: Dict) -> bool:
         try:
-            for i, star in enumerate(self._stars):
-                if star.get('id') == star_id:
-                    star_data['id'] = star_id
-                    self._stars[i] = star_data
-                    self._save_json_file("stars.json", self._stars)
-                    return True
-            return False
+            self._con.execute(
+                """UPDATE stars SET
+                   proper_name=?, fictional_name=?, fictional_description=?,
+                   x=?, y=?, z=?, dist=?, magnitude=?, spectral_class=?,
+                   constellation=?, nation_id=?
+                   WHERE id=?""",
+                (
+                    star_data.get("proper_name") or star_data.get("name") or "",
+                    star_data.get("fictional_name") or "",
+                    star_data.get("fictional_description") or "",
+                    star_data.get("x") or 0.0,
+                    star_data.get("y") or 0.0,
+                    star_data.get("z") or 0.0,
+                    star_data.get("dist"),
+                    star_data.get("magnitude") or star_data.get("mag"),
+                    star_data.get("spectral_class") or star_data.get("spect") or "",
+                    star_data.get("constellation") or "",
+                    star_data.get("nation_id") or "",
+                    star_id,
+                ),
+            )
+            self._con.commit()
+            return self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
         except Exception as e:
-            print(f"❌ Error updating star {star_id}: {e}")
+            print(f"update_star error: {e}")
             return False
 
     def delete_star(self, star_id: int) -> bool:
-        """
-        Delete a star by ID
-
-        Args:
-            star_id: ID of the star to delete
-
-        Returns:
-            True if successful, False otherwise
-        """
         try:
-            original_length = len(self._stars)
-            self._stars = [star for star in self._stars if star.get('id') != star_id]
-
-            if len(self._stars) < original_length:
-                self._save_json_file("stars.json", self._stars)
-                return True
-            return False
+            self._con.execute("DELETE FROM stars WHERE id = ?", (star_id,))
+            self._con.commit()
+            return self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
         except Exception as e:
-            print(f"❌ Error deleting star {star_id}: {e}")
+            print(f"delete_star error: {e}")
             return False
 
-    # Nations methods
-    def get_nations(self) -> List[Dict[str, Any]]:
-        """Retrieve all nations"""
-        try:
-            return self._nations.copy()
-        except Exception as e:
-            print(f"❌ Error getting nations: {e}")
-            return []
+    def get_fictional_stars(self) -> List[Dict]:
+        rows = self._q("SELECT * FROM stars WHERE is_fictional = 1")
+        return [self._star_to_dict(r) for r in rows]
 
-    def get_nation_by_id(self, nation_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve a specific nation by ID"""
-        try:
-            for nation in self._nations:
-                if nation.get('id') == nation_id:
-                    return nation
-            return None
-        except Exception as e:
-            print(f"❌ Error getting nation by ID {nation_id}: {e}")
-            return None
+    # ── Exoplanets ────────────────────────────────────────────────────────────
 
-    def add_nation(self, nation_data: Dict[str, Any]) -> bool:
-        """Add a new nation"""
+    def get_exoplanets(self) -> List[Dict]:
+        return self._q("SELECT * FROM exoplanets WHERE is_fictional = 0")
+
+    def get_fictional_exoplanets(self) -> List[Dict]:
+        return self._q("SELECT * FROM fictional_exoplanets")
+
+    # ── Nations ───────────────────────────────────────────────────────────────
+
+    def get_nations(self) -> List[Dict]:
+        nations = self._q("SELECT * FROM nations")
+        for nation in nations:
+            territories = self._q(
+                "SELECT star_id FROM nation_territories WHERE nation_id = ?",
+                (nation["id"],),
+            )
+            nation["territories"] = [t["star_id"] for t in territories]
+            nation["color"] = nation.get("color") or "#888888"
+        return nations
+
+    def get_nation_by_id(self, nation_id: str) -> Optional[Dict]:
+        nation = self._one("SELECT * FROM nations WHERE id = ?", (nation_id,))
+        if nation:
+            territories = self._q(
+                "SELECT star_id FROM nation_territories WHERE nation_id = ?",
+                (nation_id,),
+            )
+            nation["territories"] = [t["star_id"] for t in territories]
+            nation["color"] = nation.get("color") or "#888888"
+        return nation
+
+    def add_nation(self, nation_data: Dict) -> bool:
         try:
-            self._nations.append(nation_data)
-            self._save_json_file("nations.json", self._nations)
+            nation_id = str(nation_data.get("id") or nation_data.get("_id") or "")
+            self._con.execute(
+                """INSERT OR REPLACE INTO nations
+                   (id, name, full_name, description, color, government_type, capital_star_id)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (
+                    nation_id,
+                    str(nation_data.get("name") or ""),
+                    str(nation_data.get("full_name") or ""),
+                    str(nation_data.get("description") or ""),
+                    str(nation_data.get("color") or ""),
+                    str(nation_data.get("government_type") or ""),
+                    nation_data.get("capital_star_id"),
+                ),
+            )
+            for star_id in nation_data.get("territories", []):
+                self._con.execute(
+                    "INSERT OR IGNORE INTO nation_territories (nation_id, star_id) VALUES (?,?)",
+                    (nation_id, star_id),
+                )
+            self._con.commit()
             return True
         except Exception as e:
-            print(f"❌ Error adding nation: {e}")
+            print(f"add_nation error: {e}")
             return False
 
-    # Exoplanets methods
-    def get_exoplanets(self) -> List[Dict[str, Any]]:
-        """Retrieve all exoplanets"""
-        try:
-            return self._exoplanets.copy()
-        except Exception as e:
-            print(f"❌ Error getting exoplanets: {e}")
-            return []
+    # ── Trade routes ──────────────────────────────────────────────────────────
 
-    def get_fictional_exoplanets(self) -> List[Dict[str, Any]]:
-        """Retrieve all fictional exoplanets"""
-        try:
-            return self._fictional_exoplanets.copy()
-        except Exception as e:
-            print(f"❌ Error getting fictional exoplanets: {e}")
-            return []
-
-    def get_trade_routes(self) -> List[Dict[str, Any]]:
-        """Retrieve all trade routes"""
-        try:
-            return self._trade_routes.copy()
-        except Exception as e:
-            print(f"❌ Error getting trade routes: {e}")
-            return []
-
-    def get_stellar_regions(self) -> List[Dict[str, Any]]:
-        """Retrieve all stellar regions"""
-        try:
-            return self._stellar_regions.copy()
-        except Exception as e:
-            print(f"❌ Error getting stellar regions: {e}")
-            return []
-
-    # Statistics methods
-    def get_stats(self) -> Dict[str, Any]:
-        """Get database statistics"""
-        try:
-            return {
-                'stars': len(self._stars),
-                'nations': len(self._nations),
-                'exoplanets': len(self._exoplanets),
-                'fictional_exoplanets': len(self._fictional_exoplanets),
-                'trade_routes': len(self._trade_routes),
-                'stellar_regions': len(self._stellar_regions)
+    def get_trade_routes(self) -> List[Dict]:
+        routes = self._q("SELECT * FROM trade_routes")
+        # Re-shape to match the legacy nested 'endpoints' format
+        for r in routes:
+            r["endpoints"] = {
+                "from": {"star_id": r.get("from_star_id")},
+                "to":   {"star_id": r.get("to_star_id")},
             }
-        except Exception as e:
-            print(f"❌ Error getting stats: {e}")
-            return {}
+        return routes
+
+    # ── Stellar regions ───────────────────────────────────────────────────────
+
+    def get_stellar_regions(self) -> List[Dict]:
+        rows = self._q("SELECT * FROM stellar_regions")
+        for r in rows:
+            r["center"] = [
+                (r.get("x_min", 0) + r.get("x_max", 0)) / 2,
+                (r.get("y_min", 0) + r.get("y_max", 0)) / 2,
+                (r.get("z_min", 0) + r.get("z_max", 0)) / 2,
+            ]
+            r["x_range"] = [r.get("x_min"), r.get("x_max")]
+            r["y_range"] = [r.get("y_min"), r.get("y_max")]
+            r["z_range"] = [r.get("z_min"), r.get("z_max")]
+            r["color"] = [
+                r.get("color_r", 128),
+                r.get("color_g", 128),
+                r.get("color_b", 128),
+            ]
+        return rows
+
+    # ── Statistics ────────────────────────────────────────────────────────────
+
+    def get_stats(self) -> Dict[str, Any]:
+        return {
+            "stars":                self._one("SELECT COUNT(*) AS c FROM stars WHERE is_fictional=0")["c"],
+            "fictional_stars":      self._one("SELECT COUNT(*) AS c FROM stars WHERE is_fictional=1")["c"],
+            "nations":              self._one("SELECT COUNT(*) AS c FROM nations")["c"],
+            "exoplanets":           self._one("SELECT COUNT(*) AS c FROM exoplanets WHERE is_fictional=0")["c"],
+            "fictional_exoplanets": self._one("SELECT COUNT(*) AS c FROM fictional_exoplanets")["c"],
+            "trade_routes":         self._one("SELECT COUNT(*) AS c FROM trade_routes")["c"],
+            "stellar_regions":      self._one("SELECT COUNT(*) AS c FROM stellar_regions")["c"],
+        }
+
+    def get_system_stats(self, star_id: int) -> Optional[Dict]:
+        star = self.get_star_by_id(star_id)
+        if not star:
+            return None
+        star_name = star.get("name") or ""
+        return {
+            "star": star,
+            "exoplanets": self._q(
+                "SELECT * FROM exoplanets WHERE host_star_name = ?", (star_name,)
+            ),
+            "fictional_exoplanets": self._q(
+                "SELECT * FROM fictional_exoplanets WHERE host_star_name = ?", (star_name,)
+            ),
+        }
 
     def reload_data(self):
-        """Reload all data from files"""
-        print("🔄 Reloading database data...")
-        self._load_all_data()
-        print("✅ Database reloaded successfully!")
-
-    def search_stars(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
-        """
-        Search stars by name or ID
-
-        Args:
-            query: Search query string
-            limit: Maximum results to return
-
-        Returns:
-            List of matching stars
-        """
-        try:
-            results = []
-            query_lower = query.lower()
-
-            for star in self._stars:
-                if query_lower in star.get('name', '').lower():
-                    results.append(star)
-                elif str(query_lower) in str(star.get('id', '')):
-                    results.append(star)
-
-            return results[:limit]
-        except Exception as e:
-            print(f"❌ Error searching stars: {e}")
-            return []
-
-    def get_system_stats(self, star_id: int) -> Optional[Dict[str, Any]]:
-        """Get statistics for a specific stellar system"""
-        try:
-            star = self.get_star_by_id(star_id)
-            if not star:
-                return None
-
-            system_stats = {
-                'star': star,
-                'exoplanets': [p for p in self._exoplanets if p.get('hostname') == star.get('name')],
-                'fictional_exoplanets': [p for p in self._fictional_exoplanets if p.get('host_star') == star.get('name')]
-            }
-
-            return system_stats
-        except Exception as e:
-            print(f"❌ Error getting system stats for star {star_id}: {e}")
-            return None
+        """No-op: data is always on disk with SQLite."""
+        pass

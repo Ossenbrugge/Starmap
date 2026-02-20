@@ -33,7 +33,7 @@ def init_api_services():
 
 
 # Blueprint for protected/CRUD API routes
-api_bp = Blueprint('api', __name__, url_prefix='/api')
+api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
 
 @api_bp.route('/star/<int:star_id>')

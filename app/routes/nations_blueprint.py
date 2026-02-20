@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-nations_bp = Blueprint('nations', __name__, url_prefix='/api')
+nations_bp = Blueprint('nations', __name__, url_prefix='/api/v1')
 
 # Initialize service
 nation_service = NationService()

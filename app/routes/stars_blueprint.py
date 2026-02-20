@@ -7,13 +7,13 @@ from flask import Blueprint, request
 from typing import Dict, Any, Optional
 from app.services.star_service import StarService
 from app.middleware.auth_middleware import api_auth_required
-from app.utils.response_utils import success_response, error_response
+from app.utils.response_utils import success_response, error_response, paginated_response
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-stars_bp = Blueprint('stars', __name__, url_prefix='/api')
+stars_bp = Blueprint('stars', __name__, url_prefix='/api/v1')
 
 # Initialize service
 star_service = StarService()
@@ -21,22 +21,37 @@ star_service = StarService()
 
 @stars_bp.route('/stars')
 def get_stars() -> Dict[str, Any]:
-    """Get stars with optional filtering parameters"""
+    """Get stars with optional filtering and pagination.
+
+    Query params:
+        page         (int, default 1)
+        limit        (int, default 1000, max 10000)
+        mag_limit    (float, default 8.0)
+        spectral_type (str)
+        constellation (str)
+    """
     try:
-        count_limit: Optional[int] = request.args.get('count_limit', type=int)
+        page: int = max(1, request.args.get('page', 1, type=int))
+        limit: int = min(request.args.get('limit', 1000, type=int), 50000)
         mag_limit: Optional[float] = request.args.get('mag_limit', type=float)
         spectral_type: Optional[str] = request.args.get('spectral_type')
         constellation: Optional[str] = request.args.get('constellation')
 
-        result: Dict[str, Any] = star_service.get_filtered_stars(
-            count_limit=count_limit,
-            mag_limit=mag_limit,
-            spectral_type=spectral_type,
-            constellation=constellation
+        result: Dict[str, Any] = star_service.get_stars_paginated(
+            page=page,
+            limit=limit,
+            mag_limit=mag_limit or 8.0,
+            spectral_type=spectral_type or "",
+            constellation=constellation or "",
         )
 
         if result['success']:
-            return success_response(result['data'], count=len(result['data']))
+            return paginated_response(
+                result['data'],
+                page=page,
+                limit=limit,
+                total_count=result['total'],
+            )
         return error_response(result.get('error', 'Failed to retrieve stars'), 500)
 
     except Exception as e:

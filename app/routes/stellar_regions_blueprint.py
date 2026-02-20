@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-stellar_regions_bp = Blueprint('stellar_regions', __name__, url_prefix='/api')
+stellar_regions_bp = Blueprint('stellar_regions', __name__, url_prefix='/api/v1')
 
 # Initialize service
 stats_service = StatsService()

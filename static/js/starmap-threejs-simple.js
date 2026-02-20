@@ -123,8 +123,8 @@ class ThreeJSStarmap {
             console.log('🌟 Loading stars...');
 
             const [starsResponse, fictionalResponse] = await Promise.all([
-                fetch('/api/stars'),
-                fetch('/api/fictional-stars')
+                fetch('/api/v1/stars?limit=50000&mag_limit=15'),
+                fetch('/api/v1/fictional-stars')
             ]);
 
             const starsData = await starsResponse.json();
@@ -202,29 +202,32 @@ class ThreeJSStarmap {
         return 'A frontier system in the Felgenland Saga universe.';
     }
 
-    _buildStarTexture() {
-        if (this._starTexture) return this._starTexture;
-        const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
-        const context = canvas.getContext('2d');
-        const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
-        gradient.addColorStop(0, 'rgba(255,255,255,1)');
-        gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-        gradient.addColorStop(0.4, 'rgba(255,255,255,0.4)');
-        gradient.addColorStop(1, 'rgba(255,255,255,0)');
-        context.fillStyle = gradient;
-        context.fillRect(0, 0, 32, 32);
-        this._starTexture = new THREE.CanvasTexture(canvas);
-        return this._starTexture;
+    // Spectral class → RGB color mapping (approximate black-body colours)
+    static _spectralColor(spectralClass) {
+        const key = (spectralClass || 'G')[0].toUpperCase();
+        const map = {
+            O: [0.60, 0.70, 1.00],
+            B: [0.70, 0.85, 1.00],
+            A: [0.95, 0.97, 1.00],
+            F: [1.00, 1.00, 0.85],
+            G: [1.00, 0.92, 0.60],
+            K: [1.00, 0.75, 0.40],
+            M: [1.00, 0.45, 0.25],
+        };
+        return map[key] || [1.0, 1.0, 1.0];
     }
 
     createStars(stars) {
+        // Dispose previous geometry / material
         while (this.starField.children.length > 0) {
             const child = this.starField.children[0];
             this.starField.remove(child);
             if (child.geometry) child.geometry.dispose();
             if (child.material) child.material.dispose();
+        }
+        if (this.starMaterial) {
+            this.starMaterial.dispose();
+            this.starMaterial = null;
         }
 
         const validStars = stars.filter(star =>
@@ -234,35 +237,91 @@ class ThreeJSStarmap {
         );
 
         this.currentStars = validStars;
-        const positions = [];
-        const colors = [];
 
-        validStars.forEach(star => {
-            positions.push(star.x * 10, star.y * 10, star.z * 10);
-            colors.push(1, 1, 1);
+        const positions  = new Float32Array(validStars.length * 3);
+        const magnitudes = new Float32Array(validStars.length);
+        const colors     = new Float32Array(validStars.length * 3);
+
+        validStars.forEach((star, i) => {
+            positions[i * 3]     = star.x * 10;
+            positions[i * 3 + 1] = star.y * 10;
+            positions[i * 3 + 2] = star.z * 10;
+
+            magnitudes[i] = (star.magnitude != null && !isNaN(star.magnitude))
+                ? star.magnitude : 8.0;
+
+            const [r, g, b] = ThreeJSStarmap._spectralColor(star.spectral_class);
+            colors[i * 3]     = r;
+            colors[i * 3 + 1] = g;
+            colors[i * 3 + 2] = b;
         });
 
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('position',  new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('magnitude', new THREE.Float32BufferAttribute(magnitudes, 1));
+        geometry.setAttribute('starColor', new THREE.Float32BufferAttribute(colors, 3));
 
-        const material = new THREE.PointsMaterial({
-            size: 3,
-            vertexColors: true,
-            sizeAttenuation: true,
-            map: this._buildStarTexture(),
+        // ── GPU Shader (LOD + spectral colours, no texture uploads on filter) ──
+        const vertexShader = `
+            attribute float magnitude;
+            attribute vec3  starColor;
+            uniform float   uMagLimit;
+            uniform float   uCameraDistance;
+            varying vec3    vColor;
+            varying float   vAlpha;
+
+            void main() {
+                vColor = starColor;
+
+                // Hide stars dimmer than the current magnitude limit
+                float visible = step(magnitude, uMagLimit);
+
+                // LOD: brighter stars are larger; point size scales with camera proximity
+                float brightness = max(0.0, uMagLimit - magnitude);
+                float sz = (2.0 + brightness * 3.0) * (50.0 / max(uCameraDistance, 1.0));
+                sz = clamp(sz, 0.5, 14.0);
+
+                gl_PointSize = sz * visible;
+                gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                vAlpha = visible * (0.4 + brightness * 0.6);
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec3  vColor;
+            varying float vAlpha;
+
+            void main() {
+                vec2  coord = gl_PointCoord - 0.5;
+                float dist  = length(coord);
+                if (dist > 0.5) discard;
+                float alpha = smoothstep(0.5, 0.0, dist) * vAlpha;
+                if (alpha < 0.01) discard;
+                gl_FragColor = vec4(vColor, alpha);
+            }
+        `;
+
+        const initialMag = parseFloat(document.getElementById('magLimit')?.value ?? '8');
+
+        this.starMaterial = new THREE.ShaderMaterial({
+            vertexShader,
+            fragmentShader,
+            uniforms: {
+                uMagLimit:       { value: initialMag },
+                uCameraDistance: { value: 10.0 },
+            },
             transparent: true,
-            alphaTest: 0.001
+            depthWrite: false,
         });
 
-        const points = new THREE.Points(geometry, material);
+        const points = new THREE.Points(geometry, this.starMaterial);
         this.starField.add(points);
-        console.log(`Created ${validStars.length} stars`);
+        console.log(`Created ${validStars.length} stars with GPU shader LOD`);
     }
 
     setupStarInteraction() {
-
         this.raycaster = new THREE.Raycaster();
+        this.raycaster.params.Points.threshold = 0.5;
         this.mouse = new THREE.Vector2();
         this.intersects = [];
         this.highlightedStar = null;
@@ -271,6 +330,21 @@ class ThreeJSStarmap {
         this.container.addEventListener('mousemove', (event) => this.onMouseMove(event));
         this.container.addEventListener('mouseout', () => this.onMouseOut());
 
+        // Respond to window resize
+        window.addEventListener('resize', () => this.resize());
+
+        // Wire magnitude slider → shader uniform (instant, no API call)
+        const slider = document.getElementById('magLimit');
+        const label  = document.getElementById('magValue');
+        if (slider) {
+            slider.addEventListener('input', () => {
+                const val = parseFloat(slider.value);
+                if (label) label.textContent = val.toFixed(1);
+                if (this.starMaterial) {
+                    this.starMaterial.uniforms.uMagLimit.value = val;
+                }
+            });
+        }
     }
 
     onMouseClick(event) {
@@ -282,7 +356,7 @@ class ThreeJSStarmap {
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         if (this.starField && this.starField.children.length > 0) {
-            this.intersects = this.raycaster.intersectObjects([this.starField]);
+            this.intersects = this.raycaster.intersectObjects(this.starField.children, true);
 
             if (this.intersects.length > 0) {
                 const intersect = this.intersects[0];
@@ -290,6 +364,11 @@ class ThreeJSStarmap {
 
                 if (pointIndex >= 0 && pointIndex < this.currentStars.length) {
                     const clickedStar = this.currentStars[pointIndex];
+                    // Ignore stars filtered out by the magnitude shader
+                    const magLimit = this.starMaterial
+                        ? this.starMaterial.uniforms.uMagLimit.value
+                        : 15;
+                    if (clickedStar.magnitude > magLimit) return;
                     console.log('⭐ Star clicked:', clickedStar);
                     this.displayStarDetails(clickedStar);
                     this.highlightStar(clickedStar);
@@ -306,7 +385,7 @@ class ThreeJSStarmap {
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         if (this.starField && this.starField.children.length > 0) {
-            this.intersects = this.raycaster.intersectObjects([this.starField]);
+            this.intersects = this.raycaster.intersectObjects(this.starField.children, true);
 
             if (this.intersects.length > 0) {
                 const intersect = this.intersects[0];
@@ -314,6 +393,10 @@ class ThreeJSStarmap {
 
                 if (pointIndex >= 0 && pointIndex < this.currentStars.length) {
                     const hoveredStar = this.currentStars[pointIndex];
+                    const magLimit = this.starMaterial
+                        ? this.starMaterial.uniforms.uMagLimit.value
+                        : 15;
+                    if (hoveredStar.magnitude > magLimit) return;
 
                     if (this.highlightedStar !== hoveredStar) {
                         this.clearStarHighlights();
@@ -518,7 +601,7 @@ class ThreeJSStarmap {
     async loadNations() {
         console.log('🏛️ loadNations called - loading nations overlay...');
         try {
-            const response = await fetch('/api/nations');
+            const response = await fetch('/api/v1/nations');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -677,7 +760,7 @@ class ThreeJSStarmap {
     async loadTradeRoutes() {
         console.log('🚛 loadTradeRoutes called - loading trade routes overlay...');
         try {
-            const response = await fetch('/api/trade-routes');
+            const response = await fetch('/api/v1/trade-routes');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -734,7 +817,7 @@ class ThreeJSStarmap {
     async loadStellarRegions() {
         console.log('🌌 loadStellarRegions called - loading stellar regions overlay...');
         try {
-            const response = await fetch('/api/stellar-regions');
+            const response = await fetch('/api/v1/stellar-regions');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -798,7 +881,7 @@ class ThreeJSStarmap {
     async loadExoplanets() {
         console.log('🪐 loadExoplanets called - loading exoplanets overlay...');
         try {
-            const response = await fetch('/api/exoplanets');
+            const response = await fetch('/api/v1/exoplanets');
             const data = await response.json();
 
             if (data.success && data.data) {
@@ -876,6 +959,15 @@ class ThreeJSStarmap {
 
         if (this.controls && this.controls.update) {
             this.controls.update();
+        }
+
+        // Keep LOD shader uniform in sync with camera distance
+        if (this.starMaterial) {
+            const target = (this.controls && this.controls.target)
+                ? this.controls.target
+                : new THREE.Vector3(0, 0, 0);
+            this.starMaterial.uniforms.uCameraDistance.value =
+                this.camera.position.distanceTo(target);
         }
 
         this.render();

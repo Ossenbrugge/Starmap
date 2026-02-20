@@ -12,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-trade_routes_bp = Blueprint('trade_routes', __name__, url_prefix='/api')
+trade_routes_bp = Blueprint('trade_routes', __name__, url_prefix='/api/v1')
 
 # Initialize service
 trade_route_service = TradeRouteService()

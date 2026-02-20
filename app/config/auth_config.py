@@ -6,10 +6,21 @@ Centralized configuration for security settings
 import os
 from datetime import timedelta
 
+_DEFAULT_SECRET = 'felgenland-union-secure-key-2025-change-in-production'
+_secret_key = os.environ.get('STARMAP_SECRET_KEY', _DEFAULT_SECRET)
+
+# Refuse to start with the default key in production
+def _validate_secret_key(key: str) -> str:
+    if key == _DEFAULT_SECRET and os.environ.get('FLASK_ENV') == 'production':
+        raise RuntimeError(
+            'STARMAP_SECRET_KEY must be set to a strong random value in production. '
+            'Generate one with: python -c "import secrets; print(secrets.token_hex(32))"'
+        )
+    return key
+
 # Authentication configuration
 auth_config = {
-    'SECRET_KEY': os.environ.get('STARMAP_SECRET_KEY',
-                                'felgenland-union-secure-key-2025-change-in-production'),
+    'SECRET_KEY': _validate_secret_key(_secret_key),
     'SESSION_TIMEOUT_HOURS': int(os.environ.get('SESSION_TIMEOUT_HOURS', 8)),
     'JWT_EXPIRES_HOURS': int(os.environ.get('JWT_EXPIRES_HOURS', 24)),
     'JWT_ALGORITHM': 'HS256',

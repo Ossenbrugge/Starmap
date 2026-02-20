@@ -48,18 +48,43 @@ class AuthManager:
         self.users = self._create_default_users()
     
     def _create_default_users(self):
-        """Create default admin users - in production, load from secure storage"""
+        """Load admin credentials from environment variables.
+
+        In production both STARMAP_ADMIN_PASSWORD and STARMAP_ADMIN2_PASSWORD
+        must be set explicitly.  In development, random passwords are generated
+        and printed to stdout on startup.
+        """
+        import secrets as _secrets
+        from app.config.auth_config import is_production
+
+        admin_pw = os.environ.get('STARMAP_ADMIN_PASSWORD')
+        admin2_pw = os.environ.get('STARMAP_ADMIN2_PASSWORD')
+
+        if not admin_pw or not admin2_pw:
+            if is_production():
+                raise RuntimeError(
+                    'STARMAP_ADMIN_PASSWORD and STARMAP_ADMIN2_PASSWORD '
+                    'must be set in production.'
+                )
+            admin_pw = admin_pw or _secrets.token_urlsafe(16)
+            admin2_pw = admin2_pw or _secrets.token_urlsafe(16)
+            print('[DEV] Auto-generated credentials (set env vars to override):')
+            if not os.environ.get('STARMAP_ADMIN_PASSWORD'):
+                print(f'  admin          : {admin_pw}')
+            if not os.environ.get('STARMAP_ADMIN2_PASSWORD'):
+                print(f'  starmap_admin  : {admin2_pw}')
+
         return {
             'admin': User(
                 id=1,
                 username='admin',
-                password_hash=generate_password_hash('felgenland_secure_2025'),  # Change in production!
+                password_hash=generate_password_hash(admin_pw),
                 role='admin'
             ),
             'starmap_admin': User(
                 id=2,
                 username='starmap_admin',
-                password_hash=generate_password_hash('galactic_command_auth'),  # Change in production!
+                password_hash=generate_password_hash(admin2_pw),
                 role='admin'
             )
         }

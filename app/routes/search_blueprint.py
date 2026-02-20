@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Create blueprint
-search_bp = Blueprint('search', __name__, url_prefix='/api')
+search_bp = Blueprint('search', __name__, url_prefix='/api/v1')
 
 # Initialize service
 search_service = SearchService()

@@ -53,6 +53,33 @@ class StarService:
             spectral_type=spectral_type or ""
         )
 
+    def get_stars_paginated(self, page: int = 1, limit: int = 1000,
+                            mag_limit: float = 8.0, spectral_type: str = "",
+                            constellation: str = "") -> Dict[str, Any]:
+        """Get paginated stars; returns {success, data, total}."""
+        try:
+            if mag_limit < -2.0 or mag_limit > 15.0:
+                return {'success': False, 'error': 'Magnitude limit must be between -2.0 and 15.0'}
+
+            spectral_type = spectral_type.upper().strip()
+            valid_spectral = ['O', 'B', 'A', 'F', 'G', 'K', 'M']
+            if spectral_type and spectral_type[0] not in valid_spectral:
+                return {'success': False, 'error': 'Invalid spectral type'}
+
+            db = self.star_repository.database
+            if not db:
+                return {'success': False, 'error': 'Database not available'}
+
+            rows, total = db.get_stars_paginated(
+                page=page, limit=limit, mag_limit=mag_limit,
+                spectral_type=spectral_type, constellation=constellation,
+            )
+            client_stars = [self._convert_star_to_client_format(s) for s in rows]
+            return {'success': True, 'data': client_stars, 'total': total}
+
+        except Exception as e:
+            return {'success': False, 'error': f'Failed to retrieve stars: {str(e)}'}
+
     def get_star_by_id(self, star_id: int) -> Dict[str, Any]:
         """Get detailed information for a specific star by ID"""
         return self.get_star_details(star_id)

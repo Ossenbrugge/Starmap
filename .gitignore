@@ -142,6 +142,7 @@ benchmarks/
 
 # Legacy Code Directory
 legacy/
+legacy_backup/
 
 # Temporary Files Created by Scripts
 setup_log.txt

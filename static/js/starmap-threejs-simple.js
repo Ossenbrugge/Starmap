@@ -11,6 +11,7 @@ class ThreeJSStarmap {
         this.currentStars = [];
         this.animationId = null;
         this.keys = {};
+        this.fictionalExoplanets = [];
 
         if (typeof THREE === 'undefined') {
             console.error('❌ Three.js not loaded');
@@ -163,6 +164,7 @@ class ThreeJSStarmap {
                 id: star.id || 999990 + index,
                 name: starName,
                 fictional_name: star.fictional_name || starName,
+                fictional_description: star.fictional_description || '',
                 x: parseFloat(star.x) || 0,
                 y: parseFloat(star.y) || 0,
                 z: parseFloat(star.z) || 0,
@@ -172,7 +174,6 @@ class ThreeJSStarmap {
                 distance: parseFloat(star.distance || star.dist) || 10.0,
                 catalog_ids: this.buildCatalogIds(star),
                 is_fictional: true,
-                fictional_description: this.generateFictionalDescription(starName)
             };
         });
     }
@@ -196,12 +197,6 @@ class ThreeJSStarmap {
         return catalogIds;
     }
 
-    generateFictionalDescription(starName) {
-        if (starName.includes('Tiefe-Grenze')) {
-            return 'Tiefe-Grenze Tor serves as the gateway to deep space exploration.';
-        }
-        return 'A frontier system in the Felgenland Saga universe.';
-    }
 
     // Spectral class → RGB color mapping (approximate black-body colours)
     static _spectralColor(spectralClass) {
@@ -557,13 +552,41 @@ class ThreeJSStarmap {
             </div>
         `;
 
-        if (star.fictional_name && star.fictional_description) {
+        if (star.fictional_description) {
             html += `
                 <div class="mt-3 p-2 bg-light bg-opacity-25 rounded">
-                    <strong>Fictional Universe:</strong><br>
+                    <strong>Saga Notes:</strong><br>
                     <small class="text-muted">${star.fictional_description}</small>
                 </div>
             `;
+        }
+
+        // Show known worlds from fictional_exoplanets
+        const starPlanets = this.fictionalExoplanets.filter(p =>
+            p.host_star_name === star.name ||
+            p.host_star_name === star.fictional_name
+        );
+        if (starPlanets.length > 0) {
+            html += `<div class="mt-3"><strong>Known Worlds (${starPlanets.length}):</strong>`;
+            for (const planet of starPlanets) {
+                const typeColor = {
+                    'Earth-like': 'text-success', 'Rocky Moon': 'text-success',
+                    'Gas Giant': 'text-warning', 'Ice Giant': 'text-info',
+                    'Hot Neptune': 'text-danger', 'Hot Rocky': 'text-danger',
+                    'Rocky': 'text-secondary', 'Ice/Rocky': 'text-info',
+                    'Terrestrial': 'text-light',
+                }[planet.planet_type] || 'text-muted';
+                html += `
+                <div class="mt-1 p-2 bg-dark bg-opacity-50 rounded">
+                    <small>
+                        <span class="text-info fw-bold">${planet.name}</span>
+                        <span class="${typeColor} ms-2">${planet.planet_type}</span>
+                        ${planet.orbit ? `<span class="text-muted ms-2">${planet.orbit} AU</span>` : ''}
+                        ${planet.description ? `<br><span class="text-muted">${planet.description}</span>` : ''}
+                    </small>
+                </div>`;
+            }
+            html += `</div>`;
         }
 
         detailsContent.innerHTML = html;
@@ -959,17 +982,36 @@ class ThreeJSStarmap {
     }
 
     async loadExoplanets() {
-        console.log('🪐 loadExoplanets called - loading exoplanets overlay...');
+        console.log('🪐 loadExoplanets called - loading real + fictional exoplanets...');
         try {
-            const response = await fetch('/api/v1/exoplanets');
-            const data = await response.json();
+            const [realRes, fictionalRes] = await Promise.all([
+                fetch('/api/v1/exoplanets'),
+                fetch('/api/v1/fictional-exoplanets'),
+            ]);
+            const realData      = await realRes.json();
+            const fictionalData = await fictionalRes.json();
 
-            if (data.success && data.data) {
-                console.log(`🎯 Creating exoplanets for ${data.data.length} planets`);
-                this.createExoplanetsOverlay(data.data);
-                return true;
+            const allPlanets = [];
+
+            if (realData.success && realData.data) {
+                allPlanets.push(...realData.data);
             }
-            return false;
+
+            if (fictionalData.success && fictionalData.data) {
+                // Normalise: createExoplanetsOverlay reads planet.host_star
+                const normalised = fictionalData.data.map(p => ({
+                    ...p,
+                    host_star: p.host_star_name || p.host_star,
+                }));
+                this.fictionalExoplanets = normalised;
+                allPlanets.push(...normalised);
+            }
+
+            if (allPlanets.length > 0) {
+                console.log(`🎯 Creating exoplanets overlay for ${allPlanets.length} planets`);
+                this.createExoplanetsOverlay(allPlanets);
+            }
+            return true;
         } catch (error) {
             console.warn('🪐 loadExoplanets failed:', error);
             return false;

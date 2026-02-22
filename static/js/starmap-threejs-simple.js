@@ -13,10 +13,12 @@ class ThreeJSStarmap {
         this.keys = {};
         this.fictionalExoplanets = [];
         this.nations = [];
-        this.nationFilter = null;
+        this.nationFilter = null;      // Set of star IDs for nation filter
+        this.eraYear = null;           // Current era year (null = no era filter)
         this.politicalView = false;
         this.flyAnimation = null;
         this.points = null;
+        this.clock = new THREE.Clock();
 
         if (typeof THREE === 'undefined') {
             console.error('❌ Three.js not loaded');
@@ -178,6 +180,9 @@ class ThreeJSStarmap {
                 constellation: star.con || star.constellation,
                 distance: parseFloat(star.distance || star.dist) || 10.0,
                 catalog_ids: this.buildCatalogIds(star),
+                nation_id: star.nation_id || '',
+                era_start: star.era_start || null,
+                era_end: star.era_end || null,
                 is_fictional: true,
             };
         });
@@ -448,6 +453,71 @@ class ThreeJSStarmap {
         document.body.removeChild(a);
     }
 
+    // ── Wiki / Top-down export ────────────────────────────────────────────────
+
+    generateWikiView(titleText = null) {
+        // Fly to top-down view, hide UI, render clean map, download PNG + wiki markup
+        const camOffset = 800;
+        const target    = (this.controls && this.controls.target)
+            ? this.controls.target.clone()
+            : new THREE.Vector3(0, 0, 0);
+
+        // Snap camera directly above target (Y-up = galactic north)
+        this.flyAnimation = {
+            startPos:    this.camera.position.clone(),
+            endPos:      new THREE.Vector3(target.x, target.y + camOffset, target.z),
+            startTarget: this.controls.target.clone(),
+            endTarget:   target.clone(),
+            duration:    1200,
+            startTime:   performance.now(),
+        };
+
+        // After fly animation completes, render & export
+        setTimeout(() => {
+            // Hide axes, turn on trade routes for the map
+            if (this.axesHelper) this.axesHelper.visible = false;
+            if (this.axisLabels) this.axisLabels.forEach(l => l.visible = false);
+
+            this.render();
+
+            const dataURL = this.renderer.domElement.toDataURL('image/png');
+            const inUniverYear = this.eraYear || 2750;
+            const title = titleText || 'Felgenland Starmap';
+            const wikiMarkup = `{{:starmap:${title.toLowerCase().replace(/ /g,'_')}_${inUniverYear}.png|${title} — In-universe date: ${inUniverYear}}}
+
+/* Exported by Starmap tool. Era: ${inUniverYear}. */
+`;
+            // Download PNG
+            const a = document.createElement('a');
+            a.href = dataURL;
+            a.download = `wiki-starmap-${inUniverYear}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Copy wiki markup
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(wikiMarkup).then(() => {
+                    console.log('✅ DokuWiki markup copied to clipboard');
+                });
+            }
+
+            // Restore axes visibility
+            const axesCheck = document.getElementById('galacticDirectionsOverlay');
+            const showAxes  = axesCheck ? axesCheck.checked : false;
+            if (this.axesHelper) this.axesHelper.visible = showAxes;
+            if (this.axisLabels) this.axisLabels.forEach(l => l.visible = showAxes);
+
+            // Notify user
+            const banner = document.getElementById('wikiExportBanner');
+            if (banner) {
+                banner.textContent = `✅ Wiki map saved as "wiki-starmap-${inUniverYear}.png". DokuWiki markup copied to clipboard.`;
+                banner.style.display = 'block';
+                setTimeout(() => { banner.style.display = 'none'; }, 5000);
+            }
+        }, 1400);
+    }
+
     onMouseClick(event) {
 
         const rect = this.container.getBoundingClientRect();
@@ -536,64 +606,123 @@ class ThreeJSStarmap {
 
         const starName = star.fictional_name || star.name || 'Unknown Star';
         const primaryName = star.name || star.fictional_name || 'Unknown Star';
+        const dist = star.distance ?? star.dist;
+
+        // Look up nation
+        const nation = this.nations.find(n => (n._id || n.id) === star.nation_id);
+        const nationColor = nation ? ((nation.appearance && nation.appearance.color) || nation.color || '#888888') : null;
+
+        // Find trade routes through this star
+        const connectedRoutes = [];
+        if (this.tradeRoutesGroup) {
+            this.tradeRoutesGroup.children.forEach(child => {
+                const r = child.userData?.data;
+                if (!r) return;
+                const fromId = r.endpoints?.from?.star_id;
+                const toId   = r.endpoints?.to?.star_id;
+                if (fromId === star.id || toId === star.id) {
+                    connectedRoutes.push(r);
+                }
+            });
+        }
 
         let html = `
-            <h6 class="text-primary">${starName}</h6>
-            ${starName !== primaryName ? `<p class="small text-muted">${primaryName}</p>` : ''}
-
-            <div class="row">
-                <div class="col-6">
-                    <strong>Magnitude:</strong><br>
-                    <span class="text-info">${star.magnitude ? star.magnitude.toFixed(2) : 'Unknown'}</span>
-                </div>
-                <div class="col-6">
-                    <strong>Spectral Class:</strong><br>
-                    <span class="text-warning">${star.spectral_class || 'Unknown'}</span>
-                </div>
-            </div>
-
-            <div class="row mt-2">
-                <div class="col-6">
-                    <strong>Distance:</strong><br>
-                    <span class="text-success">${star.distance ? star.distance.toFixed(1) + ' pc' : 'Unknown'}</span>
-                </div>
-                <div class="col-6">
-                    <strong>Constellation:</strong><br>
-                    <span class="text-success">${star.constellation || 'Unknown'}</span>
-                </div>
-            </div>
-
-            <div class="mt-3">
-                <strong>Galactic Coordinates:</strong><br>
-                <small class="text-muted">
-                    X: ${star.x ? star.x.toFixed(2) : 'Unknown'}<br>
-                    Y: ${star.y ? star.y.toFixed(2) : 'Unknown'}<br>
-                    Z: ${star.z ? star.z.toFixed(2) : 'Unknown'}
-                </small>
-            </div>
-
-            <div class="mt-3">
-                <strong>Star ID:</strong><br>
-                <small class="text-muted">${star.id || 'Unknown'}</small>
-            </div>
+            <h6 class="text-primary mb-1">${starName}</h6>
+            ${starName !== primaryName ? `<p class="small text-muted mb-1">${primaryName}</p>` : ''}
         `;
 
-        if (star.fictional_description) {
+        // Nation badge
+        if (nation && nationColor) {
+            const safeColor = /^#[0-9A-Fa-f]{6}$/.test(nationColor) ? nationColor : '#888888';
             html += `
-                <div class="mt-3 p-2 bg-light bg-opacity-25 rounded">
-                    <strong>Saga Notes:</strong><br>
-                    <small class="text-muted">${star.fictional_description}</small>
+                <div class="mb-2 px-2 py-1 rounded d-flex align-items-center gap-2"
+                     style="border-left:3px solid ${safeColor}; background:rgba(0,0,0,0.4)">
+                    <span style="width:8px;height:8px;border-radius:50%;background:${safeColor};flex-shrink:0;display:inline-block;"></span>
+                    <div>
+                        <span class="small fw-bold">${nation.name}</span>
+                        <br><small class="text-muted" style="font-size:0.7rem">${nation.government?.type || ''}</small>
+                    </div>
                 </div>
             `;
         }
 
-        // Show known worlds from fictional_exoplanets
+        html += `
+            <div class="row g-1 mb-2">
+                <div class="col-6">
+                    <small class="text-muted">Magnitude</small><br>
+                    <span class="text-info">${star.magnitude != null ? star.magnitude.toFixed(2) : '—'}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Type</small><br>
+                    <span class="text-warning">${star.spectral_class || '—'}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Distance</small><br>
+                    <span class="text-success">${dist != null ? parseFloat(dist).toFixed(1) + ' pc' : '—'}</span>
+                </div>
+                <div class="col-6">
+                    <small class="text-muted">Constellation</small><br>
+                    <span class="text-success" style="font-size:0.8rem">${star.constellation || '—'}</span>
+                </div>
+            </div>
+
+            <div class="mb-2">
+                <small class="text-muted">Galactic coords (pc)</small><br>
+                <small class="text-secondary font-monospace">
+                    X ${star.x ? star.x.toFixed(2) : '?'} &nbsp;
+                    Y ${star.y ? star.y.toFixed(2) : '?'} &nbsp;
+                    Z ${star.z ? star.z.toFixed(2) : '?'}
+                </small>
+            </div>
+        `;
+
+        // Era info
+        if (star.era_start || star.era_end) {
+            html += `
+                <div class="mb-2">
+                    <small class="text-muted">Saga Era</small><br>
+                    <small class="text-warning">${star.era_start || '?'} – ${star.era_end || '?'}</small>
+                </div>
+            `;
+        }
+
+        // Fictional description collapsible
+        if (star.fictional_description) {
+            html += `
+                <div class="mb-2">
+                    <button class="btn btn-sm btn-outline-secondary w-100 py-0"
+                            style="font-size:0.75rem"
+                            onclick="this.nextElementSibling.classList.toggle('d-none')">
+                        📖 Saga Lore ▾
+                    </button>
+                    <div class="d-none mt-1 p-2 rounded" style="background:rgba(255,255,255,0.05);font-size:0.78rem">
+                        ${star.fictional_description}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Trade routes through this star
+        if (connectedRoutes.length > 0) {
+            html += `<div class="mb-2"><small class="text-muted">Trade Routes (${connectedRoutes.length})</small>`;
+            for (const r of connectedRoutes) {
+                const color = r.route_type === 'Primary Trade' ? 'text-success' : 'text-secondary';
+                html += `<div class="d-flex align-items-center gap-1 mt-1">
+                    <span class="${color}" style="font-size:0.7rem">●</span>
+                    <small style="font-size:0.75rem">${r.name || r.id || 'Route'}</small>
+                    ${r.route_type ? `<small class="text-muted ms-auto" style="font-size:0.65rem">${r.route_type}</small>` : ''}
+                </div>`;
+            }
+            html += '</div>';
+        }
+
+        // Known worlds
         const starPlanets = this.fictionalExoplanets.filter(p =>
             p.host_star_name === star.name ||
             p.host_star_name === star.fictional_name
         );
         if (starPlanets.length > 0) {
-            html += `<div class="mt-3"><strong>Known Worlds (${starPlanets.length}):</strong>`;
+            html += `<div class="mt-2"><small class="text-muted">Known Worlds (${starPlanets.length})</small>`;
             for (const planet of starPlanets) {
                 const typeColor = {
                     'Earth-like': 'text-success', 'Rocky Moon': 'text-success',
@@ -603,7 +732,7 @@ class ThreeJSStarmap {
                     'Terrestrial': 'text-light',
                 }[planet.planet_type] || 'text-muted';
                 html += `
-                <div class="mt-1 p-2 bg-dark bg-opacity-50 rounded">
+                <div class="mt-1 p-2 rounded" style="background:rgba(0,0,0,0.4)">
                     <small>
                         <span class="text-info fw-bold">${planet.name}</span>
                         <span class="${typeColor} ms-2">${planet.planet_type}</span>
@@ -614,6 +743,9 @@ class ThreeJSStarmap {
             }
             html += `</div>`;
         }
+
+        // Star ID
+        html += `<div class="mt-2"><small class="text-secondary">ID: ${star.id || '—'}</small></div>`;
 
         detailsContent.innerHTML = html;
         detailsPanel.style.display = 'block';
@@ -662,32 +794,44 @@ class ThreeJSStarmap {
             tooltip.id = 'starTooltip';
             tooltip.style.cssText = `
                 position: fixed;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0,0,0,0.85);
                 color: white;
                 padding: 8px 12px;
                 border-radius: 4px;
                 font-size: 12px;
                 pointer-events: none;
                 z-index: 1000;
-                border: 1px solid #333;
+                border: 1px solid #444;
+                max-width: 200px;
             `;
             document.body.appendChild(tooltip);
         }
 
         const starName = star.fictional_name || star.name || 'Unknown Star';
-        const magnitude = star.magnitude ? star.magnitude.toFixed(2) : 'Unknown';
-        const spectral = star.spectral_class || 'Unknown';
+        const magnitude = star.magnitude ? star.magnitude.toFixed(2) : '—';
+        const spectral = star.spectral_class || '—';
 
-        tooltip.innerHTML = `<strong>${starName}</strong><br>Mag: ${magnitude} | Type: ${spectral}`;
+        // Look up nation for tooltip
+        const nation = this.nations.find(n => (n._id || n.id) === star.nation_id);
+        const nationName = nation ? nation.name : '';
+        const nationColor = nation ? ((nation.appearance && nation.appearance.color) || '#888') : '';
+        const safeColor = /^#[0-9A-Fa-f]{6}$/.test(nationColor) ? nationColor : '#888';
 
-        tooltip.style.left = (event.pageX + 10) + 'px';
-        tooltip.style.top = (event.pageY + 10) + 'px';
+        tooltip.innerHTML = `
+            <strong>${starName}</strong><br>
+            <span style="color:#7cf">Mag:</span> ${magnitude} &nbsp;
+            <span style="color:#fc7">Type:</span> ${spectral}
+            ${nationName ? `<br><span style="color:${safeColor}">■</span> ${nationName}` : ''}
+        `;
+
+        tooltip.style.left = (event.pageX + 12) + 'px';
+        tooltip.style.top  = (event.pageY +  8) + 'px';
         tooltip.style.display = 'block';
 
         clearTimeout(this.tooltipTimeout);
         this.tooltipTimeout = setTimeout(() => {
             if (tooltip) tooltip.style.display = 'none';
-        }, 2000);
+        }, 2500);
     }
 
     createGalacticAxes() {
@@ -800,7 +944,7 @@ class ThreeJSStarmap {
     createSingleStarTerritory(nation, star, color) {
         // Create a sphere around single star with larger radius
         let sphereRadius = 3.0; // Increased base radius
-        
+
         // Special handling for specific nations to show their greater influence
         if (nation._id === 'protelani_republic' || nation._id === 'dorsai_republic') {
             sphereRadius *= 2.0; // Double the sphere size for these nations
@@ -926,15 +1070,21 @@ class ThreeJSStarmap {
                     ];
 
                     const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                    const color = route.route_type === 'Primary Trade' ? 0x00ff00 : 0x888888;
-                    const material = new THREE.LineBasicMaterial({
-                        color: color,
+
+                    // Animated dashed lines — dashOffset updated each frame in animate()
+                    const isPrimary = route.route_type === 'Primary Trade';
+                    const material = new THREE.LineDashedMaterial({
+                        color: isPrimary ? 0x00ff88 : 0x888888,
+                        dashSize: isPrimary ? 4 : 3,
+                        gapSize:  isPrimary ? 2 : 3,
                         transparent: true,
-                        opacity: 0.7
+                        opacity: isPrimary ? 0.85 : 0.55,
                     });
 
                     const line = new THREE.Line(geometry, material);
-                    line.userData = { type: 'trade_route', data: route };
+                    // computeLineDistances() is required for LineDashedMaterial
+                    line.computeLineDistances();
+                    line.userData = { type: 'trade_route', data: route, isPrimary };
 
                     this.tradeRoutesGroup.add(line);
                 }
@@ -1132,6 +1282,16 @@ class ThreeJSStarmap {
                 this.camera.position.distanceTo(target);
         }
 
+        // Animate trade route dashes (flowing pulses)
+        const delta = this.clock.getDelta();
+        this.tradeRoutesGroup.children.forEach(child => {
+            if (child.material && child.material.isLineDashedMaterial) {
+                // Primary routes flow faster + reverse direction for visual distinction
+                const speed = child.userData.isPrimary ? -4.0 : -1.5;
+                child.material.dashOffset += speed * delta;
+            }
+        });
+
         this.render();
     }
 
@@ -1143,24 +1303,69 @@ class ThreeJSStarmap {
 
     // ── Nation / Political-view methods ──────────────────────────────────────
 
-    filterByNation(nationId) {
+    /** Recompute aFilter from current nation filter + era filter combined. */
+    _recomputeFilter() {
         const filterAttr = this.points?.geometry?.attributes?.aFilter;
         if (!filterAttr) return;
 
+        for (let i = 0; i < this.currentStars.length; i++) {
+            const star = this.currentStars[i];
+
+            // Nation filter: 1.0 if matches (or no filter), 0.0 if excluded
+            let nf = 1.0;
+            if (this.nationFilter) {
+                nf = this.nationFilter.has(star.id) ? 1.0 : 0.0;
+            }
+
+            // Era filter: 1.0 if the star exists in the current era, 0.2 otherwise
+            let ef = 1.0;
+            if (this.eraYear != null) {
+                const es = star.era_start;
+                const ee = star.era_end;
+                // Stars without era data are always shown at full brightness
+                if (es != null || ee != null) {
+                    const inEra = (es == null || this.eraYear >= es) &&
+                                  (ee == null || this.eraYear <= ee);
+                    ef = inEra ? 1.0 : 0.0;
+                }
+            }
+
+            // Combine: if either filter excludes, use minimum
+            filterAttr.array[i] = Math.min(nf, ef);
+        }
+        filterAttr.needsUpdate = true;
+    }
+
+    filterByNation(nationId) {
         if (!nationId) {
             this.nationFilter = null;
-            filterAttr.array.fill(1.0);
         } else {
             const nation = this.nations.find(n => (n._id || n.id) === nationId);
             const memberIds = new Set(
                 (nation?.territories || []).map(t => t.star_id ?? t)
             );
             this.nationFilter = memberIds;
-            for (let i = 0; i < this.currentStars.length; i++) {
-                filterAttr.array[i] = memberIds.has(this.currentStars[i].id) ? 1.0 : 0.0;
-            }
         }
-        filterAttr.needsUpdate = true;
+        this._recomputeFilter();
+    }
+
+    filterByEra(year) {
+        this.eraYear = (year == null || isNaN(year)) ? null : parseInt(year);
+        this._recomputeFilter();
+
+        // Also dim/show nation overlays by era
+        if (this.nationsGroup) {
+            this.nationsGroup.children.forEach(child => {
+                const nation = child.userData?.data;
+                if (!nation) return;
+                if (this.eraYear == null) { child.visible = true; return; }
+                const ns = nation.era_start;
+                const ne = nation.era_end;
+                const inEra = (ns == null || this.eraYear >= ns) &&
+                              (ne == null || this.eraYear <= ne);
+                child.visible = inEra;
+            });
+        }
     }
 
     setPoliticalView(enabled) {

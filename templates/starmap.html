@@ -4,100 +4,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Starmap - Felgenland Saga</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- A-Frame for VR/3D starfield -->
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
-    
+
     <!-- A-Frame Loading Screen Component -->
     <script>
-        // A-Frame Loading Screen Component for main app
         if (typeof AFRAME !== 'undefined') {
             AFRAME.registerComponent('loading-screen', {
                 init: function() {
-                    console.log('🔄 A-Frame loading screen component initialized');
                     this.showLoadingScreen();
-                    
-                    // Listen for scene loaded event
                     this.el.addEventListener('loaded', () => {
-                        console.log('✅ A-Frame scene loaded');
-                        setTimeout(() => {
-                            this.hideLoadingScreen();
-                        }, 1000);
+                        setTimeout(() => this.hideLoadingScreen(), 1000);
                     });
-                    
-                    // Also hide on renderstart
                     this.el.addEventListener('renderstart', () => {
-                        console.log('🎬 A-Frame render started');
-                        setTimeout(() => {
-                            this.hideLoadingScreen();
-                        }, 2000);
+                        setTimeout(() => this.hideLoadingScreen(), 2000);
                     });
                 },
-                
                 showLoadingScreen: function() {
-                    // Only show if A-Frame view is active
                     const aframeContainer = document.getElementById('aframe-container');
                     if (!aframeContainer || aframeContainer.style.display === 'none') return;
-                    
                     const loadingDiv = document.createElement('div');
                     loadingDiv.id = 'aframe-loading-screen';
                     loadingDiv.innerHTML = `
-                        <div style="
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            width: 100%;
-                            height: 100%;
-                            background: linear-gradient(135deg, #000011 0%, #1a1a2e 50%, #16213e 100%);
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: center;
-                            align-items: center;
-                            z-index: 9999;
-                            color: #00ff88;
-                            font-family: 'Courier New', monospace;
-                        ">
-                            <div style="text-align: center;">
-                                <h2 style="font-size: 2em; margin-bottom: 20px; text-shadow: 0 0 20px #00ff88;">🥽 Loading VR Starfield</h2>
-                                <div style="
-                                    width: 40px;
-                                    height: 40px;
-                                    border: 3px solid rgba(0, 255, 136, 0.3);
-                                    border-top: 3px solid #00ff88;
-                                    border-radius: 50%;
-                                    animation: spin 1s linear infinite;
-                                    margin: 20px auto;
-                                "></div>
-                                <p style="font-size: 1em; margin: 10px 0;">Initializing A-Frame VR...</p>
-                                <p style="font-size: 0.8em; opacity: 0.7;" id="aframe-loading-status">Loading assets...</p>
-                            </div>
-                        </div>
-                    `;
-                    
+                        <div style="position:fixed;top:0;left:0;width:100%;height:100%;
+                            background:linear-gradient(135deg,#000011,#1a1a2e,#16213e);
+                            display:flex;flex-direction:column;justify-content:center;align-items:center;
+                            z-index:9999;color:#00ff88;font-family:'Courier New',monospace;">
+                            <h2 style="font-size:2em;text-shadow:0 0 20px #00ff88;">🥽 Loading VR Starfield</h2>
+                            <div style="width:40px;height:40px;border:3px solid rgba(0,255,136,0.3);
+                                border-top:3px solid #00ff88;border-radius:50%;animation:spin 1s linear infinite;margin:20px auto;"></div>
+                            <p id="aframe-loading-status">Loading assets...</p>
+                        </div>`;
                     document.body.appendChild(loadingDiv);
-                    console.log('📺 A-Frame loading screen displayed');
                 },
-                
                 hideLoadingScreen: function() {
-                    const loadingScreen = document.getElementById('aframe-loading-screen');
-                    if (loadingScreen) {
-                        loadingScreen.style.opacity = '0';
-                        loadingScreen.style.transition = 'opacity 0.5s ease-out';
-                        setTimeout(() => {
-                            loadingScreen.remove();
-                            console.log('✨ A-Frame loading screen hidden');
-                        }, 500);
-                    }
+                    const s = document.getElementById('aframe-loading-screen');
+                    if (s) { s.style.opacity='0'; s.style.transition='opacity 0.5s'; setTimeout(() => s.remove(), 500); }
                 }
             });
         }
     </script>
-    
-    <!-- Three.js for cinematic 3D (ES6 modules) -->
+
+    <!-- Three.js (ES6 modules) -->
     <script type="importmap">
         {
             "imports": {
@@ -106,9 +59,42 @@
             }
         }
     </script>
-    
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
+
+    <style>
+        /* ── Autocomplete ── */
+        #searchAutocomplete {
+            background: #1a1a2e;
+            border: 1px solid #444;
+            border-radius: 0 0 6px 6px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .ac-item {
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            border-bottom: 1px solid #2a2a3e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ac-item:hover, .ac-item.ac-active { background: #2a2a4e; }
+        .ac-badge { font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; flex-shrink: 0; }
+        /* ── Era slider track ── */
+        .era-track { position: relative; height: 4px; background: #333; border-radius: 2px; margin: 8px 0; }
+        .era-fill  { position: absolute; height: 100%; background: linear-gradient(90deg,#667eea,#764ba2); border-radius: 2px; }
+        /* ── Wiki export banner ── */
+        #wikiExportBanner {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: #198754; color: white; padding: 10px 20px; border-radius: 6px;
+            z-index: 2000; display: none; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        /* ── Story moments ── */
+        .story-btn { font-size: 0.72rem; padding: 3px 6px; }
+    </style>
 </head>
 <body>
     <div class="container-fluid h-100">
@@ -123,7 +109,6 @@
                 </div>
 
                 <div id="sidebarContent" class="flex-grow-1 d-flex flex-column overflow-hidden">
-                    <!-- Auth status -->
                     {% if user %}
                     <div class="alert alert-success small mx-2 mt-2 mb-0 py-1">
                         🛡️ <strong>{{ user.username }}</strong>
@@ -134,7 +119,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Status bar -->
                     <div id="status" class="alert alert-info small mx-2 mt-2 mb-0 py-1">
                         Initializing...
                     </div>
@@ -163,21 +147,53 @@
 
                         <!-- ── FILTERS TAB ── -->
                         <div class="tab-pane fade show active" id="tabFilters" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Search Stars</label>
+
+                            <!-- Search with autocomplete -->
+                            <div class="mb-3 position-relative">
+                                <label class="form-label small fw-bold">Search Stars &amp; Nations</label>
                                 <div class="input-group input-group-sm">
-                                    <input type="text" id="searchInput" class="form-control" placeholder="Star name...">
+                                    <input type="text" id="searchInput" class="form-control"
+                                           placeholder="Star name, nation…"
+                                           autocomplete="off"
+                                           oninput="onSearchInput(this.value)"
+                                           onkeydown="onSearchKeydown(event)"
+                                           onfocus="if(this.value) onSearchInput(this.value)"
+                                           onblur="setTimeout(()=>hideAutocomplete(),200)">
                                     <button class="btn btn-outline-primary" onclick="searchStars()">🔍</button>
                                 </div>
+                                <div id="searchAutocomplete" style="display:none; position:absolute; width:100%; z-index:1050;"></div>
                                 <div id="searchResults" class="mt-2"></div>
                             </div>
 
+                            <!-- Magnitude slider -->
                             <div class="mb-2">
                                 <label class="form-label small fw-bold">Magnitude Limit</label>
-                                <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5">
+                                <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5"
+                                       oninput="onMagChange(this.value)">
                                 <small class="text-muted">Max: <span id="magValue">8.0</span></small>
                             </div>
 
+                            <!-- Era / Timeline slider -->
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold d-flex justify-content-between">
+                                    <span>📅 Era / Timeline</span>
+                                    <span id="eraValueLabel" class="text-warning">All Eras</span>
+                                </label>
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" id="eraFilterToggle"
+                                           onchange="toggleEraFilter(this.checked)">
+                                    <label class="form-check-label small" for="eraFilterToggle">Enable Era Filter</label>
+                                </div>
+                                <input type="range" id="eraSlider" class="form-range" min="2738" max="2760"
+                                       value="2750" step="1" disabled
+                                       oninput="onEraChange(this.value)">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">2738</small>
+                                    <small class="text-muted">2760</small>
+                                </div>
+                            </div>
+
+                            <!-- Star limit -->
                             <div class="mb-2">
                                 <label class="form-label small">Star Limit</label>
                                 <select id="starLimit" class="form-select form-select-sm">
@@ -188,6 +204,7 @@
                                 </select>
                             </div>
 
+                            <!-- Spectral type -->
                             <div class="mb-2">
                                 <label class="form-label small">Spectral Type</label>
                                 <select id="spectralType" class="form-select form-select-sm">
@@ -212,6 +229,7 @@
 
                         <!-- ── LORE TAB ── -->
                         <div class="tab-pane fade" id="tabLore" role="tabpanel">
+
                             <!-- Quick Views -->
                             <div class="mb-3">
                                 <h6 class="text-muted small mb-2">⚡ Quick Views</h6>
@@ -224,6 +242,29 @@
                                             onclick="applyQuickView('frontier_tors')">⚡ Frontier Tors</button>
                                     <button class="btn btn-outline-success btn-sm"
                                             onclick="applyQuickView('all_trade')">🛤 All Trade Networks</button>
+                                </div>
+                            </div>
+
+                            <!-- Story Moments -->
+                            <div class="mb-3">
+                                <h6 class="text-muted small mb-2">📚 Story Moments</h6>
+                                <div class="d-grid gap-1">
+                                    <button class="btn btn-outline-secondary story-btn"
+                                            onclick="applyStoryMoment('felgenland_core_2750')">
+                                        🏛️ Felgenland Core 2750
+                                    </button>
+                                    <button class="btn btn-outline-secondary story-btn"
+                                            onclick="applyStoryMoment('tiefe_grenze')">
+                                        🌌 Tiefe-Grenze Frontier
+                                    </button>
+                                    <button class="btn btn-outline-secondary story-btn"
+                                            onclick="applyStoryMoment('protelani_summit')">
+                                        🤝 Protelani Trade Summit
+                                    </button>
+                                    <button class="btn btn-outline-secondary story-btn"
+                                            onclick="applyStoryMoment('holsten_tor')">
+                                        ⚓ Holsten Tor (Stahlburgh)
+                                    </button>
                                 </div>
                             </div>
 
@@ -305,7 +346,13 @@
                             </div>
                             <div class="d-grid gap-2">
                                 <button class="btn btn-outline-info btn-sm" onclick="resetView()">🎯 Reset View</button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()" title="Save PNG">📷 Screenshot</button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()">📷 Screenshot</button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="generateWikiMap()" title="Top-down PNG + DokuWiki markup">
+                                    🗺️ Generate Wiki Map
+                                </button>
+                                <button class="btn btn-outline-light btn-sm" onclick="copyShareableLink()" title="Copy link with current filters">
+                                    🔗 Copy Shareable Link
+                                </button>
                                 <button class="btn btn-outline-warning btn-sm" onclick="exportData()">💾 Export CSV</button>
                             </div>
                         </div>
@@ -313,16 +360,15 @@
                     </div><!-- /tab-content -->
                 </div><!-- /sidebarContent -->
             </div>
-            
+
             <!-- Main Starmap -->
             <div class="col-md-9 col-lg-10 p-0">
-                <!-- Three.js View -->
                 <div id="threejs-error-banner" class="alert alert-danger m-3" style="display:none;"></div>
                 <div id="threejs-container" class="starmap-container"></div>
-                
+
                 <!-- A-Frame VR View -->
                 <div id="aframe-container" class="starmap-container" style="display: none;">
-                    <a-scene 
+                    <a-scene
                         id="starfield-scene"
                         background="color: #000011"
                         vr-mode-ui="enabled: true"
@@ -331,90 +377,37 @@
                         fog="type: linear; color: #0B1426; near: 50; far: 300"
                         loading-screen
                         a-assets-timeout="30000">
-                        
-                        <!-- Assets with increased timeout -->
+
                         <a-assets timeout="30000">
-                            <!-- Star materials -->
-                            <a-mixin id="star-base" 
+                            <a-mixin id="star-base"
                                      geometry="primitive: sphere; radius: 0.1"
                                      material="shader: standard; metalness: 0; roughness: 0; emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
-                            
-                            <!-- Nation colors -->
-                            <a-mixin id="terran-star" 
-                                     mixin="star-base"
-                                     material="emissive: #1565C0; emissiveIntensity: 1.2"></a-mixin>
-                            <a-mixin id="felgenland-star" 
-                                     mixin="star-base"
-                                     material="emissive: #4CAF50; emissiveIntensity: 1.2"></a-mixin>
-                            <a-mixin id="neutral-star" 
-                                     mixin="star-base"
-                                     material="emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
-                            <a-mixin id="fictional-star" 
-                                     mixin="star-base"
-                                     material="emissive: #00ff88; emissiveIntensity: 1.5"></a-mixin>
+                            <a-mixin id="terran-star"     mixin="star-base" material="emissive: #1565C0; emissiveIntensity: 1.2"></a-mixin>
+                            <a-mixin id="felgenland-star" mixin="star-base" material="emissive: #4CAF50; emissiveIntensity: 1.2"></a-mixin>
+                            <a-mixin id="neutral-star"    mixin="star-base" material="emissive: #ffffff; emissiveIntensity: 0.8"></a-mixin>
+                            <a-mixin id="fictional-star"  mixin="star-base" material="emissive: #00ff88; emissiveIntensity: 1.5"></a-mixin>
                         </a-assets>
-                        
-                        <!-- Camera with orbit controls -->
-                        <a-camera 
-                            id="camera"
-                            position="0 0 30"
+
+                        <a-camera id="camera" position="0 0 30"
                             look-controls="enabled: true"
                             wasd-controls="enabled: true"
-                            orbit-controls="
-                                target: 0 0 0;
-                                enableDamping: true;
-                                dampingFactor: 0.1;
-                                rotateSpeed: 0.05;
-                                enableZoom: true;
-                                minDistance: 5;
-                                maxDistance: 200;
-                                enablePan: true;">
-                            
-                            <!-- VR controllers -->
-                            <a-entity 
-                                id="left-hand" 
-                                hand-controls="hand: left"
-                                laser-controls
-                                raycaster="objects: .star"></a-entity>
-                            <a-entity 
-                                id="right-hand" 
-                                hand-controls="hand: right"
-                                laser-controls
-                                raycaster="objects: .star"></a-entity>
+                            orbit-controls="target: 0 0 0; enableDamping: true; dampingFactor: 0.1;
+                                            rotateSpeed: 0.05; enableZoom: true; minDistance: 5;
+                                            maxDistance: 200; enablePan: true;">
+                            <a-entity id="left-hand"  hand-controls="hand: left"  laser-controls raycaster="objects: .star"></a-entity>
+                            <a-entity id="right-hand" hand-controls="hand: right" laser-controls raycaster="objects: .star"></a-entity>
                         </a-camera>
-                        
-                        <!-- Ambient lighting -->
+
                         <a-light type="ambient" color="#404040" intensity="0.4"></a-light>
-                        
-                        <!-- Directional light (represents galactic core) -->
-                        <a-light 
-                            type="directional" 
-                            position="0 10 0" 
-                            color="#ffffff" 
-                            intensity="0.2"
-                            light="castShadow: false"></a-light>
-                        
-                        <!-- Stars container -->
+                        <a-light type="directional" position="0 10 0" color="#ffffff" intensity="0.2"></a-light>
                         <a-entity id="star-field"></a-entity>
-                        
-                        <!-- Galactic grid (optional) -->
-                        <a-entity 
-                            id="galactic-grid"
-                            visible="false">
-                            <!-- Grid lines will be added via JavaScript -->
-                        </a-entity>
-                        
-                        <!-- Navigation info -->
-                        <a-text 
-                            id="nav-info"
-                            position="0 25 -30"
-                            value="🌌 Felgenland Starfield - Use mouse/WASD to navigate - Click stars for details"
-                            color="#00ff88"
-                            align="center"
-                            scale="2 2 2"></a-text>
+                        <a-entity id="galactic-grid" visible="false"></a-entity>
+                        <a-text id="nav-info" position="0 25 -30"
+                            value="🌌 Felgenland Starfield — Use mouse/WASD to navigate — Click stars for details"
+                            color="#00ff88" align="center" scale="2 2 2"></a-text>
                     </a-scene>
                 </div>
-                
+
                 <!-- Star Details Panel -->
                 <div id="starDetails" class="star-details-panel">
                     <div class="card">
@@ -430,7 +423,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Nations Legend Modal -->
     <div class="modal fade" id="nationsModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -439,130 +432,89 @@
                     <h5 class="modal-title">🏛️ Nations of the Felgenland Saga</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="nationsContent">
-                    Loading nations...
-                </div>
+                <div class="modal-body" id="nationsContent">Loading nations...</div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
     </div>
-    
+
+    <!-- Wiki export success banner -->
+    <div id="wikiExportBanner"></div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JavaScript -->
+
+    <!-- Three.js module -->
     <script type="module" src="{{ url_for('static', filename='js/starmap-threejs-simple.js') }}"></script>
-    
+
     <script>
-        // Authentication functions
+        // ── Auth ────────────────────────────────────────────────────────────
         async function generateApiToken() {
             try {
                 const response = await fetch('/api/v1/auth/token', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        expires_hours: 24
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ expires_hours: 24 })
                 });
-                
                 const data = await response.json();
-                
                 if (data.success) {
-                    // Show token in a modal-like alert
-                    const tokenInfo = `🎫 API Token Generated Successfully!
-                        
-Token: ${data.token}
-
-Expires: ${data.expires_in_hours} hours
-User: ${data.user}
-
-Use in API requests:
-Authorization: Bearer ${data.token}`;
-                    
+                    const info = `🎫 API Token\n\nToken: ${data.token}\nExpires: ${data.expires_in_hours}h\n\nAuthorization: Bearer ${data.token}`;
                     try {
                         await navigator.clipboard.writeText(data.token);
-                        alert(tokenInfo + '\n\n✅ Token copied to clipboard!');
-                    } catch {
-                        alert(tokenInfo + '\n\n(Copy the token manually from above)');
-                    }
+                        alert(info + '\n\n✅ Token copied to clipboard!');
+                    } catch { alert(info); }
                 } else {
                     alert('❌ Failed to generate API token');
                 }
-            } catch (error) {
-                console.error('Error generating token:', error);
-                alert('❌ Error generating API token');
-            }
+            } catch (e) { console.error(e); alert('❌ Error generating API token'); }
         }
-        
-        // HTML escape helper to prevent XSS when inserting server data into innerHTML
+
+        // ── XSS escape ──────────────────────────────────────────────────────
         function esc(str) {
             const div = document.createElement('div');
             div.appendChild(document.createTextNode(String(str ?? '')));
             return div.innerHTML;
         }
 
-        // View switching functionality
+        // ── State ───────────────────────────────────────────────────────────
         let currentView = 'threejs';
         let aframeInitialized = false;
         let threejsInitialized = false;
         let threejsStarmap = null;
-        
+        let searchResults = [];
+        let allStars = [];
+        let acSuggestions = [];  // autocomplete suggestions
+        let acIndex = -1;        // keyboard-selected autocomplete item
+
+        // ── View switching ──────────────────────────────────────────────────
         function switchView(view) {
             currentView = view;
-
-            const threejsContainer = document.getElementById('threejs-container');
-            const aframeContainer = document.getElementById('aframe-container');
-
-            // Hide all containers
-            threejsContainer.style.display = 'none';
-            aframeContainer.style.display = 'none';
+            document.getElementById('threejs-container').style.display = view === 'threejs' ? 'block' : 'none';
+            document.getElementById('aframe-container').style.display  = view === 'aframe'  ? 'block' : 'none';
 
             if (view === 'threejs') {
-                threejsContainer.style.display = 'block';
-                
-                // Initialize Three.js if not already done
-                if (!threejsInitialized) {
-                    initializeThreeJSStarfield();
-                } else if (threejsStarmap) {
-                    threejsStarmap.setVisible(true);
-                    threejsStarmap.resize();
-                }
+                if (!threejsInitialized) initializeThreeJSStarfield();
+                else if (threejsStarmap) { threejsStarmap.setVisible(true); threejsStarmap.resize(); }
             } else if (view === 'aframe') {
-                aframeContainer.style.display = 'block';
-                
-                // Initialize A-Frame starfield if not already done
-                if (!aframeInitialized) {
-                    initializeAFrameStarfield();
-                    aframeInitialized = true;
-                } else {
-                    // Refresh A-Frame scene
-                    refreshAFrameStarfield();
-                }
+                if (!aframeInitialized) { initializeAFrameStarfield(); aframeInitialized = true; }
+                else refreshAFrameStarfield();
             }
         }
-        
-        // Three.js starfield functions
-        async function initializeThreeJSStarfield() {
-            console.log('🌟 Initializing Three.js starfield...');
 
+        // ── Three.js init ───────────────────────────────────────────────────
+        async function initializeThreeJSStarfield() {
             try {
-                // ThreeJSStarmap.init() calls loadStars() internally — don't duplicate it.
                 threejsStarmap = new window.ThreeJSStarmap();
 
-                // Wait for the internal loadStars() to finish before loading overlays.
-                // Poll every 200 ms; give up after 30 s (150 attempts) so the page never hangs.
                 await new Promise((resolve, reject) => {
                     let attempts = 0;
-                    const MAX_ATTEMPTS = 150;
                     const check = () => {
                         if (threejsStarmap.currentStars && threejsStarmap.currentStars.length > 0) {
                             resolve();
-                        } else if (++attempts >= MAX_ATTEMPTS) {
-                            reject(new Error('Star loading timed out after 30 s — check server logs and browser console.'));
+                        } else if (++attempts >= 150) {
+                            reject(new Error('Star loading timed out — check server logs.'));
                         } else {
                             setTimeout(check, 200);
                         }
@@ -570,666 +522,446 @@ Authorization: Bearer ${data.token}`;
                     setTimeout(check, 300);
                 });
 
-                // Share the already-loaded stars with search so we don't fetch twice
                 allStars = threejsStarmap.currentStars.filter(s =>
                     s.x != null && !isNaN(s.x) &&
                     s.y != null && !isNaN(s.y) &&
                     s.z != null && !isNaN(s.z)
                 );
-                console.log(`✅ Shared ${allStars.length} stars with search cache`);
 
                 await loadAllThreeJSOverlays();
                 populateNationDropdown();
 
+                // Apply URL params after everything is loaded
+                applyUrlParams();
+
+                // Load stats
+                fetch('/api/v1/stats').then(r => r.json()).then(data => {
+                    if (data.success && data.data) {
+                        const d = data.data;
+                        document.getElementById('stats').innerHTML =
+                            `Stars: ${d.stars}<br>Fictional: ${d.fictional_stars}<br>` +
+                            `Nations: ${d.nations}<br>Trade Routes: ${d.trade_routes}<br>` +
+                            `Worlds: ${d.fictional_exoplanets}`;
+                    }
+                }).catch(() => {});
+
                 threejsInitialized = true;
-                console.log('✅ Three.js starfield initialized');
+                document.getElementById('status').className = 'alert alert-success small mx-2 mt-2 mb-0 py-1';
+                document.getElementById('status').textContent = `✅ ${allStars.length.toLocaleString()} stars loaded`;
             } catch (error) {
-                console.error('❌ Error initializing Three.js starfield:', error);
+                console.error('❌ Three.js init error:', error);
                 const banner = document.getElementById('threejs-error-banner');
-                if (banner) {
-                    banner.textContent = `Failed to load starmap: ${error.message}`;
-                    banner.style.display = 'block';
-                }
+                if (banner) { banner.textContent = `Failed to load starmap: ${error.message}`; banner.style.display = 'block'; }
             }
         }
-        
-        // Load all Three.js overlays
+
         async function loadAllThreeJSOverlays() {
             if (!threejsStarmap) return;
-            
-            try {
-                await threejsStarmap.loadStellarRegions();
-                await threejsStarmap.loadNations();
-                await threejsStarmap.loadTradeRoutes();
-                await threejsStarmap.loadExoplanets();
-                console.log('✅ All Three.js overlays loaded');
-            } catch (error) {
-                console.error('❌ Error loading Three.js overlays:', error);
+            await threejsStarmap.loadStellarRegions();
+            await threejsStarmap.loadNations();
+            await threejsStarmap.loadTradeRoutes();
+            await threejsStarmap.loadExoplanets();
+        }
+
+        // ── Era filter ──────────────────────────────────────────────────────
+        function toggleEraFilter(enabled) {
+            const slider = document.getElementById('eraSlider');
+            const label  = document.getElementById('eraValueLabel');
+            slider.disabled = !enabled;
+            if (enabled) {
+                onEraChange(slider.value);
+            } else {
+                label.textContent = 'All Eras';
+                if (threejsStarmap) threejsStarmap.filterByEra(null);
+                updateUrl();
             }
         }
-        
-        let searchResults = [];
-        let allStars = []; // Cache for all stars
 
-        // Load all stars for search functionality
+        function onEraChange(value) {
+            document.getElementById('eraValueLabel').textContent = `Year ${value}`;
+            if (threejsStarmap) threejsStarmap.filterByEra(parseInt(value));
+            updateUrl();
+        }
+
+        function onMagChange(value) {
+            document.getElementById('magValue').textContent = parseFloat(value).toFixed(1);
+            updateUrl();
+        }
+
+        // ── Deep-linkable views ─────────────────────────────────────────────
+        function updateUrl() {
+            if (!history.pushState) return;
+            const params = new URLSearchParams();
+
+            const magEl    = document.getElementById('magLimit');
+            const nationEl = document.getElementById('nationSelector');
+            const eraEl    = document.getElementById('eraFilterToggle');
+            const eraSlider= document.getElementById('eraSlider');
+
+            if (magEl && parseFloat(magEl.value) !== 8) params.set('mag', magEl.value);
+            if (nationEl && nationEl.value) params.set('nation', nationEl.value);
+            if (eraEl && eraEl.checked) params.set('era', eraSlider.value);
+
+            const tradeEl  = document.getElementById('tradeRoutesOverlay');
+            const nationsO = document.getElementById('nationsOverlay');
+            if (tradeEl  && !tradeEl.checked)  params.set('trade', '0');
+            if (nationsO && nationsO.checked)   params.set('nations', '1');
+
+            const str = params.toString();
+            history.replaceState(null, '', str ? `?${str}` : location.pathname);
+        }
+
+        function applyUrlParams() {
+            const params = new URLSearchParams(location.search);
+
+            if (params.has('mag')) {
+                const mag = parseFloat(params.get('mag'));
+                const magEl = document.getElementById('magLimit');
+                if (magEl && !isNaN(mag)) {
+                    magEl.value = mag;
+                    document.getElementById('magValue').textContent = mag.toFixed(1);
+                    if (threejsStarmap && threejsStarmap.starMaterial) {
+                        threejsStarmap.starMaterial.uniforms.uMagLimit.value = mag;
+                    }
+                }
+            }
+
+            if (params.has('nation')) {
+                const nationId = params.get('nation');
+                const nationEl = document.getElementById('nationSelector');
+                if (nationEl) {
+                    nationEl.value = nationId;
+                    onNationSelect(nationId);
+                }
+            }
+
+            if (params.has('era')) {
+                const eraEl    = document.getElementById('eraFilterToggle');
+                const eraSlider= document.getElementById('eraSlider');
+                const eraYear  = params.get('era');
+                if (eraEl) { eraEl.checked = true; eraSlider.disabled = false; }
+                if (eraSlider) { eraSlider.value = eraYear; onEraChange(eraYear); }
+            }
+
+            if (params.get('trade') === '0') {
+                const tradeEl = document.getElementById('tradeRoutesOverlay');
+                if (tradeEl) { tradeEl.checked = false; updateOverlays(); }
+            }
+            if (params.get('nations') === '1') {
+                const nationsEl = document.getElementById('nationsOverlay');
+                if (nationsEl) { nationsEl.checked = true; updateOverlays(); }
+            }
+        }
+
+        function copyShareableLink() {
+            updateUrl();
+            const url = location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+            }).catch(() => {
+                prompt('Copy this link:', url);
+            });
+        }
+
+        // ── Search with autocomplete ────────────────────────────────────────
+        let searchDebounce = null;
+
+        function onSearchInput(value) {
+            clearTimeout(searchDebounce);
+            if (!value.trim()) { hideAutocomplete(); return; }
+            searchDebounce = setTimeout(() => showAutocomplete(value.trim()), 120);
+        }
+
+        function showAutocomplete(term) {
+            const lower = term.toLowerCase();
+            acSuggestions = [];
+            acIndex = -1;
+
+            // Stars
+            for (const star of allStars) {
+                const name = star.fictional_name || star.name || '';
+                if (name.toLowerCase().includes(lower)) {
+                    acSuggestions.push({ type: 'star', label: name, star });
+                    if (acSuggestions.length >= 6) break;
+                }
+            }
+
+            // Nations
+            if (threejsStarmap && threejsStarmap.nations) {
+                for (const n of threejsStarmap.nations) {
+                    if (n.name.toLowerCase().includes(lower)) {
+                        acSuggestions.push({ type: 'nation', label: n.name, nation: n });
+                    }
+                }
+            }
+
+            const ac = document.getElementById('searchAutocomplete');
+            if (acSuggestions.length === 0) { ac.style.display = 'none'; return; }
+
+            ac.innerHTML = acSuggestions.slice(0, 8).map((s, i) => {
+                const badgeClass = s.type === 'nation' ? 'bg-warning text-dark' : 'bg-secondary text-white';
+                const sub = s.type === 'star'
+                    ? (s.star.spectral_class ? s.star.spectral_class.charAt(0) + '-type' : '')
+                    : (s.nation.government?.type || '');
+                return `<div class="ac-item" data-idx="${i}"
+                             onmousedown="selectAutocompleteItem(${i})">
+                    <span class="ac-badge ${badgeClass}">${s.type}</span>
+                    <div><div>${esc(s.label)}</div>
+                    ${sub ? `<div style="font-size:0.7rem;color:#888">${esc(sub)}</div>` : ''}
+                    </div>
+                </div>`;
+            }).join('');
+            ac.style.display = 'block';
+        }
+
+        function hideAutocomplete() {
+            document.getElementById('searchAutocomplete').style.display = 'none';
+        }
+
+        function onSearchKeydown(event) {
+            const ac = document.getElementById('searchAutocomplete');
+            const items = ac.querySelectorAll('.ac-item');
+            if (event.key === 'ArrowDown') {
+                acIndex = Math.min(acIndex + 1, items.length - 1);
+                items.forEach((el, i) => el.classList.toggle('ac-active', i === acIndex));
+                event.preventDefault();
+            } else if (event.key === 'ArrowUp') {
+                acIndex = Math.max(acIndex - 1, -1);
+                items.forEach((el, i) => el.classList.toggle('ac-active', i === acIndex));
+                event.preventDefault();
+            } else if (event.key === 'Enter') {
+                if (acIndex >= 0 && acIndex < acSuggestions.length) {
+                    selectAutocompleteItem(acIndex);
+                } else {
+                    searchStars();
+                }
+                event.preventDefault();
+            } else if (event.key === 'Escape') {
+                hideAutocomplete();
+            }
+        }
+
+        function selectAutocompleteItem(idx) {
+            const s = acSuggestions[idx];
+            if (!s) return;
+            hideAutocomplete();
+            document.getElementById('searchInput').value = s.label;
+            document.getElementById('searchResults').innerHTML = '';
+
+            if (s.type === 'star') {
+                if (threejsStarmap) {
+                    threejsStarmap.displayStarDetails(s.star);
+                    threejsStarmap.highlightStar(s.star);
+                    threejsStarmap.flyToStar(s.star, 80);
+                }
+            } else if (s.type === 'nation') {
+                const nationEl = document.getElementById('nationSelector');
+                if (nationEl) { nationEl.value = s.nation._id || s.nation.id; }
+                // Switch to Lore tab
+                document.querySelector('[data-bs-target="#tabLore"]').click();
+                onNationSelect(s.nation._id || s.nation.id);
+            }
+        }
+
+        // ── Full search (button / Enter) ────────────────────────────────────
         async function loadAllStarsForSearch() {
-            // Reuse data already loaded by Three.js init if available
             if (allStars.length > 0) return;
-
             try {
                 const response = await fetch('/api/v1/stars?limit=50000&mag_limit=15');
                 const data = await response.json();
                 if (data.success && data.data) {
-                    allStars = data.data.filter(star =>
-                        star.x != null && !isNaN(star.x) &&
-                        star.y != null && !isNaN(star.y) &&
-                        star.z != null && !isNaN(star.z)
+                    allStars = data.data.filter(s =>
+                        s.x != null && !isNaN(s.x) && s.y != null && !isNaN(s.y) && s.z != null && !isNaN(s.z)
                     );
-                    addMissingFictionalStars();
                 }
-            } catch (error) {
-                console.error('Error loading stars for search:', error);
-                allStars = [];
-            }
+            } catch(e) { console.error(e); }
         }
 
-        function addMissingFictionalStars() {
-            // Add Tiefe-Grenze Tor if missing
-            const tiefeGrenzeExists = allStars.some(star => star.fictional_name === 'Tiefe-Grenze Tor' || star.name === 'Tiefe-Grenze Tor');
-
-            if (!tiefeGrenzeExists) {
-                // Estimated coordinates for Tiefe-Grenze Tor (edge of explored space)
-                const tiefeGrenze = {
-                    id: 999999,
-                    name: 'Tiefe-Grenze Tor',
-                    fictional_name: 'Tiefe-Grenze Tor',
-                    x: 50,  // Deep space location
-                    y: 25,
-                    z: 12.5,
-                    magnitude: 7.5,
-                    spectral_class: 'G',
-                    constellation: 'Edge of Known Space',
-                    description: 'Tiefe-Grenze Tor serves as the primary gateway to deep space exploration and frontier systems. A massive gateway station marking humanity\'s furthest established presence.',
-                    fictional_description: 'Tiefe-Grenze Tor (Deep Border Gate) is the most distant human outpost from Earth, serving as a gateway to the uncharted territories beyond. Named for its position on the edge of explored space, it represents both hope and danger in the exploration of the galaxy.',
-                    is_fictional: true,
-                    distance: 63.245
-                };
-
-                allStars.push(tiefeGrenze);
-                console.log('➕ Added missing fictional star: Tiefe-Grenze Tor');
-            }
-        }
-
-        // Connect search functionality to Three.js starmap
         function searchStars() {
-            const searchInput = document.getElementById('searchInput');
-            const searchTerm = searchInput.value.trim();
-
-            if (!searchTerm) {
-                document.getElementById('searchResults').innerHTML = '';
-                return;
-            }
-
-            // First load all stars if not already loaded
-            if (allStars.length === 0) {
-                loadAllStarsForSearch().then(() => performSearch(searchTerm));
-            } else {
-                performSearch(searchTerm);
-            }
+            hideAutocomplete();
+            const term = document.getElementById('searchInput').value.trim();
+            if (!term) { document.getElementById('searchResults').innerHTML = ''; return; }
+            if (allStars.length === 0) { loadAllStarsForSearch().then(() => performSearch(term)); }
+            else performSearch(term);
         }
 
         function performSearch(searchTerm) {
-            console.log('🔍 Performing search for:', searchTerm);
-
-            if (allStars.length === 0) {
-                document.getElementById('searchResults').innerHTML = '<small class="text-muted">Loading star database...</small>';
-                return;
-            }
-
             const search = searchTerm.toLowerCase().trim();
             searchResults = [];
 
-            // Search by various criteria
             allStars.forEach(star => {
                 let matchScore = 0;
                 const starName = star.fictional_name || star.name || '';
 
-                // Exact matches get highest priority
                 if (star.id && star.id.toString() === search) matchScore = 100;
                 else if (starName.toLowerCase() === search) matchScore = 90;
                 else if (starName.toLowerCase().startsWith(search)) matchScore = 80;
                 else if (starName.toLowerCase().includes(search)) matchScore = 70;
 
-                // Check catalog IDs
                 if (star.catalog_ids && Array.isArray(star.catalog_ids)) {
-                    star.catalog_ids.forEach(catalogId => {
-                        if (catalogId && catalogId.toString().toLowerCase() === search) matchScore = 95;
-                        else if (catalogId && catalogId.toString().toLowerCase().includes(search)) matchScore = 75;
+                    star.catalog_ids.forEach(c => {
+                        if (c && c.toString().toLowerCase() === search) matchScore = 95;
+                        else if (c && c.toString().toLowerCase().includes(search)) matchScore = Math.max(matchScore, 75);
                     });
                 }
 
-                // Search individual catalog fields for direct catalog number searches
-                if (search.startsWith('hd ') && star.id_hd && star.id_hd.toString() === search.substring(3)) matchScore = 95;
-                if (search.startsWith('hip ') && star.id_hip && star.id_hip.toString() === search.substring(4)) matchScore = 95;
-                if (search.startsWith('hr ') && star.id_hr && star.id_hr.toString() === search.substring(3)) matchScore = 95;
-                if (search.startsWith('gliese ') && star.id_gliese && star.id_gliese.toString() === search.substring(7)) matchScore = 95;
-                if (search.startsWith('gaia ') && star.id_catalog_gaia && star.id_catalog_gaia.toString().includes(search.substring(5))) matchScore = 85;
+                if (star.constellation && star.constellation.toLowerCase().includes(search)) matchScore = Math.max(matchScore, 60);
 
-                // Search by proper names
-                if (search.startsWith('gacrux') && star.name && star.name.includes('Gacrux')) matchScore = 85;
-                if (search.startsWith('betelgeuse') && star.name && star.name.includes('Betelgeuse')) matchScore = 85;
-                if (search.startsWith('rigel') && star.name && star.name.includes('Rigel')) matchScore = 85;
-                if (search.startsWith('deneb') && star.name && star.name.includes('Deneb')) matchScore = 85;
-
-                // Special cases
-                if (search.includes('sol') && starName.toLowerCase().includes('sol')) matchScore = 85;
-                if (search.includes('20 lmi') && starName.includes('20 LMi')) matchScore = 85;
-                if (search === 'tiefe' && starName.includes('Tiefe-Grenze')) matchScore = 85;
-
-                // Search by constellation
-                if (star.constellation && star.constellation.toLowerCase().includes(search)) matchScore = 60;
-
-                if (matchScore > 0) {
-                    searchResults.push({ star, matchScore, searchReason: getSearchReason(matchScore, star, search) });
-                }
+                if (matchScore > 0) searchResults.push({ star, matchScore });
             });
 
-            // Sort by match score (highest first)
             searchResults.sort((a, b) => b.matchScore - a.matchScore);
-
-            // Take top 5 results
             searchResults = searchResults.slice(0, 5);
-
             displaySearchResults(searchResults, searchTerm);
         }
 
-        function getSearchReason(matchScore, star, searchTerm) {
-            if (matchScore >= 100) return `ID match: ${star.id}`;
-            if (matchScore >= 95) return 'Exact catalog ID match';
-            if (matchScore >= 90) return 'Exact name match';
-            if (matchScore >= 85) return 'Special name match';
-            if (matchScore >= 80) return 'Name prefix match';
-            if (matchScore >= 75) return 'Catalog ID partial match';
-            if (matchScore >= 70) return 'Name contains search term';
-            return 'Related match';
-        }
-
         function displaySearchResults(results, searchTerm) {
-            const searchResultsDiv = document.getElementById('searchResults');
-
+            const div = document.getElementById('searchResults');
             if (results.length === 0) {
-                searchResultsDiv.innerHTML = `<small class="text-warning">❌ No stars found matching "${esc(searchTerm)}"</small>`;
+                div.innerHTML = `<small class="text-warning">❌ No results for "${esc(searchTerm)}"</small>`;
                 return;
             }
-
-            let html = '<div class="search-results-list">';
-            html += `<small class="text-muted mb-2 d-block">${results.length} result(s) for "${esc(searchTerm)}":</small>`;
-
-            results.forEach((result, index) => {
-                const star = result.star;
-                const starName = esc(star.fictional_name || star.name || 'Unknown Star');
-                const coords = `(${parseFloat(star.x || 0).toFixed(2)}, ${parseFloat(star.y || 0).toFixed(2)}, ${parseFloat(star.z || 0).toFixed(2)}) pc`;
-                const magnitude = star.magnitude ? `Mag: ${parseFloat(star.magnitude).toFixed(2)}` : 'Unknown mag';
-                const spectral = esc(star.spectral_class || 'Unknown type');
-
-                html += `
-                    <div class="search-result-item d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded bg-dark" onclick="selectSearchResult(${index})" style="cursor: pointer;">
-                        <div class="flex-grow-1">
-                            <strong class="text-light">${starName}</strong>
-                            <br>
-                            <small class="text-muted">${coords} • ${magnitude} • ${spectral}</small>
-                        </div>
-                        <small class="text-info">${esc(star.id)}</small>
-                    </div>
-                `;
+            let html = `<small class="text-muted d-block mb-1">${results.length} result(s):</small>`;
+            results.forEach((r, i) => {
+                const s = r.star;
+                const name = esc(s.fictional_name || s.name || '?');
+                const mag  = s.magnitude ? parseFloat(s.magnitude).toFixed(2) : '—';
+                html += `<div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded"
+                              style="background:#1a1a2e;cursor:pointer" onclick="selectSearchResult(${i})">
+                    <div><strong class="text-light" style="font-size:0.82rem">${name}</strong>
+                    <br><small class="text-muted">${esc(s.spectral_class||'?')} · Mag ${mag}</small></div>
+                    <small class="text-info ms-2">${esc(s.id)}</small>
+                </div>`;
             });
-
-            html += '</div>';
-            searchResultsDiv.innerHTML = html;
+            div.innerHTML = html;
         }
 
         function selectSearchResult(index) {
             if (index < 0 || index >= searchResults.length) return;
-
-            const result = searchResults[index];
-            const star = result.star;
-
-            console.log('🎯 Selected search result:', star);
-
-            // Clear search results
+            const star = searchResults[index].star;
             document.getElementById('searchResults').innerHTML = '';
             document.getElementById('searchInput').value = '';
-
-            // Display star details
-            if (threejsStarmap && threejsStarmap.displayStarDetails) {
+            if (threejsStarmap) {
                 threejsStarmap.displayStarDetails(star);
-            }
-
-            // Highlight the star if it has valid coordinates
-            if (threejsStarmap && star.x !== undefined && star.y !== undefined && star.z !== undefined) {
                 threejsStarmap.highlightStar(star);
-            }
-
-            // Center camera on star if possible
-            if (threejsStarmap && threejsStarmap.camera && threejsStarmap.controls) {
-                threejsStarmap.camera.position.set(star.x * 10, star.y * 10, star.z * 10 + 50);
-                threejsStarmap.controls.target.set(star.x * 10, star.y * 10, star.z * 10);
-                threejsStarmap.controls.update();
+                threejsStarmap.flyToStar(star, 80);
             }
         }
-        
-        // Connect overlay toggles to Three.js starmap
+
+        // ── Overlay toggles ─────────────────────────────────────────────────
         function updateOverlays() {
             if (!threejsStarmap) return;
-            
-            const nationsToggle = document.getElementById('nationsOverlay').checked;
-            const tradeRoutesToggle = document.getElementById('tradeRoutesOverlay').checked;
-            const stellarRegionsToggle = document.getElementById('stellarRegionsOverlay').checked;
-            const galacticDirectionsToggle = document.getElementById('galacticDirectionsOverlay').checked;
-            const exoplanetsToggle = document.getElementById('exoplanetsOverlay').checked;
-            
-            console.log('🎛️ Updating overlays:', {
-                nations: nationsToggle,
-                tradeRoutes: tradeRoutesToggle,
-                stellarRegions: stellarRegionsToggle,
-                galacticDirections: galacticDirectionsToggle,
-                exoplanets: exoplanetsToggle
-            });
-            
-            // Show/hide overlay groups
-            if (threejsStarmap.nationsGroup) {
-                threejsStarmap.nationsGroup.visible = nationsToggle;
-            }
-            
-            if (threejsStarmap.tradeRoutesGroup) {
-                threejsStarmap.tradeRoutesGroup.visible = tradeRoutesToggle;
-            }
-            
-            if (threejsStarmap.stellarRegionsGroup) {
-                threejsStarmap.stellarRegionsGroup.visible = stellarRegionsToggle;
-            }
-            
-            if (threejsStarmap.exoplanetGroup) {
-                threejsStarmap.exoplanetGroup.visible = exoplanetsToggle;
-            }
-            
-            // Handle axis labels visibility
-            if (threejsStarmap.axisLabels) {
-                threejsStarmap.axisLabels.forEach(label => {
-                    label.visible = galacticDirectionsToggle;
-                });
-            }
-            
-            // Also toggle AxesHelper itself
-            if (threejsStarmap.axesHelper) {
-                threejsStarmap.axesHelper.visible = galacticDirectionsToggle;
-            }
+            if (threejsStarmap.nationsGroup)      threejsStarmap.nationsGroup.visible      = document.getElementById('nationsOverlay').checked;
+            if (threejsStarmap.tradeRoutesGroup)  threejsStarmap.tradeRoutesGroup.visible  = document.getElementById('tradeRoutesOverlay').checked;
+            if (threejsStarmap.stellarRegionsGroup) threejsStarmap.stellarRegionsGroup.visible = document.getElementById('stellarRegionsOverlay').checked;
+            if (threejsStarmap.exoplanetGroup)    threejsStarmap.exoplanetGroup.visible    = document.getElementById('exoplanetsOverlay').checked;
+            const showAxes = document.getElementById('galacticDirectionsOverlay').checked;
+            if (threejsStarmap.axisLabels) threejsStarmap.axisLabels.forEach(l => l.visible = showAxes);
+            if (threejsStarmap.axesHelper) threejsStarmap.axesHelper.visible = showAxes;
+            updateUrl();
         }
-        
-        // Apply filters function
+
+        // ── Apply filters (reload) ──────────────────────────────────────────
         function applyFilters() {
-            console.log('🎛️ Applying filters...');
-            if (threejsStarmap) {
-                initializeThreeJSStarfield();
-            }
+            if (threejsStarmap) initializeThreeJSStarfield();
         }
-        
-        // Screenshot function
+
+        // ── Wiki map export ─────────────────────────────────────────────────
+        function generateWikiMap() {
+            if (!threejsStarmap) { alert('Starmap not ready yet.'); return; }
+            const eraEl = document.getElementById('eraFilterToggle');
+            const eraSlider = document.getElementById('eraSlider');
+            const eraYear = (eraEl && eraEl.checked) ? eraSlider.value : null;
+            const nationEl = document.getElementById('nationSelector');
+            const nationName = nationEl && nationEl.value
+                ? nationEl.options[nationEl.selectedIndex].text
+                : 'Full Starmap';
+            threejsStarmap.generateWikiView(nationName);
+        }
+
+        // ── Screenshot ──────────────────────────────────────────────────────
         function takeStarmapScreenshot() {
-            if (!threejsStarmap) {
-                alert('Three.js starmap is not initialized yet.');
-                return;
-            }
+            if (!threejsStarmap) { alert('Starmap not initialized yet.'); return; }
             threejsStarmap.takeScreenshot();
         }
 
-        // Reset view function
+        // ── Reset view ──────────────────────────────────────────────────────
         function resetView() {
-            console.log('🎯 Resetting view...');
-            
             if (threejsStarmap && threejsStarmap.camera && threejsStarmap.controls) {
-                // Reset camera position
                 threejsStarmap.camera.position.set(0, 0, 1000);
                 threejsStarmap.camera.lookAt(0, 0, 0);
-                
-                // Reset controls target
-                if (threejsStarmap.controls.target) {
-                    threejsStarmap.controls.target.set(0, 0, 0);
-                }
-                
-                // Clear highlights
-                if (threejsStarmap.clearStarHighlights) {
-                    threejsStarmap.clearStarHighlights();
-                }
-                
-                console.log('✅ View reset to origin');
+                threejsStarmap.controls.target.set(0, 0, 0);
+                if (threejsStarmap.clearStarHighlights) threejsStarmap.clearStarHighlights();
             }
         }
-        
-        // Export data function
-        function exportData() {
-            console.warn('Export functionality not available');
-        }
-        
-        // Show nations legend
+
+        // ── Export CSV stub ─────────────────────────────────────────────────
+        function exportData() { console.warn('Export CSV not yet implemented'); }
+
+        // ── Nations legend ──────────────────────────────────────────────────
         function showNationsLegend() {
-            console.log('🏛️ Showing nations legend...');
-
-            const modal = new bootstrap.Modal(document.getElementById('nationsModal'));
+            const modal   = new bootstrap.Modal(document.getElementById('nationsModal'));
             const content = document.getElementById('nationsContent');
-
-            // Try to get nations data from Three.js starmap first
-            if (threejsStarmap && threejsStarmap.currentStars && threejsStarmap.currentStars.length > 0) {
-                // Fetch nations data
-                fetch('/api/v1/nations')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.data) {
-                            displayNationsLegend(data.data);
-                            modal.show();
-                        } else {
-                            console.warn('No nations data available');
-                            content.innerHTML = '<p>No nation data loaded yet. Try refreshing the page.</p>';
-                            modal.show();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading nations for legend:', error);
-                        content.innerHTML = '<p>Error loading nations data.</p>';
-                        modal.show();
-                    });
-            } else {
-                content.innerHTML = '<p>Loading star data... Please wait and try again.</p>';
-                modal.show();
-            }
+            fetch('/api/v1/nations').then(r => r.json()).then(data => {
+                if (data.success && data.data) { displayNationsLegend(data.data); modal.show(); }
+                else { content.innerHTML = '<p>No nation data available.</p>'; modal.show(); }
+            }).catch(() => { content.innerHTML = '<p>Error loading nations.</p>'; modal.show(); });
         }
 
         function displayNationsLegend(nations) {
             const content = document.getElementById('nationsContent');
-
-            if (!nations || nations.length === 0) {
-                content.innerHTML = '<div class="alert alert-info">No nations data available</div>';
-                return;
-            }
-
             let html = '<div class="row">';
-
-            nations.forEach((nation, index) => {
-                const colorStyle = nation.appearance && nation.appearance.color
-                    ? `background-color: ${nation.appearance.color}; color: ${getContrastColor(nation.appearance.color)};`
-                    : `background-color: #6c757d; color: white;`;
-
-                const capitalInfo = nation.capital ? `${nation.capital.system} (Star ID: ${nation.capital.star_id})` : 'Unknown';
-                const territories = nation.territories && nation.territories.length > 0
-                    ? `${nation.territories.length} systems`
-                    : '';
-
-                const safeColor = /^#[0-9a-fA-F]{3,6}$/.test(nation.appearance?.color || '') ? nation.appearance.color : '#6c757d';
+            nations.forEach(nation => {
+                const color = nation.appearance?.color || '#6c757d';
+                const safeColor = /^#[0-9a-fA-F]{3,6}$/.test(color) ? color : '#6c757d';
+                const capital = nation.capital ? `${nation.capital.system}` : '—';
+                const territories = nation.territories?.length ? `${nation.territories.length} systems` : '';
+                const era = (nation.era_start || nation.era_end)
+                    ? `<br><strong>Era:</strong> ${nation.era_start||'?'}–${nation.era_end||'?'}` : '';
                 html += `
                     <div class="col-md-6 mb-3">
-                        <div class="nation-item card h-100" style="border-left: 4px solid ${safeColor}">
+                        <div class="card h-100" style="border-left:4px solid ${safeColor}">
                             <div class="card-body">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <h6 class="mb-0 fw-bold">${esc(nation.name)}</h6>
-                                    <div class="badge" style="${esc(colorStyle)}">${esc(nation._id)}</div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <h6 class="mb-0">${esc(nation.name)}</h6>
+                                    <span class="badge" style="background:${safeColor};color:${getContrastColor(safeColor)}">${esc(nation._id)}</span>
                                 </div>
-
-                                <div class="small text-muted mb-2">
-                                    <strong>Type:</strong> ${esc(nation.government?.type || 'Unknown')}<br>
-                                    <strong>Capital:</strong> ${esc(capitalInfo)}<br>
+                                <small class="text-muted">
+                                    <strong>Type:</strong> ${esc(nation.government?.type||'—')}<br>
+                                    <strong>Capital:</strong> ${esc(capital)}<br>
                                     ${territories ? `<strong>Territories:</strong> ${esc(territories)}` : ''}
+                                    ${era}
+                                </small>
+                                <p class="small mt-2 mb-1">${esc(nation.description||'')}</p>
+                                <div class="d-flex align-items-center">
+                                    <div style="width:14px;height:14px;background:${safeColor};border:1px solid #555;border-radius:2px;flex-shrink:0"></div>
+                                    <small class="ms-1 text-muted">${esc(color)}</small>
                                 </div>
-
-                                <p class="small mb-2">${esc(nation.description || 'No description available')}</p>
-
-                                ${nation.appearance?.color ? `
-                                    <div class="small">
-                                        <strong>Official Color:</strong>
-                                        <div class="d-inline-block ms-2" style="width: 16px; height: 16px; background-color: ${safeColor}; border: 1px solid #333; border-radius: 2px;"></div>
-                                        <span class="ms-1">${esc(nation.appearance.color)}</span>
-                                    </div>
-                                ` : ''}
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
-
             html += '</div>';
             content.innerHTML = html;
-
-            console.log(`✅ Nations legend populated with ${nations.length} nations`);
         }
 
-        function getContrastColor(hexColor) {
-            // Simple function to determine if text should be black or white based on background color
-            if (!hexColor) return 'white';
-
-            // Remove # if present
-            const color = hexColor.replace('#', '');
-
-            // Convert to RGB
-            const r = parseInt(color.substr(0, 2), 16);
-            const g = parseInt(color.substr(2, 2), 16);
-            const b = parseInt(color.substr(4, 2), 16);
-
-            // Calculate brightness
-            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-            return brightness > 128 ? 'black' : 'white';
+        function getContrastColor(hex) {
+            if (!hex) return 'white';
+            const c = hex.replace('#', '');
+            const r = parseInt(c.substr(0,2),16), g = parseInt(c.substr(2,2),16), b = parseInt(c.substr(4,2),16);
+            return (r*299 + g*587 + b*114) / 1000 > 128 ? 'black' : 'white';
         }
-        
-        // Hide star details panel
+
+        // ── Hide star details ───────────────────────────────────────────────
         function hideStarDetails() {
-            const starDetailsPanel = document.getElementById('starDetails');
-            if (starDetailsPanel) {
-                starDetailsPanel.style.display = 'none';
-            }
-            
-            // Also clear Three.js highlights
-            if (threejsStarmap && threejsStarmap.clearStarHighlights) {
-                threejsStarmap.clearStarHighlights();
-            }
-        }
-        
-        // A-Frame starfield functions with enhanced error logging
-        async function initializeAFrameStarfield() {
-            console.log('🥽 Initializing A-Frame starfield...');
-            
-            try {
-                // Setup A-Frame asset error logging
-                setupAFrameAssetLogging();
-                
-                // Get star data (limit to 100 for performance)
-                console.log('📡 Fetching star data for A-Frame...');
-                const response = await fetch('/api/v1/stars?count_limit=100&mag_limit=8');
-                const data = await response.json();
-                
-                console.log('📊 A-Frame star data received:', data.success, data.data ? data.data.length : 0);
-                
-                if (data.success && data.data) {
-                    createAFrameStars(data.data);
-                    console.log(`✅ A-Frame starfield created with ${data.data.length} stars`);
-                } else {
-                    console.error('❌ Failed to load star data for A-Frame:', data.error);
-                }
-            } catch (error) {
-                console.error('❌ Error initializing A-Frame starfield:', error);
-                updateAFrameLoadingStatus('Error loading starfield - Check console');
-            }
-        }
-        
-        function setupAFrameAssetLogging() {
-            const scene = document.getElementById('starfield-scene');
-            const assetsEl = scene.querySelector('a-assets');
-            
-            if (!assetsEl) {
-                console.warn('⚠️ No a-assets element found in A-Frame scene');
-                return;
-            }
-            
-            console.log('🔧 Setting up A-Frame asset error logging...');
-            
-            // Asset loading events
-            assetsEl.addEventListener('loaded', function() {
-                console.log('✅ A-Frame assets loaded successfully');
-                updateAFrameLoadingStatus('Assets loaded');
-            });
-            
-            assetsEl.addEventListener('timeout', function() {
-                console.error('❌ A-Frame assets loading timeout (30s exceeded)');
-                updateAFrameLoadingStatus('Asset loading timeout');
-            });
-            
-            // Scene events
-            scene.addEventListener('loaded', function() {
-                console.log('🎬 A-Frame scene fully loaded');
-                updateAFrameLoadingStatus('Scene loaded');
-            });
-            
-            scene.addEventListener('renderstart', function() {
-                console.log('🚀 A-Frame rendering started');
-                updateAFrameLoadingStatus('Rendering started');
-            });
-            
-            scene.addEventListener('error', function(event) {
-                console.error('❌ A-Frame scene error:', event);
-                updateAFrameLoadingStatus('Scene error');
-            });
-            
-            // Log capabilities
-            console.log('🖥️ A-Frame WebGL Support:', !!window.WebGLRenderingContext);
-            console.log('🥽 A-Frame WebXR Support:', 'xr' in navigator);
-        }
-        
-        function updateAFrameLoadingStatus(message) {
-            const statusEl = document.getElementById('aframe-loading-status');
-            if (statusEl) {
-                statusEl.textContent = message;
-                console.log('📺 A-Frame loading status:', message);
-            }
-        }
-        
-        async function refreshAFrameStarfield() {
-            console.log('🔄 Refreshing A-Frame starfield...');
-            
-            // Clear existing stars
-            const starField = document.getElementById('star-field');
-            if (starField) {
-                starField.innerHTML = '';
-                
-                // Reload stars
-                await initializeAFrameStarfield();
-            }
-        }
-        
-        function createAFrameStars(stars) {
-            const starField = document.getElementById('star-field');
-            if (!starField) return;
-            
-            stars.forEach((star, index) => {
-                // Create star entity
-                const starEntity = document.createElement('a-sphere');
-                
-                // Position (scale coordinates for better visibility)
-                starEntity.setAttribute('position', `${star.x} ${star.z} ${-star.y}`);
-                
-                // Size based on magnitude (brighter = bigger)
-                const size = Math.max(0.05, (8 - star.magnitude) * 0.03);
-                starEntity.setAttribute('radius', size);
-                
-                // Color and material based on star properties
-                let color = '#ffffff';
-
-                if (star.fictional_name) {
-                    color = '#00ff88';
-                } else if (star.nation) {
-                    if (star.nation.id === 'terran_directorate') {
-                        color = '#1565C0';
-                    } else if (star.nation.id === 'felgenland_union') {
-                        color = '#4CAF50';
-                    }
-                } else {
-                    // Color by spectral class
-                    const spectral = star.spectral_class?.charAt(0) || 'G';
-                    const spectralColors = {
-                        'O': '#9bb0ff', 'B': '#aabfff', 'A': '#cad7ff',
-                        'F': '#f8f7ff', 'G': '#fff4ea', 'K': '#ffd2a1',
-                        'M': '#ffad51'
-                    };
-                    color = spectralColors[spectral] || '#ffffff';
-                }
-                
-                starEntity.setAttribute('material', `
-                    shader: standard;
-                    metalness: 0;
-                    roughness: 0;
-                    emissive: ${color};
-                    emissiveIntensity: ${star.fictional_name ? 1.5 : 0.8};
-                `);
-                
-                // Add interaction
-                starEntity.setAttribute('class', 'star');
-                starEntity.setAttribute('data-star-id', star.id);
-                starEntity.setAttribute('data-star-name', star.fictional_name || star.name);
-                
-                // Click event for star details
-                starEntity.addEventListener('click', function() {
-                    showAFrameStarDetails(star);
-                });
-                
-                // Hover effect
-                starEntity.addEventListener('mouseenter', function() {
-                    this.setAttribute('scale', '2 2 2');
-                });
-                
-                starEntity.addEventListener('mouseleave', function() {
-                    this.setAttribute('scale', '1 1 1');
-                });
-                
-                starField.appendChild(starEntity);
-            });
-            
-            console.log(`🌟 Created ${stars.length} A-Frame star entities`);
-        }
-        
-        function showAFrameStarDetails(star) {
-            console.log('⭐ Star clicked in A-Frame:', star.fictional_name || star.name);
-            
-            // Update the navigation info with star details
-            const navInfo = document.getElementById('nav-info');
-            if (navInfo) {
-                const info = `⭐ ${star.fictional_name || star.name} | ${star.spectral_class} | ${star.distance.toFixed(1)} pc | Mag: ${star.magnitude.toFixed(1)}`;
-                navInfo.setAttribute('value', info);
-                
-                // Reset after 5 seconds
-                setTimeout(() => {
-                    navInfo.setAttribute('value', '🌌 Felgenland Starfield - Use mouse/WASD to navigate - Click stars for details');
-                }, 5000);
-            }
-            
-        }
-        
-        // ── Sidebar collapse ─────────────────────────────────────────────────
-        function toggleSidebar() {
-            const content = document.getElementById('sidebarContent');
-            const btn     = document.getElementById('sidebarToggle');
-            const col     = document.getElementById('sidebarCol');
-            if (content.style.display === 'none') {
-                content.style.display = '';
-                col.classList.remove('col-md-1');
-                col.classList.add('col-md-3', 'col-lg-2');
-                btn.textContent = '◀';
-            } else {
-                content.style.display = 'none';
-                col.classList.remove('col-md-3', 'col-lg-2');
-                col.classList.add('col-md-1');
-                btn.textContent = '▶';
-            }
-            if (threejsStarmap) threejsStarmap.resize();
+            document.getElementById('starDetails').style.display = 'none';
+            if (threejsStarmap?.clearStarHighlights) threejsStarmap.clearStarHighlights();
         }
 
-        // ── Quick Views ──────────────────────────────────────────────────────
+        // ── Quick views ─────────────────────────────────────────────────────
         const QUICK_VIEWS = {
             felgenland_union: {
                 nationId: 'felgenland_union',
@@ -1257,25 +989,85 @@ Authorization: Bearer ${data.token}`;
             const config = QUICK_VIEWS[name];
             if (!threejsStarmap || !config) return;
             threejsStarmap.applyQuickView(config);
+            const nationsEl   = document.getElementById('nationsOverlay');
+            const tradeEl     = document.getElementById('tradeRoutesOverlay');
+            const magEl       = document.getElementById('magLimit');
+            const magValEl    = document.getElementById('magValue');
+            const nationSelEl = document.getElementById('nationSelector');
+            if (nationsEl)   nationsEl.checked   = config.showNations ?? true;
+            if (tradeEl)     tradeEl.checked      = config.showTradeRoutes ?? true;
+            if (magEl)       magEl.value          = config.magLimit ?? 8;
+            if (magValEl)    magValEl.textContent  = (config.magLimit ?? 8).toFixed(1);
+            if (nationSelEl) nationSelEl.value    = config.nationId ?? '';
+            updateLorePanel(config.nationId ?? null);
+            updateUrl();
+        }
+
+        // ── Story Moments ───────────────────────────────────────────────────
+        const STORY_MOMENTS = {
+            felgenland_core_2750: {
+                label: 'Felgenland Core 2750',
+                nationId: 'felgenland_union',
+                target: { x: -11.09, y: 6.34, z: 7.96 },
+                cameraOffset: 200, showTradeRoutes: true, showNations: true, magLimit: 9,
+                era: 2750
+            },
+            tiefe_grenze: {
+                label: 'Tiefe-Grenze Frontier',
+                nationId: null,
+                target: { x: 50, y: 25, z: 12.5 },
+                cameraOffset: 300, showTradeRoutes: false, showNations: false, magLimit: 10,
+                era: null
+            },
+            protelani_summit: {
+                label: 'Protelani Trade Summit',
+                nationId: 'protelani_republic',
+                target: { x: -8, y: 4, z: 6 },
+                cameraOffset: 250, showTradeRoutes: true, showNations: true, magLimit: 9,
+                era: 2750
+            },
+            holsten_tor: {
+                label: 'Holsten Tor (Stahlburgh)',
+                nationId: 'felgenland_union',
+                target: { x: -11.09, y: 6.34, z: 7.96 },
+                cameraOffset: 80, showTradeRoutes: true, showNations: true, magLimit: 11,
+                era: 2750
+            }
+        };
+
+        function applyStoryMoment(name) {
+            const m = STORY_MOMENTS[name];
+            if (!threejsStarmap || !m) return;
+            threejsStarmap.applyQuickView(m);
+
             // Sync sidebar controls
             const nationsEl   = document.getElementById('nationsOverlay');
             const tradeEl     = document.getElementById('tradeRoutesOverlay');
             const magEl       = document.getElementById('magLimit');
             const magValEl    = document.getElementById('magValue');
             const nationSelEl = document.getElementById('nationSelector');
-            if (nationsEl)   nationsEl.checked  = config.showNations ?? true;
-            if (tradeEl)     tradeEl.checked     = config.showTradeRoutes ?? true;
-            if (magEl)       magEl.value         = config.magLimit ?? 8;
-            if (magValEl)    magValEl.textContent = (config.magLimit ?? 8).toFixed(1);
-            if (nationSelEl) nationSelEl.value   = config.nationId ?? '';
-            updateLorePanel(config.nationId ?? null);
+            if (nationsEl)   nationsEl.checked   = m.showNations ?? false;
+            if (tradeEl)     tradeEl.checked      = m.showTradeRoutes ?? true;
+            if (magEl)       magEl.value          = m.magLimit ?? 9;
+            if (magValEl)    magValEl.textContent  = (m.magLimit ?? 9).toFixed(1);
+            if (nationSelEl) nationSelEl.value    = m.nationId ?? '';
+            updateLorePanel(m.nationId ?? null);
+
+            // Apply era if specified
+            if (m.era != null) {
+                const eraToggle = document.getElementById('eraFilterToggle');
+                const eraSlider = document.getElementById('eraSlider');
+                if (eraToggle) { eraToggle.checked = true; }
+                if (eraSlider) { eraSlider.disabled = false; eraSlider.value = m.era; }
+                onEraChange(m.era);
+            }
+            updateUrl();
         }
 
-        // ── Nation Selector + Lore Panel ─────────────────────────────────────
+        // ── Nation Selector + Lore Panel ────────────────────────────────────
         function populateNationDropdown() {
-            if (!threejsStarmap || !threejsStarmap.nations) return;
+            if (!threejsStarmap?.nations) return;
             const sel = document.getElementById('nationSelector');
-            // Remove any previously added options (keep first "Show All" option)
             while (sel.options.length > 1) sel.remove(1);
             for (const nation of threejsStarmap.nations) {
                 const opt = document.createElement('option');
@@ -1290,6 +1082,7 @@ Authorization: Bearer ${data.token}`;
             if (document.getElementById('showOnlyNation')?.checked) {
                 if (threejsStarmap) threejsStarmap.filterByNation(nationId || null);
             }
+            updateUrl();
         }
 
         function toggleShowOnlyNation(checked) {
@@ -1309,23 +1102,24 @@ Authorization: Bearer ${data.token}`;
             if (!panel || !content) return;
             if (!nationId || !threejsStarmap) { panel.classList.add('d-none'); return; }
 
-            const nation = threejsStarmap.nations.find(
-                n => (n._id || n.id) === nationId
-            );
+            const nation = threejsStarmap.nations.find(n => (n._id || n.id) === nationId);
             if (!nation) { panel.classList.add('d-none'); return; }
 
-            const color = (nation.appearance && nation.appearance.color) || nation.color || '#888888';
+            const color     = (nation.appearance && nation.appearance.color) || nation.color || '#888888';
             const safeColor = /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#888888';
 
-            // Resolve territory star names
             const territories = (nation.territories || []).map(t => {
                 const id   = (typeof t === 'object') ? t.star_id : t;
                 const star = threejsStarmap.currentStars.find(s => s.id === id);
                 return { id, name: star?.fictional_name || star?.name || `Star #${id}`, star };
             });
 
-            const colorDot = `<span style="display:inline-block;width:10px;height:10px;
-                border-radius:50%;background:${safeColor};margin-right:5px;flex-shrink:0;"></span>`;
+            const colorDot = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+                background:${safeColor};margin-right:5px;flex-shrink:0;"></span>`;
+
+            const eraLine = (nation.era_start || nation.era_end)
+                ? `<small class="text-warning d-block mb-1">Era ${nation.era_start||'?'}–${nation.era_end||'?'}</small>`
+                : '';
 
             content.innerHTML = `
                 <div class="border rounded p-2" style="border-color:${safeColor}55 !important">
@@ -1333,6 +1127,7 @@ Authorization: Bearer ${data.token}`;
                         ${colorDot}<strong class="small">${esc(nation.name)}</strong>
                     </div>
                     <small class="text-muted d-block mb-1">${esc(nation.government?.type || nation.government_type || '')}</small>
+                    ${eraLine}
                     <p class="small mb-2" style="font-size:0.75rem">${esc(nation.description || '')}</p>
                     ${territories.length ? `<div class="mb-1"><strong class="small">Key Systems (${territories.length})</strong></div>` : ''}
                     ${territories.map(t => `
@@ -1353,26 +1148,85 @@ Authorization: Bearer ${data.token}`;
             threejsStarmap.displayStarDetails(star);
         }
 
-        // Initialize Three.js view on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, current view:', currentView);
+        // ── Sidebar collapse ─────────────────────────────────────────────────
+        function toggleSidebar() {
+            const content = document.getElementById('sidebarContent');
+            const btn     = document.getElementById('sidebarToggle');
+            const col     = document.getElementById('sidebarCol');
+            if (content.style.display === 'none') {
+                content.style.display = '';
+                col.classList.remove('col-md-1');
+                col.classList.add('col-md-3', 'col-lg-2');
+                btn.textContent = '◀';
+            } else {
+                content.style.display = 'none';
+                col.classList.remove('col-md-3', 'col-lg-2');
+                col.classList.add('col-md-1');
+                btn.textContent = '▶';
+            }
+            if (threejsStarmap) threejsStarmap.resize();
+        }
 
-            // Set up overlay toggle event listeners
-            ['nationsOverlay', 'tradeRoutesOverlay', 'stellarRegionsOverlay', 'galacticDirectionsOverlay', 'exoplanetsOverlay'].forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('change', updateOverlays);
+        // ── A-Frame ──────────────────────────────────────────────────────────
+        async function initializeAFrameStarfield() {
+            try {
+                const response = await fetch('/api/v1/stars?count_limit=100&mag_limit=8');
+                const data = await response.json();
+                if (data.success && data.data) createAFrameStars(data.data);
+            } catch (e) { console.error('A-Frame init error:', e); }
+        }
+
+        async function refreshAFrameStarfield() {
+            const sf = document.getElementById('star-field');
+            if (sf) { sf.innerHTML = ''; await initializeAFrameStarfield(); }
+        }
+
+        function createAFrameStars(stars) {
+            const starField = document.getElementById('star-field');
+            if (!starField) return;
+            stars.forEach(star => {
+                const el = document.createElement('a-sphere');
+                el.setAttribute('position', `${star.x} ${star.z} ${-star.y}`);
+                const size = Math.max(0.05, (8 - star.magnitude) * 0.03);
+                el.setAttribute('radius', size);
+                let color = '#ffffff';
+                if (star.fictional_name) color = '#00ff88';
+                else {
+                    const s = star.spectral_class?.charAt(0) || 'G';
+                    color = {'O':'#9bb0ff','B':'#aabfff','A':'#cad7ff','F':'#f8f7ff','G':'#fff4ea','K':'#ffd2a1','M':'#ffad51'}[s] || '#ffffff';
                 }
+                el.setAttribute('material', `shader:standard;metalness:0;roughness:0;emissive:${color};emissiveIntensity:0.8`);
+                el.setAttribute('class', 'star');
+                el.addEventListener('click', () => showAFrameStarDetails(star));
+                el.addEventListener('mouseenter', function() { this.setAttribute('scale','2 2 2'); });
+                el.addEventListener('mouseleave', function() { this.setAttribute('scale','1 1 1'); });
+                starField.appendChild(el);
             });
+        }
 
-            // Give scripts time to finish loading before initialising Three.js
+        function showAFrameStarDetails(star) {
+            const navInfo = document.getElementById('nav-info');
+            if (navInfo) {
+                const dist = star.distance ?? star.dist;
+                navInfo.setAttribute('value', `⭐ ${star.fictional_name||star.name} | ${star.spectral_class} | ${dist ? parseFloat(dist).toFixed(1) : '?'} pc | Mag: ${star.magnitude?.toFixed(1)||'?'}`);
+                setTimeout(() => {
+                    navInfo.setAttribute('value', '🌌 Felgenland Starfield — Use mouse/WASD — Click stars for details');
+                }, 5000);
+            }
+        }
+
+        // ── DOMContentLoaded ─────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            ['nationsOverlay','tradeRoutesOverlay','stellarRegionsOverlay','galacticDirectionsOverlay','exoplanetsOverlay']
+                .forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('change', updateOverlays);
+                });
+
             setTimeout(() => {
-                if (currentView === 'threejs') {
-                    initializeThreeJSStarfield();
-                }
+                if (currentView === 'threejs') initializeThreeJSStarfield();
             }, 500);
         });
-        
     </script>
 </body>
 </html>

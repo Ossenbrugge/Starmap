@@ -82,6 +82,8 @@ class Database:
             "hd": row.get("hd"),
             "nation_id": row.get("nation_id") or "",
             "is_fictional": bool(row.get("is_fictional")),
+            "era_start": row.get("era_start"),
+            "era_end": row.get("era_end"),
         }
 
     # ── Stars ─────────────────────────────────────────────────────────────────
@@ -280,6 +282,8 @@ class Database:
             "star_id": nation.get("capital_star_id"),
             "planet": "",
         }
+        nation["era_start"] = nation.get("era_start")
+        nation["era_end"] = nation.get("era_end")
         return nation
 
     def get_nations(self) -> List[Dict]:

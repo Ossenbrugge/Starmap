@@ -116,6 +116,10 @@ def create_app():
     from app.routes.trade_routes_blueprint import trade_routes_bp
     app.register_blueprint(trade_routes_bp)
 
+    # Saved views (auth-protected)
+    from app.routes.saved_views_blueprint import saved_views_bp
+    app.register_blueprint(saved_views_bp)
+
     print("All blueprints registered successfully")
 
     # ── Error handlers ───────────────────────────────────────────────────────

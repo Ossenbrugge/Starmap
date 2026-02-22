@@ -13,12 +13,15 @@ class ThreeJSStarmap {
         this.keys = {};
         this.fictionalExoplanets = [];
         this.nations = [];
-        this.nationFilter = null;      // Set of star IDs for nation filter
+        this.nationFilter = null;      // Set of star IDs for nation filter (nation 1)
+        this.nationFilter2 = null;     // Set of star IDs for nation 2 (compare mode)
         this.eraYear = null;           // Current era year (null = no era filter)
         this.politicalView = false;
         this.flyAnimation = null;
         this.points = null;
         this.clock = new THREE.Clock();
+        this.constellationsGroup = null;
+        this.habitableZoneGroup = null;
 
         if (typeof THREE === 'undefined') {
             console.error('❌ Three.js not loaded');
@@ -73,6 +76,12 @@ class ThreeJSStarmap {
         this.scene.add(this.tradeRoutesGroup);
         this.scene.add(this.stellarRegionsGroup);
         this.scene.add(this.exoplanetGroup);
+
+        this.constellationsGroup = new THREE.Group();
+        this.scene.add(this.constellationsGroup);
+
+        this.habitableZoneGroup = new THREE.Group();
+        this.scene.add(this.habitableZoneGroup);
 
         // Create galactic axes and star interaction
         this.createGalacticAxes();
@@ -744,8 +753,16 @@ class ThreeJSStarmap {
             html += `</div>`;
         }
 
-        // Star ID
-        html += `<div class="mt-2"><small class="text-secondary">ID: ${star.id || '—'}</small></div>`;
+        // System map + star ID row
+        html += `
+        <div class="mt-2 d-flex justify-content-between align-items-center">
+            <small class="text-secondary">ID: ${star.id || '—'}</small>
+            <button class="btn btn-sm btn-outline-info py-0"
+                    style="font-size:0.72rem"
+                    onclick='window.openSystemMap(${JSON.stringify(star)})'>
+                🪐 System Map
+            </button>
+        </div>`;
 
         detailsContent.innerHTML = html;
         detailsPanel.style.display = 'block';
@@ -768,6 +785,10 @@ class ThreeJSStarmap {
         highlight.userData = { type: 'star_highlight', star: star };
 
         this.scene.add(highlight);
+
+        // Show habitable zone rings around the selected star
+        this.showHabitableZoneRing(star);
+
         console.log('✨ Highlighted star:', star.fictional_name || star.name);
     }
 
@@ -778,12 +799,13 @@ class ThreeJSStarmap {
                 highlights.push(child);
             }
         });
-
-        highlights.forEach(highlight => {
-            this.scene.remove(highlight);
-            if (highlight.geometry) highlight.geometry.dispose();
-            if (highlight.material) highlight.material.dispose();
+        highlights.forEach(h => {
+            this.scene.remove(h);
+            if (h.geometry) h.geometry.dispose();
+            if (h.material) h.material.dispose();
         });
+        // Also clear HZ rings
+        this.clearHabitableZoneRings();
     }
 
     showStarTooltip(star, event) {
@@ -1303,7 +1325,7 @@ class ThreeJSStarmap {
 
     // ── Nation / Political-view methods ──────────────────────────────────────
 
-    /** Recompute aFilter from current nation filter + era filter combined. */
+    /** Recompute aFilter from nation filter(s) + era filter combined. */
     _recomputeFilter() {
         const filterAttr = this.points?.geometry?.attributes?.aFilter;
         if (!filterAttr) return;
@@ -1311,18 +1333,19 @@ class ThreeJSStarmap {
         for (let i = 0; i < this.currentStars.length; i++) {
             const star = this.currentStars[i];
 
-            // Nation filter: 1.0 if matches (or no filter), 0.0 if excluded
+            // Nation filter(s): 1.0 if matches nation1 OR nation2 (or no filter)
             let nf = 1.0;
-            if (this.nationFilter) {
-                nf = this.nationFilter.has(star.id) ? 1.0 : 0.0;
+            if (this.nationFilter || this.nationFilter2) {
+                const inN1 = this.nationFilter  ? this.nationFilter.has(star.id)  : false;
+                const inN2 = this.nationFilter2 ? this.nationFilter2.has(star.id) : false;
+                nf = (inN1 || inN2) ? 1.0 : 0.0;
             }
 
-            // Era filter: 1.0 if the star exists in the current era, 0.2 otherwise
+            // Era filter: 1.0 if the star exists in the current era, 0.0 otherwise
             let ef = 1.0;
             if (this.eraYear != null) {
                 const es = star.era_start;
                 const ee = star.era_end;
-                // Stars without era data are always shown at full brightness
                 if (es != null || ee != null) {
                     const inEra = (es == null || this.eraYear >= es) &&
                                   (ee == null || this.eraYear <= ee);
@@ -1330,13 +1353,13 @@ class ThreeJSStarmap {
                 }
             }
 
-            // Combine: if either filter excludes, use minimum
             filterAttr.array[i] = Math.min(nf, ef);
         }
         filterAttr.needsUpdate = true;
     }
 
     filterByNation(nationId) {
+        this.nationFilter2 = null;  // clear compare-mode second filter
         if (!nationId) {
             this.nationFilter = null;
         } else {
@@ -1426,6 +1449,141 @@ class ThreeJSStarmap {
         if (magLimit != null && this.starMaterial) {
             this.starMaterial.uniforms.uMagLimit.value = magLimit;
         }
+    }
+
+    // ── Habitable Zone rings (3D indicator around selected star) ─────────────
+
+    /**
+     * Estimate luminosity (solar = 1) from spectral class if not known.
+     */
+    static _spectralLuminosity(spec) {
+        const cls = (spec || 'G')[0].toUpperCase();
+        return { O: 50000, B: 800, A: 8, F: 1.8, G: 1, K: 0.35, M: 0.04 }[cls] ?? 1;
+    }
+
+    clearHabitableZoneRings() {
+        while (this.habitableZoneGroup.children.length > 0) {
+            const child = this.habitableZoneGroup.children[0];
+            this.habitableZoneGroup.remove(child);
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+        }
+    }
+
+    showHabitableZoneRing(star) {
+        this.clearHabitableZoneRings();
+        if (!star || star.x == null) return;
+
+        const L = star.luminosity || ThreeJSStarmap._spectralLuminosity(star.spectral_class);
+        // Habitable zone radii in AU, then convert to parsecs (1 AU = 1/206265 pc)
+        // At galaxy scale (1 pc = 10 Three.js units) these are microscopic, so we show
+        // a stylized scaled ring that signals "this star has a habitable zone."
+        // Visual scale: inner ≈ 0.8 units, outer ≈ 1.6 units around the star.
+        const baseInner = 0.8;
+        const baseOuter = 1.6 + Math.log10(Math.max(L, 0.01)) * 0.4;
+        const starPos = new THREE.Vector3(star.x * 10, star.y * 10, star.z * 10);
+
+        // Inner hot-zone ring (orange)
+        const hotGeo = new THREE.RingGeometry(baseInner * 0.5, baseInner, 48);
+        const hotMat = new THREE.MeshBasicMaterial({ color: 0xff6600, transparent: true, opacity: 0.35, side: THREE.DoubleSide });
+        const hotRing = new THREE.Mesh(hotGeo, hotMat);
+        hotRing.rotation.x = -Math.PI / 2;
+        hotRing.position.copy(starPos);
+        this.habitableZoneGroup.add(hotRing);
+
+        // Habitable zone ring (green)
+        const hzGeo = new THREE.RingGeometry(baseInner, baseOuter, 48);
+        const hzMat = new THREE.MeshBasicMaterial({ color: 0x00cc44, transparent: true, opacity: 0.3, side: THREE.DoubleSide });
+        const hzRing = new THREE.Mesh(hzGeo, hzMat);
+        hzRing.rotation.x = -Math.PI / 2;
+        hzRing.position.copy(starPos);
+        this.habitableZoneGroup.add(hzRing);
+
+        // Outer cold-zone ring (blue)
+        const coldGeo = new THREE.RingGeometry(baseOuter, baseOuter * 1.5, 48);
+        const coldMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
+        const coldRing = new THREE.Mesh(coldGeo, coldMat);
+        coldRing.rotation.x = -Math.PI / 2;
+        coldRing.position.copy(starPos);
+        this.habitableZoneGroup.add(coldRing);
+    }
+
+    // ── Constellation lines ───────────────────────────────────────────────────
+
+    async loadConstellations() {
+        console.log('✨ loadConstellations called...');
+        try {
+            const resp = await fetch('/static/data/constellation_lines.json');
+            const data = await resp.json();
+            this.createConstellationsOverlay(data);
+            return true;
+        } catch (e) {
+            console.warn('✨ loadConstellations failed:', e);
+            return false;
+        }
+    }
+
+    createConstellationsOverlay(constellations) {
+        while (this.constellationsGroup.children.length > 0) {
+            const child = this.constellationsGroup.children[0];
+            this.constellationsGroup.remove(child);
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) child.material.dispose();
+        }
+
+        // Build HIP → star lookup
+        const hipMap = new Map();
+        for (const star of this.currentStars) {
+            if (star.hip) hipMap.set(Math.round(star.hip), star);
+        }
+
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0x334488,
+            transparent: true,
+            opacity: 0.6,
+        });
+
+        let drawnLines = 0;
+        for (const con of constellations) {
+            for (const [hipA, hipB] of con.pairs) {
+                const starA = hipMap.get(hipA);
+                const starB = hipMap.get(hipB);
+                if (!starA || !starB) continue;
+                const pts = [
+                    new THREE.Vector3(starA.x * 10, starA.y * 10, starA.z * 10),
+                    new THREE.Vector3(starB.x * 10, starB.y * 10, starB.z * 10),
+                ];
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const line = new THREE.Line(geo, lineMat.clone());
+                line.userData = { type: 'constellation_line', constellation: con.name };
+                this.constellationsGroup.add(line);
+                drawnLines++;
+            }
+        }
+        console.log(`✅ Constellation overlay: ${drawnLines} lines from ${constellations.length} constellations`);
+    }
+
+    // ── Compare Two Nations ───────────────────────────────────────────────────
+
+    /**
+     * Filter stars to show nation1 AND nation2 at full brightness,
+     * everything else dimmed.  Pass null for either to clear that slot.
+     */
+    filterByNations(nationId1, nationId2) {
+        if (!nationId1 && !nationId2) {
+            this.nationFilter  = null;
+            this.nationFilter2 = null;
+        } else {
+            const resolve = (id) => {
+                if (!id) return null;
+                const n = this.nations.find(n => (n._id || n.id) === id);
+                if (!n) return null;
+                return new Set((n.territories || []).map(t => t.star_id ?? t));
+            };
+            this.nationFilter  = resolve(nationId1);
+            this.nationFilter2 = resolve(nationId2);
+        }
+        this._recomputeFilter();
     }
 
     dispose() {

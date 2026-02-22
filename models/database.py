@@ -395,6 +395,42 @@ class Database:
             ),
         }
 
+    # ── Saved Views ───────────────────────────────────────────────────────────
+
+    def get_saved_views(self, user_id: int) -> List[Dict]:
+        return self._q(
+            "SELECT * FROM saved_views WHERE user_id=? ORDER BY created_at DESC",
+            (user_id,),
+        )
+
+    def save_view(self, user_id: int, name: str, params: str) -> Optional[int]:
+        try:
+            with self._lock:
+                self._con.execute(
+                    "INSERT INTO saved_views (user_id, name, params) VALUES (?,?,?)",
+                    (user_id, name[:200], params),
+                )
+                self._con.commit()
+                row = self._con.execute("SELECT last_insert_rowid() AS id").fetchone()
+            return row["id"] if row else None
+        except Exception as e:
+            print(f"save_view error: {e}")
+            return None
+
+    def delete_saved_view(self, view_id: int, user_id: int) -> bool:
+        try:
+            with self._lock:
+                self._con.execute(
+                    "DELETE FROM saved_views WHERE id=? AND user_id=?",
+                    (view_id, user_id),
+                )
+                self._con.commit()
+                changed = self._con.execute("SELECT changes() AS c").fetchone()["c"] > 0
+            return changed
+        except Exception as e:
+            print(f"delete_saved_view error: {e}")
+            return False
+
     def reload_data(self):
         """No-op: data is always on disk with SQLite."""
         pass

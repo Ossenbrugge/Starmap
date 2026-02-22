@@ -94,6 +94,25 @@
         }
         /* ── Story moments ── */
         .story-btn { font-size: 0.72rem; padding: 3px 6px; }
+        /* ── System Map panel ── */
+        #systemMapPanel {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 400px; background: #0a0a1e;
+            border: 1px solid #334; border-radius: 8px;
+            z-index: 1500; display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        }
+        #systemMapPanel .panel-header {
+            padding: 8px 12px; border-bottom: 1px solid #334;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        #systemMapCanvas { display: block; background: #000811; }
+        /* ── Compare nations badge ── */
+        .compare-badge { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+        /* ── Saved view item ── */
+        .saved-view-item { display: flex; align-items: center; justify-content: space-between;
+            padding: 3px 6px; border-radius: 4px; font-size: 0.78rem; cursor: pointer; }
+        .saved-view-item:hover { background: #1a1a3e; }
     </style>
 </head>
 <body>
@@ -287,6 +306,22 @@
                                 </div>
                             </div>
 
+                            <!-- Compare Two Nations -->
+                            <div class="mb-2 mt-2">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" id="compareModeToggle"
+                                           onchange="toggleCompareMode(this.checked)">
+                                    <label class="form-check-label small fw-bold" for="compareModeToggle">⚔️ Compare Two Nations</label>
+                                </div>
+                                <div id="compareNationsSection" style="display:none">
+                                    <select id="nationSelector2" class="form-select form-select-sm mb-1"
+                                            onchange="onNation2Select(this.value)">
+                                        <option value="">— Nation 2 —</option>
+                                    </select>
+                                    <div id="compareNationsBadges" class="d-flex gap-2 align-items-center" style="font-size:0.75rem;min-height:18px;"></div>
+                                </div>
+                            </div>
+
                             <!-- Lore panel (dynamic) -->
                             <div id="lorePanel" class="d-none mt-2">
                                 <div id="lorePanelContent"></div>
@@ -327,6 +362,18 @@
                                         <label class="form-check-label small" for="exoplanetsOverlay">Planets</label>
                                     </div>
                                 </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="constellationsOverlay">
+                                        <label class="form-check-label small" for="constellationsOverlay">Constellations</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="habitableZoneOverlay" checked>
+                                        <label class="form-check-label small" for="habitableZoneOverlay">HZ Rings</label>
+                                    </div>
+                                </div>
                             </div>
                             <button class="btn btn-outline-success btn-sm w-100" onclick="showNationsLegend()">
                                 🏛️ Nations Legend
@@ -355,6 +402,16 @@
                                 </button>
                                 <button class="btn btn-outline-warning btn-sm" onclick="exportData()">💾 Export CSV</button>
                             </div>
+
+                            {% if user %}
+                            <div class="mt-3">
+                                <label class="form-label small fw-bold">🗂 Saved Views</label>
+                                <button class="btn btn-outline-success btn-sm w-100 mb-2" onclick="saveCurrentView()">
+                                    💾 Save Current View
+                                </button>
+                                <div id="savedViewsList"></div>
+                            </div>
+                            {% endif %}
                         </div>
 
                     </div><!-- /tab-content -->
@@ -442,6 +499,16 @@
 
     <!-- Wiki export success banner -->
     <div id="wikiExportBanner"></div>
+
+    <!-- System Map panel -->
+    <div id="systemMapPanel">
+        <div class="panel-header">
+            <span id="systemMapTitle" class="small fw-bold text-info">System Map</span>
+            <button onclick="closeSystemMap()" class="btn-close btn-close-white btn-sm"></button>
+        </div>
+        <canvas id="systemMapCanvas" width="398" height="280"></canvas>
+        <div id="systemMapInfo" class="px-3 py-1" style="font-size:0.75rem;color:#888;border-top:1px solid #334;min-height:28px;"></div>
+    </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -852,15 +919,34 @@
         }
 
         // ── Overlay toggles ─────────────────────────────────────────────────
+        let constellationsLoaded = false;
+
         function updateOverlays() {
             if (!threejsStarmap) return;
-            if (threejsStarmap.nationsGroup)      threejsStarmap.nationsGroup.visible      = document.getElementById('nationsOverlay').checked;
-            if (threejsStarmap.tradeRoutesGroup)  threejsStarmap.tradeRoutesGroup.visible  = document.getElementById('tradeRoutesOverlay').checked;
+            if (threejsStarmap.nationsGroup)        threejsStarmap.nationsGroup.visible        = document.getElementById('nationsOverlay').checked;
+            if (threejsStarmap.tradeRoutesGroup)    threejsStarmap.tradeRoutesGroup.visible    = document.getElementById('tradeRoutesOverlay').checked;
             if (threejsStarmap.stellarRegionsGroup) threejsStarmap.stellarRegionsGroup.visible = document.getElementById('stellarRegionsOverlay').checked;
-            if (threejsStarmap.exoplanetGroup)    threejsStarmap.exoplanetGroup.visible    = document.getElementById('exoplanetsOverlay').checked;
+            if (threejsStarmap.exoplanetGroup)      threejsStarmap.exoplanetGroup.visible      = document.getElementById('exoplanetsOverlay').checked;
             const showAxes = document.getElementById('galacticDirectionsOverlay').checked;
             if (threejsStarmap.axisLabels) threejsStarmap.axisLabels.forEach(l => l.visible = showAxes);
             if (threejsStarmap.axesHelper) threejsStarmap.axesHelper.visible = showAxes;
+
+            // Constellations — lazy-load on first enable
+            const showConstellations = document.getElementById('constellationsOverlay').checked;
+            if (showConstellations && !constellationsLoaded) {
+                constellationsLoaded = true;
+                threejsStarmap.loadConstellations().then(() => {
+                    if (threejsStarmap.constellationsGroup) threejsStarmap.constellationsGroup.visible = true;
+                });
+            } else if (threejsStarmap.constellationsGroup) {
+                threejsStarmap.constellationsGroup.visible = showConstellations;
+            }
+
+            // HZ rings (group visibility; individual rings controlled per-star)
+            if (threejsStarmap.habitableZoneGroup) {
+                threejsStarmap.habitableZoneGroup.visible = document.getElementById('habitableZoneOverlay').checked;
+            }
+
             updateUrl();
         }
 
@@ -1067,13 +1153,17 @@
         // ── Nation Selector + Lore Panel ────────────────────────────────────
         function populateNationDropdown() {
             if (!threejsStarmap?.nations) return;
-            const sel = document.getElementById('nationSelector');
-            while (sel.options.length > 1) sel.remove(1);
-            for (const nation of threejsStarmap.nations) {
-                const opt = document.createElement('option');
-                opt.value = nation._id || nation.id || '';
-                opt.textContent = nation.name || opt.value;
-                sel.appendChild(opt);
+            const selectors = ['nationSelector', 'nationSelector2'];
+            for (const selId of selectors) {
+                const sel = document.getElementById(selId);
+                if (!sel) continue;
+                while (sel.options.length > 1) sel.remove(1);
+                for (const nation of threejsStarmap.nations) {
+                    const opt = document.createElement('option');
+                    opt.value = nation._id || nation.id || '';
+                    opt.textContent = nation.name || opt.value;
+                    sel.appendChild(opt);
+                }
             }
         }
 
@@ -1094,6 +1184,44 @@
         function togglePoliticalView(enabled) {
             if (!threejsStarmap) return;
             threejsStarmap.setPoliticalView(enabled);
+        }
+
+        // ── Compare Two Nations ─────────────────────────────────────────────
+        function toggleCompareMode(enabled) {
+            document.getElementById('compareNationsSection').style.display = enabled ? '' : 'none';
+            if (!enabled) {
+                // revert to single-nation mode
+                const nationId = document.getElementById('nationSelector').value || null;
+                if (threejsStarmap) threejsStarmap.filterByNation(nationId);
+                document.getElementById('compareNationsBadges').innerHTML = '';
+                document.getElementById('nationSelector2').value = '';
+            }
+        }
+
+        function onNation2Select(nation2Id) {
+            if (!threejsStarmap) return;
+            const nation1Id = document.getElementById('nationSelector').value || null;
+            if (nation1Id && nation2Id) {
+                threejsStarmap.filterByNations(nation1Id, nation2Id);
+                threejsStarmap.setPoliticalView(true);
+                document.getElementById('politicalViewToggle').checked = true;
+                renderCompareBadges(nation1Id, nation2Id);
+            } else if (nation1Id) {
+                threejsStarmap.filterByNation(nation1Id);
+            }
+        }
+
+        function renderCompareBadges(id1, id2) {
+            if (!threejsStarmap?.nations) return;
+            const n1 = threejsStarmap.nations.find(n => (n._id||n.id) === id1);
+            const n2 = threejsStarmap.nations.find(n => (n._id||n.id) === id2);
+            const badge = (n) => {
+                if (!n) return '';
+                const c = n.appearance?.color || '#888';
+                return `<span class="compare-badge" style="background:${c}"></span> <span>${esc(n.name)}</span>`;
+            };
+            document.getElementById('compareNationsBadges').innerHTML =
+                badge(n1) + (n1 && n2 ? ' <span class="text-muted">vs</span> ' : '') + badge(n2);
         }
 
         function updateLorePanel(nationId) {
@@ -1215,13 +1343,216 @@
             }
         }
 
+        // ── System Map ───────────────────────────────────────────────────────
+        window.openSystemMap = function(star) {
+            const panel = document.getElementById('systemMapPanel');
+            document.getElementById('systemMapTitle').textContent = `System: ${star.fictional_name || star.name || 'Unknown'}`;
+            panel.style.display = 'block';
+            drawSystemMap(star);
+        };
+
+        function closeSystemMap() {
+            document.getElementById('systemMapPanel').style.display = 'none';
+        }
+
+        function drawSystemMap(star) {
+            const canvas = document.getElementById('systemMapCanvas');
+            const info   = document.getElementById('systemMapInfo');
+            const ctx    = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            const cx = W / 2, cy = H / 2;
+
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#000811';
+            ctx.fillRect(0, 0, W, H);
+
+            // Star spectral color
+            const specColors = { O:'#9bb0ff', B:'#aabfff', A:'#cad7ff', F:'#f8f7ff', G:'#fff4ea', K:'#ffd2a1', M:'#ffad51' };
+            const sp = (star.spectral_class || 'G').charAt(0).toUpperCase();
+            const starColor = specColors[sp] || '#fffbe8';
+
+            // Glow
+            const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 28);
+            grd.addColorStop(0, starColor);
+            grd.addColorStop(0.4, starColor + 'aa');
+            grd.addColorStop(1, 'transparent');
+            ctx.beginPath(); ctx.arc(cx, cy, 28, 0, Math.PI * 2);
+            ctx.fillStyle = grd; ctx.fill();
+
+            // Star body
+            ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+            ctx.fillStyle = starColor; ctx.fill();
+
+            // HZ rings (visual, scaled to canvas)
+            const ringScale = 55; // px per unit
+            const zones = [
+                { r1: 0.7 * ringScale, r2: 1.0 * ringScale, color: 'rgba(255,100,0,0.18)', label: 'Inner' },
+                { r1: 1.0 * ringScale, r2: 1.5 * ringScale, color: 'rgba(0,200,80,0.18)',  label: 'HZ' },
+                { r1: 1.5 * ringScale, r2: 2.0 * ringScale, color: 'rgba(80,140,255,0.12)',label: 'Outer' }
+            ];
+            zones.forEach(z => {
+                ctx.beginPath();
+                ctx.arc(cx, cy, z.r2, 0, Math.PI * 2);
+                ctx.arc(cx, cy, z.r1, 0, Math.PI * 2, true);
+                ctx.fillStyle = z.color; ctx.fill();
+            });
+
+            // HZ label
+            ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(0,200,80,0.7)';
+            ctx.fillText('HZ', cx + 1.25 * ringScale, cy - 4);
+
+            // Planet orbits — use exoplanets if available
+            const planets = (threejsStarmap && threejsStarmap.exoplanets)
+                ? threejsStarmap.exoplanets.filter(p => p.star_id === star.id || p.host_star === star.id)
+                : [];
+
+            if (planets.length > 0) {
+                planets.forEach((planet, i) => {
+                    const sma = planet.semi_major_axis_au || (0.4 + i * 0.5);
+                    const r = Math.min(sma * ringScale, W * 0.48);
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(100,150,255,0.4)'; ctx.lineWidth = 0.8; ctx.stroke();
+
+                    // Planet dot
+                    const angle = (i * 137.5 * Math.PI / 180); // golden angle for spacing
+                    const px = cx + r * Math.cos(angle), py = cy + r * Math.sin(angle);
+                    const pSize = planet.is_habitable ? 4 : 2.5;
+                    ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
+                    ctx.fillStyle = planet.is_habitable ? '#00ff88' : '#8899cc'; ctx.fill();
+
+                    if (planet.name) {
+                        ctx.font = '8px monospace'; ctx.fillStyle = '#aabbdd';
+                        ctx.fillText(planet.name.substring(0, 12), px + 5, py - 3);
+                    }
+                });
+                info.textContent = `${planets.length} known world(s) · ${esc(star.spectral_class || '?')}-type star`;
+            } else {
+                // No planet data — show placeholder orbits
+                [0.5, 1.0, 1.5].forEach((au, i) => {
+                    const r = au * ringScale;
+                    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(80,100,150,0.3)'; ctx.lineWidth = 0.7; ctx.stroke();
+                });
+                info.textContent = `No planet data · ${esc(star.spectral_class || '?')}-type star · ${star.distance ? parseFloat(star.distance).toFixed(2) + ' pc' : ''}`;
+            }
+
+            // Scale bar: 1 AU
+            const barY = H - 16, barX = 20, barLen = ringScale;
+            ctx.beginPath(); ctx.moveTo(barX, barY); ctx.lineTo(barX + barLen, barY);
+            ctx.strokeStyle = '#446'; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.fillStyle = '#556'; ctx.font = '9px monospace';
+            ctx.fillText('1 AU', barX + barLen + 4, barY + 3);
+        }
+
+        // ── Saved Views ──────────────────────────────────────────────────────
+        {% if user %}
+        async function loadSavedViews() {
+            try {
+                const resp = await fetch('/api/v1/views');
+                const data = await resp.json();
+                if (!data.success) return;
+                renderSavedViews(data.data || []);
+            } catch(e) { console.error('loadSavedViews:', e); }
+        }
+
+        function renderSavedViews(views) {
+            const list = document.getElementById('savedViewsList');
+            if (!list) return;
+            if (views.length === 0) {
+                list.innerHTML = '<small class="text-muted">No saved views yet.</small>';
+                return;
+            }
+            list.innerHTML = views.map(v => `
+                <div class="saved-view-item">
+                    <span class="text-truncate flex-grow-1" onclick="applySavedView(${JSON.stringify(v.params || {})})"
+                          title="${esc(v.name)}">${esc(v.name)}</span>
+                    <button class="btn btn-outline-danger btn-sm py-0 px-1 ms-1 flex-shrink-0"
+                            style="font-size:0.65rem"
+                            onclick="deleteSavedView(${v.id})">✕</button>
+                </div>`).join('');
+        }
+
+        async function saveCurrentView() {
+            const name = prompt('Name for this view:');
+            if (!name || !name.trim()) return;
+            const params = {};
+            const magEl     = document.getElementById('magLimit');
+            const nationEl  = document.getElementById('nationSelector');
+            const eraToggle = document.getElementById('eraFilterToggle');
+            const eraSlider = document.getElementById('eraSlider');
+            const tradeEl   = document.getElementById('tradeRoutesOverlay');
+            const nationsO  = document.getElementById('nationsOverlay');
+            if (magEl)    params.mag    = magEl.value;
+            if (nationEl && nationEl.value) params.nation = nationEl.value;
+            if (eraToggle && eraToggle.checked) params.era = eraSlider.value;
+            if (tradeEl  && !tradeEl.checked)  params.trade   = '0';
+            if (nationsO && nationsO.checked)   params.nations = '1';
+            if (threejsStarmap?.camera) {
+                const cam = threejsStarmap.camera.position;
+                params.cam = { x: +cam.x.toFixed(1), y: +cam.y.toFixed(1), z: +cam.z.toFixed(1) };
+            }
+            try {
+                const resp = await fetch('/api/v1/views', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), params })
+                });
+                const data = await resp.json();
+                if (data.success) { loadSavedViews(); }
+                else { alert('Could not save view: ' + (data.error || 'unknown error')); }
+            } catch(e) { console.error(e); alert('Error saving view'); }
+        }
+
+        function applySavedView(params) {
+            if (!params) return;
+            if (params.mag) {
+                const el = document.getElementById('magLimit');
+                if (el) { el.value = params.mag; document.getElementById('magValue').textContent = parseFloat(params.mag).toFixed(1); }
+            }
+            if (params.nation) {
+                const el = document.getElementById('nationSelector');
+                if (el) { el.value = params.nation; onNationSelect(params.nation); }
+            }
+            if (params.era) {
+                const toggle = document.getElementById('eraFilterToggle');
+                const slider = document.getElementById('eraSlider');
+                if (toggle) { toggle.checked = true; slider.disabled = false; slider.value = params.era; onEraChange(params.era); }
+            }
+            if (params.trade === '0') {
+                const el = document.getElementById('tradeRoutesOverlay'); if (el) el.checked = false;
+            }
+            if (params.nations === '1') {
+                const el = document.getElementById('nationsOverlay'); if (el) el.checked = true;
+            }
+            updateOverlays();
+            if (params.cam && threejsStarmap?.camera) {
+                threejsStarmap.camera.position.set(params.cam.x, params.cam.y, params.cam.z);
+                if (threejsStarmap.controls) threejsStarmap.controls.update();
+            }
+        }
+
+        async function deleteSavedView(id) {
+            if (!confirm('Delete this saved view?')) return;
+            try {
+                const resp = await fetch(`/api/v1/views/${id}`, { method: 'DELETE' });
+                const data = await resp.json();
+                if (data.success) loadSavedViews();
+            } catch(e) { console.error(e); }
+        }
+        {% endif %}
+
         // ── DOMContentLoaded ─────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
-            ['nationsOverlay','tradeRoutesOverlay','stellarRegionsOverlay','galacticDirectionsOverlay','exoplanetsOverlay']
+            ['nationsOverlay','tradeRoutesOverlay','stellarRegionsOverlay','galacticDirectionsOverlay',
+             'exoplanetsOverlay','constellationsOverlay','habitableZoneOverlay']
                 .forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.addEventListener('change', updateOverlays);
                 });
+
+            {% if user %}
+            loadSavedViews();
+            {% endif %}
 
             setTimeout(() => {
                 if (currentView === 'threejs') initializeThreeJSStarfield();

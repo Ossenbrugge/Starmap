@@ -12,6 +12,11 @@ class ThreeJSStarmap {
         this.animationId = null;
         this.keys = {};
         this.fictionalExoplanets = [];
+        this.nations = [];
+        this.nationFilter = null;
+        this.politicalView = false;
+        this.flyAnimation = null;
+        this.points = null;
 
         if (typeof THREE === 'undefined') {
             console.error('❌ Three.js not loaded');
@@ -234,9 +239,12 @@ class ThreeJSStarmap {
 
         this.currentStars = validStars;
 
-        const positions  = new Float32Array(validStars.length * 3);
-        const magnitudes = new Float32Array(validStars.length);
-        const colors     = new Float32Array(validStars.length * 3);
+        const positions    = new Float32Array(validStars.length * 3);
+        const magnitudes   = new Float32Array(validStars.length);
+        const colors       = new Float32Array(validStars.length * 3);
+        const filterValues = new Float32Array(validStars.length);
+        const nationColors = new Float32Array(validStars.length * 3);
+        filterValues.fill(1.0);
 
         validStars.forEach((star, i) => {
             positions[i * 3]     = star.x * 10;
@@ -250,24 +258,37 @@ class ThreeJSStarmap {
             colors[i * 3]     = r;
             colors[i * 3 + 1] = g;
             colors[i * 3 + 2] = b;
+            // Nation colors default to spectral colors; updated by setPoliticalView()
+            nationColors[i * 3]     = r;
+            nationColors[i * 3 + 1] = g;
+            nationColors[i * 3 + 2] = b;
         });
 
         const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position',  new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setAttribute('magnitude', new THREE.Float32BufferAttribute(magnitudes, 1));
-        geometry.setAttribute('starColor', new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('position',    new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setAttribute('magnitude',   new THREE.Float32BufferAttribute(magnitudes, 1));
+        geometry.setAttribute('starColor',   new THREE.Float32BufferAttribute(colors, 3));
+        geometry.setAttribute('aFilter',     new THREE.Float32BufferAttribute(filterValues, 1));
+        geometry.setAttribute('aNationColor',new THREE.Float32BufferAttribute(nationColors, 3));
 
         // ── GPU Shader (LOD + spectral colours, no texture uploads on filter) ──
         const vertexShader = `
             attribute float magnitude;
             attribute vec3  starColor;
+            attribute float aFilter;
+            attribute vec3  aNationColor;
             uniform float   uMagLimit;
             uniform float   uCameraDistance;
+            uniform bool    uPoliticalView;
             varying vec3    vColor;
             varying float   vAlpha;
+            varying float   vFilter;
+            varying vec3    vNationColor;
 
             void main() {
-                vColor = starColor;
+                vColor       = starColor;
+                vFilter      = aFilter;
+                vNationColor = aNationColor;
 
                 // Hide stars dimmer than the current magnitude limit
                 float visible = step(magnitude, uMagLimit);
@@ -286,6 +307,9 @@ class ThreeJSStarmap {
         const fragmentShader = `
             varying vec3  vColor;
             varying float vAlpha;
+            varying float vFilter;
+            varying vec3  vNationColor;
+            uniform bool  uPoliticalView;
 
             void main() {
                 vec2  coord = gl_PointCoord - 0.5;
@@ -293,7 +317,8 @@ class ThreeJSStarmap {
                 if (dist > 0.5) discard;
                 float alpha = smoothstep(0.5, 0.0, dist) * vAlpha;
                 if (alpha < 0.01) discard;
-                gl_FragColor = vec4(vColor, alpha);
+                vec3 finalColor = uPoliticalView ? vNationColor : vColor;
+                gl_FragColor = vec4(finalColor, alpha * max(vFilter, 0.15));
             }
         `;
 
@@ -305,13 +330,14 @@ class ThreeJSStarmap {
             uniforms: {
                 uMagLimit:       { value: initialMag },
                 uCameraDistance: { value: 10.0 },
+                uPoliticalView:  { value: false },
             },
             transparent: true,
             depthWrite: false,
         });
 
-        const points = new THREE.Points(geometry, this.starMaterial);
-        this.starField.add(points);
+        this.points = new THREE.Points(geometry, this.starMaterial);
+        this.starField.add(this.points);
         console.log(`Created ${validStars.length} stars with GPU shader LOD`);
     }
 
@@ -710,6 +736,7 @@ class ThreeJSStarmap {
             if (data.success && data.data) {
                 console.log(`🎯 Creating nations for ${data.data.length} nations`);
                 this.createNationsOverlay(data.data);
+                this.nations = data.data;
                 return true;
             }
             return false;
@@ -1081,6 +1108,17 @@ class ThreeJSStarmap {
 
         this.processKeyboardInput();
 
+        // Smooth fly-to animation
+        if (this.flyAnimation) {
+            const fa = this.flyAnimation;
+            const elapsed = performance.now() - fa.startTime;
+            const t = Math.min(elapsed / fa.duration, 1);
+            const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+            this.camera.position.lerpVectors(fa.startPos, fa.endPos, ease);
+            this.controls.target.lerpVectors(fa.startTarget, fa.endTarget, ease);
+            if (t >= 1) this.flyAnimation = null;
+        }
+
         if (this.controls && this.controls.update) {
             this.controls.update();
         }
@@ -1100,6 +1138,88 @@ class ThreeJSStarmap {
     render() {
         if (this.renderer && this.scene && this.camera) {
             this.renderer.render(this.scene, this.camera);
+        }
+    }
+
+    // ── Nation / Political-view methods ──────────────────────────────────────
+
+    filterByNation(nationId) {
+        const filterAttr = this.points?.geometry?.attributes?.aFilter;
+        if (!filterAttr) return;
+
+        if (!nationId) {
+            this.nationFilter = null;
+            filterAttr.array.fill(1.0);
+        } else {
+            const nation = this.nations.find(n => (n._id || n.id) === nationId);
+            const memberIds = new Set(
+                (nation?.territories || []).map(t => t.star_id ?? t)
+            );
+            this.nationFilter = memberIds;
+            for (let i = 0; i < this.currentStars.length; i++) {
+                filterAttr.array[i] = memberIds.has(this.currentStars[i].id) ? 1.0 : 0.0;
+            }
+        }
+        filterAttr.needsUpdate = true;
+    }
+
+    setPoliticalView(enabled) {
+        this.politicalView = enabled;
+        if (this.starMaterial) {
+            this.starMaterial.uniforms.uPoliticalView.value = enabled;
+        }
+        if (enabled && this.points) {
+            const colorMap = {};
+            for (const n of this.nations) {
+                const hex = (n.appearance && n.appearance.color) || n.color || '#888888';
+                if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) continue;
+                const r = parseInt(hex.slice(1, 3), 16) / 255;
+                const g = parseInt(hex.slice(3, 5), 16) / 255;
+                const b = parseInt(hex.slice(5, 7), 16) / 255;
+                colorMap[n._id || n.id] = [r, g, b];
+            }
+            const attr = this.points.geometry.attributes.aNationColor;
+            for (let i = 0; i < this.currentStars.length; i++) {
+                const c = colorMap[this.currentStars[i].nation_id] || [0.5, 0.5, 0.5];
+                attr.setXYZ(i, c[0], c[1], c[2]);
+            }
+            attr.needsUpdate = true;
+        }
+    }
+
+    // ── Camera fly-to animation ──────────────────────────────────────────────
+
+    flyToStar(star, offsetDistance = 25) {
+        if (!star || star.x == null) return;
+        const endTarget = new THREE.Vector3(star.x * 10, star.y * 10, star.z * 10);
+        const dir = this.camera.position.clone()
+            .sub(this.controls.target).normalize();
+        const endPos = endTarget.clone().addScaledVector(dir, offsetDistance);
+        this.flyAnimation = {
+            startPos:    this.camera.position.clone(),
+            endPos,
+            startTarget: this.controls.target.clone(),
+            endTarget,
+            t:           0,
+            duration:    1500,
+            startTime:   performance.now(),
+        };
+    }
+
+    applyQuickView({ nationId, target, cameraOffset, magLimit, showTradeRoutes, showNations }) {
+        // Fly camera to target (target coords are in parsec space)
+        this.flyToStar({ x: target.x, y: target.y, z: target.z }, cameraOffset ?? 30);
+
+        // Nation filter
+        this.filterByNation(nationId || null);
+
+        // Overlay visibility
+        if (showTradeRoutes != null) this.tradeRoutesGroup.visible = showTradeRoutes;
+        if (showNations != null)     this.nationsGroup.visible = showNations;
+
+        // Magnitude limit
+        if (magLimit != null && this.starMaterial) {
+            this.starMaterial.uniforms.uMagLimit.value = magLimit;
         }
     }
 

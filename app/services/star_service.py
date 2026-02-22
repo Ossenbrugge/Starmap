@@ -293,6 +293,7 @@ class StarService:
             'exoplanet_count': 0,
             'has_planets': False,
             'is_fictional': star.get('is_fictional', False),
+            'nation_id': star.get('nation_id', ''),
         }
 
     def _get_best_star_name(self, star: Dict[str, Any]) -> str:

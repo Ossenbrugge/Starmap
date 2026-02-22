@@ -7,6 +7,7 @@ from the legacy JSON files.
 
 import os
 import sqlite3
+import threading
 from typing import Any, Dict, List, Optional
 
 _DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "starmap.sqlite")
@@ -34,16 +35,19 @@ class Database:
                 "Run 'python scripts/migrate_to_sqlite.py' first."
             )
         self._con = sqlite3.connect(db_path, check_same_thread=False)
+        self._lock = threading.Lock()
         self._con.row_factory = _row_factory
         self._con.execute("PRAGMA journal_mode = WAL")
         self._con.execute("PRAGMA foreign_keys = ON")
         print(f"Database opened: {db_path}")
 
     def _q(self, sql: str, params: tuple = ()) -> List[Dict]:
-        return self._con.execute(sql, params).fetchall()
+        with self._lock:
+            return self._con.execute(sql, params).fetchall()
 
     def _one(self, sql: str, params: tuple = ()) -> Optional[Dict]:
-        return self._con.execute(sql, params).fetchone()
+        with self._lock:
+            return self._con.execute(sql, params).fetchone()
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -164,36 +168,36 @@ class Database:
 
     def add_star(self, star_data: Dict) -> bool:
         try:
-            d = self._star_to_dict(star_data) if "id" not in star_data else star_data
-            self._con.execute(
-                """INSERT OR REPLACE INTO stars
-                   (id, proper_name, fictional_name, fictional_description,
-                    x, y, z, dist, ra, dec, magnitude, absolute_magnitude,
-                    spectral_class, color_index, luminosity,
-                    constellation, nation_id, is_fictional)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    star_data.get("id") or star_data.get("_id"),
-                    star_data.get("proper_name") or star_data.get("name") or "",
-                    star_data.get("fictional_name") or "",
-                    star_data.get("fictional_description") or "",
-                    star_data.get("x") or 0.0,
-                    star_data.get("y") or 0.0,
-                    star_data.get("z") or 0.0,
-                    star_data.get("dist"),
-                    star_data.get("ra"),
-                    star_data.get("dec"),
-                    star_data.get("magnitude") or star_data.get("mag"),
-                    star_data.get("absolute_magnitude"),
-                    star_data.get("spectral_class") or star_data.get("spect") or "",
-                    star_data.get("color_index"),
-                    star_data.get("luminosity"),
-                    star_data.get("constellation") or "",
-                    star_data.get("nation_id") or "",
-                    1 if star_data.get("is_fictional") else 0,
-                ),
-            )
-            self._con.commit()
+            with self._lock:
+                self._con.execute(
+                    """INSERT OR REPLACE INTO stars
+                       (id, proper_name, fictional_name, fictional_description,
+                        x, y, z, dist, ra, dec, magnitude, absolute_magnitude,
+                        spectral_class, color_index, luminosity,
+                        constellation, nation_id, is_fictional)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (
+                        star_data.get("id") or star_data.get("_id"),
+                        star_data.get("proper_name") or star_data.get("name") or "",
+                        star_data.get("fictional_name") or "",
+                        star_data.get("fictional_description") or "",
+                        star_data.get("x") or 0.0,
+                        star_data.get("y") or 0.0,
+                        star_data.get("z") or 0.0,
+                        star_data.get("dist"),
+                        star_data.get("ra"),
+                        star_data.get("dec"),
+                        star_data.get("magnitude") or star_data.get("mag"),
+                        star_data.get("absolute_magnitude"),
+                        star_data.get("spectral_class") or star_data.get("spect") or "",
+                        star_data.get("color_index"),
+                        star_data.get("luminosity"),
+                        star_data.get("constellation") or "",
+                        star_data.get("nation_id") or "",
+                        1 if star_data.get("is_fictional") else 0,
+                    ),
+                )
+                self._con.commit()
             return True
         except Exception as e:
             print(f"add_star error: {e}")
@@ -201,38 +205,42 @@ class Database:
 
     def update_star(self, star_id: int, star_data: Dict) -> bool:
         try:
-            self._con.execute(
-                """UPDATE stars SET
-                   proper_name=?, fictional_name=?, fictional_description=?,
-                   x=?, y=?, z=?, dist=?, magnitude=?, spectral_class=?,
-                   constellation=?, nation_id=?
-                   WHERE id=?""",
-                (
-                    star_data.get("proper_name") or star_data.get("name") or "",
-                    star_data.get("fictional_name") or "",
-                    star_data.get("fictional_description") or "",
-                    star_data.get("x") or 0.0,
-                    star_data.get("y") or 0.0,
-                    star_data.get("z") or 0.0,
-                    star_data.get("dist"),
-                    star_data.get("magnitude") or star_data.get("mag"),
-                    star_data.get("spectral_class") or star_data.get("spect") or "",
-                    star_data.get("constellation") or "",
-                    star_data.get("nation_id") or "",
-                    star_id,
-                ),
-            )
-            self._con.commit()
-            return self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
+            with self._lock:
+                self._con.execute(
+                    """UPDATE stars SET
+                       proper_name=?, fictional_name=?, fictional_description=?,
+                       x=?, y=?, z=?, dist=?, magnitude=?, spectral_class=?,
+                       constellation=?, nation_id=?
+                       WHERE id=?""",
+                    (
+                        star_data.get("proper_name") or star_data.get("name") or "",
+                        star_data.get("fictional_name") or "",
+                        star_data.get("fictional_description") or "",
+                        star_data.get("x") or 0.0,
+                        star_data.get("y") or 0.0,
+                        star_data.get("z") or 0.0,
+                        star_data.get("dist"),
+                        star_data.get("magnitude") or star_data.get("mag"),
+                        star_data.get("spectral_class") or star_data.get("spect") or "",
+                        star_data.get("constellation") or "",
+                        star_data.get("nation_id") or "",
+                        star_id,
+                    ),
+                )
+                self._con.commit()
+                changed = self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
+            return changed
         except Exception as e:
             print(f"update_star error: {e}")
             return False
 
     def delete_star(self, star_id: int) -> bool:
         try:
-            self._con.execute("DELETE FROM stars WHERE id = ?", (star_id,))
-            self._con.commit()
-            return self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
+            with self._lock:
+                self._con.execute("DELETE FROM stars WHERE id = ?", (star_id,))
+                self._con.commit()
+                changed = self._con.execute("SELECT changes()").fetchone()["changes()"] > 0
+            return changed
         except Exception as e:
             print(f"delete_star error: {e}")
             return False
@@ -297,26 +305,27 @@ class Database:
     def add_nation(self, nation_data: Dict) -> bool:
         try:
             nation_id = str(nation_data.get("id") or nation_data.get("_id") or "")
-            self._con.execute(
-                """INSERT OR REPLACE INTO nations
-                   (id, name, full_name, description, color, government_type, capital_star_id)
-                   VALUES (?,?,?,?,?,?,?)""",
-                (
-                    nation_id,
-                    str(nation_data.get("name") or ""),
-                    str(nation_data.get("full_name") or ""),
-                    str(nation_data.get("description") or ""),
-                    str(nation_data.get("color") or ""),
-                    str(nation_data.get("government_type") or ""),
-                    nation_data.get("capital_star_id"),
-                ),
-            )
-            for star_id in nation_data.get("territories", []):
+            with self._lock:
                 self._con.execute(
-                    "INSERT OR IGNORE INTO nation_territories (nation_id, star_id) VALUES (?,?)",
-                    (nation_id, star_id),
+                    """INSERT OR REPLACE INTO nations
+                       (id, name, full_name, description, color, government_type, capital_star_id)
+                       VALUES (?,?,?,?,?,?,?)""",
+                    (
+                        nation_id,
+                        str(nation_data.get("name") or ""),
+                        str(nation_data.get("full_name") or ""),
+                        str(nation_data.get("description") or ""),
+                        str(nation_data.get("color") or ""),
+                        str(nation_data.get("government_type") or ""),
+                        nation_data.get("capital_star_id"),
+                    ),
                 )
-            self._con.commit()
+                for star_id in nation_data.get("territories", []):
+                    self._con.execute(
+                        "INSERT OR IGNORE INTO nation_territories (nation_id, star_id) VALUES (?,?)",
+                        (nation_id, star_id),
+                    )
+                self._con.commit()
             return True
         except Exception as e:
             print(f"add_nation error: {e}")

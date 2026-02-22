@@ -26,7 +26,7 @@ html, body {
     backdrop-filter: blur(10px);
     border-right: 1px solid rgba(255, 255, 255, 0.1);
     height: 100vh;
-    overflow-y: auto;
+    overflow: hidden;   /* inner tab-content handles scrolling */
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 

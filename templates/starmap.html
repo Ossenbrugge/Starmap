@@ -114,143 +114,204 @@
     <div class="container-fluid h-100">
         <div class="row h-100">
             <!-- Control Panel -->
-            <div class="col-md-3 col-lg-2 control-panel p-3">
-                <h4 class="text-primary mb-3">🌌 Starmap</h4>
-                <p class="small text-muted mb-3">Felgenland Saga</p>
-                
-                <!-- Authentication Status -->
-                {% if user %}
-                <div class="alert alert-success small mb-3">
-                    🛡️ Authenticated: <strong>{{ user.username }}</strong>
-                    <br><small>Role: {{ user.role|title }}</small>
-                    <div class="mt-2">
-                        <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm">Logout</a>
-                        <button onclick="generateApiToken()" class="btn btn-outline-info btn-sm">API Token</button>
-                    </div>
+            <div class="col-md-3 col-lg-2 control-panel p-0 d-flex flex-column" id="sidebarCol">
+                <!-- Header + collapse toggle -->
+                <div class="d-flex align-items-center px-2 py-2" style="border-bottom:1px solid #333; flex-shrink:0;">
+                    <span class="text-primary fw-bold flex-grow-1 small">🌌 Starmap</span>
+                    <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                            onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
                 </div>
-                {% endif %}
-                
-                <!-- Status -->
-                <div id="status" class="alert alert-info small mb-3">
-                    Initializing starmap...
-                </div>
-                
-                <!-- Search -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Search Stars</label>
-                    <div class="input-group input-group-sm">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Star name...">
-                        <button class="btn btn-outline-primary" onclick="searchStars()">🔍</button>
-                    </div>
-                    <div id="searchResults" class="mt-2"></div>
-                </div>
-                
-                <!-- Filters -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Filters</label>
-                    <div class="mb-2">
-                        <label class="form-label small">Magnitude Limit</label>
-                        <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5">
-                        <small class="text-muted">Max: <span id="magValue">8.0</span></small>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Star Limit</label>
-                        <select id="starLimit" class="form-select form-select-sm">
-                            <option value="500">500 stars</option>
-                            <option value="1000" selected>1000 stars</option>
-                            <option value="2000">2000 stars</option>
-                            <option value="5000">5000 stars</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Spectral Type</label>
-                        <select id="spectralType" class="form-select form-select-sm">
-                            <option value="">All Types</option>
-                            <option value="O">O - Blue Giants</option>
-                            <option value="B">B - Blue</option>
-                            <option value="A">A - White</option>
-                            <option value="F">F - Yellow-White</option>
-                            <option value="G">G - Yellow (Sun-like)</option>
-                            <option value="K">K - Orange</option>
-                            <option value="M">M - Red Dwarfs</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary btn-sm w-100" onclick="applyFilters()">Apply Filters</button>
-                </div>
-                
-                <!-- View Toggle -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Starfield View</label>
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="viewToggle" id="threejsView" checked onchange="switchView('threejs')">
-                        <label class="btn btn-outline-warning btn-sm" for="threejsView">🌟 Three.js</label>
 
-                        <input type="radio" class="btn-check" name="viewToggle" id="aframeView" onchange="switchView('aframe')">
-                        <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 A-Frame VR</label>
-                    </div>
-                </div>
-                
-                <!-- Overlays -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Overlays</label>
-                    <div class="row g-1">
-                        <div class="col-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="nationsOverlay">
-                                <label class="form-check-label small" for="nationsOverlay">Nations</label>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="tradeRoutesOverlay" checked>
-                                <label class="form-check-label small" for="tradeRoutesOverlay">Trade Routes</label>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="stellarRegionsOverlay">
-                                <label class="form-check-label small" for="stellarRegionsOverlay">Regions</label>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="galacticDirectionsOverlay">
-                                <label class="form-check-label small" for="galacticDirectionsOverlay">Directions</label>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="exoplanetsOverlay" checked>
-                                <label class="form-check-label small" for="exoplanetsOverlay">Exoplanets</label>
-                            </div>
+                <div id="sidebarContent" class="flex-grow-1 d-flex flex-column overflow-hidden">
+                    <!-- Auth status -->
+                    {% if user %}
+                    <div class="alert alert-success small mx-2 mt-2 mb-0 py-1">
+                        🛡️ <strong>{{ user.username }}</strong>
+                        <div class="mt-1">
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm py-0">Logout</a>
+                            <button onclick="generateApiToken()" class="btn btn-outline-info btn-sm py-0">Token</button>
                         </div>
                     </div>
-                    <button class="btn btn-outline-success btn-sm w-100 mt-2" onclick="showNationsLegend()">
-                        🏛️ Nations Legend
-                    </button>
-                </div>
-                
-                <!-- Tools -->
-                <div class="mb-3">
-                    <label class="form-label small fw-bold">Tools</label>
-                    <button class="btn btn-outline-info btn-sm w-100 mb-2" onclick="resetView()">
-                        🎯 Reset View
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm w-100 mb-2" onclick="takeStarmapScreenshot()" title="Save the current starmap view as a PNG image">
-                        📷 Screenshot
-                    </button>
-                    <button class="btn btn-outline-warning btn-sm w-100 mb-2" onclick="exportData()">
-                        💾 Export CSV
-                    </button>
-                </div>
-                
-                <!-- Statistics -->
-                <div class="mt-4">
-                    <label class="form-label small fw-bold">Statistics</label>
-                    <div id="stats" class="small text-muted">
-                        Loading...
+                    {% endif %}
+
+                    <!-- Status bar -->
+                    <div id="status" class="alert alert-info small mx-2 mt-2 mb-0 py-1">
+                        Initializing...
                     </div>
-                </div>
+
+                    <!-- Tab navigation -->
+                    <ul class="nav nav-tabs nav-fill px-2 pt-2 flex-shrink-0" id="controlTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active px-1 py-1" data-bs-toggle="tab"
+                                    data-bs-target="#tabFilters" title="Filters">🔭</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
+                                    data-bs-target="#tabLore" title="Lore">📖</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
+                                    data-bs-target="#tabLayers" title="Layers">🗺️</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
+                                    data-bs-target="#tabTools" title="Tools">🔧</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content px-2 pt-2 overflow-auto flex-grow-1" style="min-height:0;">
+
+                        <!-- ── FILTERS TAB ── -->
+                        <div class="tab-pane fade show active" id="tabFilters" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Search Stars</label>
+                                <div class="input-group input-group-sm">
+                                    <input type="text" id="searchInput" class="form-control" placeholder="Star name...">
+                                    <button class="btn btn-outline-primary" onclick="searchStars()">🔍</button>
+                                </div>
+                                <div id="searchResults" class="mt-2"></div>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small fw-bold">Magnitude Limit</label>
+                                <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5">
+                                <small class="text-muted">Max: <span id="magValue">8.0</span></small>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small">Star Limit</label>
+                                <select id="starLimit" class="form-select form-select-sm">
+                                    <option value="500">500 stars</option>
+                                    <option value="1000" selected>1000 stars</option>
+                                    <option value="2000">2000 stars</option>
+                                    <option value="5000">5000 stars</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="form-label small">Spectral Type</label>
+                                <select id="spectralType" class="form-select form-select-sm">
+                                    <option value="">All Types</option>
+                                    <option value="O">O - Blue Giants</option>
+                                    <option value="B">B - Blue</option>
+                                    <option value="A">A - White</option>
+                                    <option value="F">F - Yellow-White</option>
+                                    <option value="G">G - Yellow (Sun-like)</option>
+                                    <option value="K">K - Orange</option>
+                                    <option value="M">M - Red Dwarfs</option>
+                                </select>
+                            </div>
+
+                            <button class="btn btn-primary btn-sm w-100 mb-3" onclick="applyFilters()">Apply Filters</button>
+
+                            <div>
+                                <label class="form-label small fw-bold">Statistics</label>
+                                <div id="stats" class="small text-muted">Loading...</div>
+                            </div>
+                        </div>
+
+                        <!-- ── LORE TAB ── -->
+                        <div class="tab-pane fade" id="tabLore" role="tabpanel">
+                            <!-- Quick Views -->
+                            <div class="mb-3">
+                                <h6 class="text-muted small mb-2">⚡ Quick Views</h6>
+                                <div class="d-grid gap-1">
+                                    <button class="btn btn-outline-danger btn-sm"
+                                            onclick="applyQuickView('felgenland_union')">🔴 Felgenland Union</button>
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            onclick="applyQuickView('terran_core')">🔵 Terran Core</button>
+                                    <button class="btn btn-outline-warning btn-sm"
+                                            onclick="applyQuickView('frontier_tors')">⚡ Frontier Tors</button>
+                                    <button class="btn btn-outline-success btn-sm"
+                                            onclick="applyQuickView('all_trade')">🛤 All Trade Networks</button>
+                                </div>
+                            </div>
+
+                            <!-- Nation selector -->
+                            <div class="mb-2">
+                                <h6 class="text-muted small mb-1">🌍 Nation / Faction</h6>
+                                <select id="nationSelector" class="form-select form-select-sm mb-2"
+                                        onchange="onNationSelect(this.value)">
+                                    <option value="">— Show All Nations —</option>
+                                </select>
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" id="showOnlyNation"
+                                           onchange="toggleShowOnlyNation(this.checked)">
+                                    <label class="form-check-label small" for="showOnlyNation">Show only this nation</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="politicalViewToggle"
+                                           onchange="togglePoliticalView(this.checked)">
+                                    <label class="form-check-label small" for="politicalViewToggle">🎨 Political colours</label>
+                                </div>
+                            </div>
+
+                            <!-- Lore panel (dynamic) -->
+                            <div id="lorePanel" class="d-none mt-2">
+                                <div id="lorePanelContent"></div>
+                            </div>
+                        </div>
+
+                        <!-- ── LAYERS TAB ── -->
+                        <div class="tab-pane fade" id="tabLayers" role="tabpanel">
+                            <label class="form-label small fw-bold">Overlays</label>
+                            <div class="row g-1 mb-2">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="nationsOverlay">
+                                        <label class="form-check-label small" for="nationsOverlay">Nations</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="tradeRoutesOverlay" checked>
+                                        <label class="form-check-label small" for="tradeRoutesOverlay">Trade</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="stellarRegionsOverlay">
+                                        <label class="form-check-label small" for="stellarRegionsOverlay">Regions</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="galacticDirectionsOverlay">
+                                        <label class="form-check-label small" for="galacticDirectionsOverlay">Axes</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="exoplanetsOverlay" checked>
+                                        <label class="form-check-label small" for="exoplanetsOverlay">Planets</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm w-100" onclick="showNationsLegend()">
+                                🏛️ Nations Legend
+                            </button>
+                        </div>
+
+                        <!-- ── TOOLS TAB ── -->
+                        <div class="tab-pane fade" id="tabTools" role="tabpanel">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Starfield View</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="viewToggle" id="threejsView" checked onchange="switchView('threejs')">
+                                    <label class="btn btn-outline-warning btn-sm" for="threejsView">🌟 Three.js</label>
+                                    <input type="radio" class="btn-check" name="viewToggle" id="aframeView" onchange="switchView('aframe')">
+                                    <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 VR</label>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-info btn-sm" onclick="resetView()">🎯 Reset View</button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()" title="Save PNG">📷 Screenshot</button>
+                                <button class="btn btn-outline-warning btn-sm" onclick="exportData()">💾 Export CSV</button>
+                            </div>
+                        </div>
+
+                    </div><!-- /tab-content -->
+                </div><!-- /sidebarContent -->
             </div>
             
             <!-- Main Starmap -->
@@ -518,6 +579,7 @@ Authorization: Bearer ${data.token}`;
                 console.log(`✅ Shared ${allStars.length} stars with search cache`);
 
                 await loadAllThreeJSOverlays();
+                populateNationDropdown();
 
                 threejsInitialized = true;
                 console.log('✅ Three.js starfield initialized');
@@ -1148,6 +1210,149 @@ Authorization: Bearer ${data.token}`;
             
         }
         
+        // ── Sidebar collapse ─────────────────────────────────────────────────
+        function toggleSidebar() {
+            const content = document.getElementById('sidebarContent');
+            const btn     = document.getElementById('sidebarToggle');
+            const col     = document.getElementById('sidebarCol');
+            if (content.style.display === 'none') {
+                content.style.display = '';
+                col.classList.remove('col-md-1');
+                col.classList.add('col-md-3', 'col-lg-2');
+                btn.textContent = '◀';
+            } else {
+                content.style.display = 'none';
+                col.classList.remove('col-md-3', 'col-lg-2');
+                col.classList.add('col-md-1');
+                btn.textContent = '▶';
+            }
+            if (threejsStarmap) threejsStarmap.resize();
+        }
+
+        // ── Quick Views ──────────────────────────────────────────────────────
+        const QUICK_VIEWS = {
+            felgenland_union: {
+                nationId: 'felgenland_union',
+                target: { x: -11.09, y: 6.34, z: 7.96 },
+                cameraOffset: 300, showTradeRoutes: true, showNations: true, magLimit: 9
+            },
+            terran_core: {
+                nationId: 'terran_directorate',
+                target: { x: 0, y: 0, z: 0 },
+                cameraOffset: 250, showTradeRoutes: true, showNations: true, magLimit: 8
+            },
+            frontier_tors: {
+                nationId: null,
+                target: { x: -9.7, y: 6.6, z: 7.6 },
+                cameraOffset: 200, showTradeRoutes: true, showNations: false, magLimit: 9
+            },
+            all_trade: {
+                nationId: null,
+                target: { x: 0, y: 0, z: 0 },
+                cameraOffset: 1200, showTradeRoutes: true, showNations: true, magLimit: 8
+            }
+        };
+
+        function applyQuickView(name) {
+            const config = QUICK_VIEWS[name];
+            if (!threejsStarmap || !config) return;
+            threejsStarmap.applyQuickView(config);
+            // Sync sidebar controls
+            const nationsEl   = document.getElementById('nationsOverlay');
+            const tradeEl     = document.getElementById('tradeRoutesOverlay');
+            const magEl       = document.getElementById('magLimit');
+            const magValEl    = document.getElementById('magValue');
+            const nationSelEl = document.getElementById('nationSelector');
+            if (nationsEl)   nationsEl.checked  = config.showNations ?? true;
+            if (tradeEl)     tradeEl.checked     = config.showTradeRoutes ?? true;
+            if (magEl)       magEl.value         = config.magLimit ?? 8;
+            if (magValEl)    magValEl.textContent = (config.magLimit ?? 8).toFixed(1);
+            if (nationSelEl) nationSelEl.value   = config.nationId ?? '';
+            updateLorePanel(config.nationId ?? null);
+        }
+
+        // ── Nation Selector + Lore Panel ─────────────────────────────────────
+        function populateNationDropdown() {
+            if (!threejsStarmap || !threejsStarmap.nations) return;
+            const sel = document.getElementById('nationSelector');
+            // Remove any previously added options (keep first "Show All" option)
+            while (sel.options.length > 1) sel.remove(1);
+            for (const nation of threejsStarmap.nations) {
+                const opt = document.createElement('option');
+                opt.value = nation._id || nation.id || '';
+                opt.textContent = nation.name || opt.value;
+                sel.appendChild(opt);
+            }
+        }
+
+        function onNationSelect(nationId) {
+            updateLorePanel(nationId || null);
+            if (document.getElementById('showOnlyNation')?.checked) {
+                if (threejsStarmap) threejsStarmap.filterByNation(nationId || null);
+            }
+        }
+
+        function toggleShowOnlyNation(checked) {
+            if (!threejsStarmap) return;
+            const nationId = document.getElementById('nationSelector')?.value || null;
+            threejsStarmap.filterByNation(checked ? nationId : null);
+        }
+
+        function togglePoliticalView(enabled) {
+            if (!threejsStarmap) return;
+            threejsStarmap.setPoliticalView(enabled);
+        }
+
+        function updateLorePanel(nationId) {
+            const panel   = document.getElementById('lorePanel');
+            const content = document.getElementById('lorePanelContent');
+            if (!panel || !content) return;
+            if (!nationId || !threejsStarmap) { panel.classList.add('d-none'); return; }
+
+            const nation = threejsStarmap.nations.find(
+                n => (n._id || n.id) === nationId
+            );
+            if (!nation) { panel.classList.add('d-none'); return; }
+
+            const color = (nation.appearance && nation.appearance.color) || nation.color || '#888888';
+            const safeColor = /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#888888';
+
+            // Resolve territory star names
+            const territories = (nation.territories || []).map(t => {
+                const id   = (typeof t === 'object') ? t.star_id : t;
+                const star = threejsStarmap.currentStars.find(s => s.id === id);
+                return { id, name: star?.fictional_name || star?.name || `Star #${id}`, star };
+            });
+
+            const colorDot = `<span style="display:inline-block;width:10px;height:10px;
+                border-radius:50%;background:${safeColor};margin-right:5px;flex-shrink:0;"></span>`;
+
+            content.innerHTML = `
+                <div class="border rounded p-2" style="border-color:${safeColor}55 !important">
+                    <div class="d-flex align-items-center mb-1">
+                        ${colorDot}<strong class="small">${esc(nation.name)}</strong>
+                    </div>
+                    <small class="text-muted d-block mb-1">${esc(nation.government?.type || nation.government_type || '')}</small>
+                    <p class="small mb-2" style="font-size:0.75rem">${esc(nation.description || '')}</p>
+                    ${territories.length ? `<div class="mb-1"><strong class="small">Key Systems (${territories.length})</strong></div>` : ''}
+                    ${territories.map(t => `
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-truncate me-1">${esc(t.name)}</small>
+                            ${t.star ? `<button class="btn btn-outline-light btn-sm py-0 px-1 flex-shrink-0"
+                                style="font-size:0.6rem"
+                                onclick='flyToNamedStar(${JSON.stringify({id:t.star.id,x:t.star.x,y:t.star.y,z:t.star.z,name:t.name})})'>→</button>` : ''}
+                        </div>`).join('')}
+                </div>`;
+            panel.classList.remove('d-none');
+        }
+
+        function flyToNamedStar(star) {
+            if (!threejsStarmap || !star) return;
+            threejsStarmap.flyToStar(star, 100);
+            threejsStarmap.highlightStar(star);
+            threejsStarmap.displayStarDetails(star);
+        }
+
         // Initialize Three.js view on page load
         document.addEventListener('DOMContentLoaded', () => {
             console.log('DOM loaded, current view:', currentView);
@@ -1159,10 +1364,6 @@ Authorization: Bearer ${data.token}`;
                     element.addEventListener('change', updateOverlays);
                 }
             });
-
-            // Pre-load search database to enable instant searches
-            console.log('📚 Pre-loading star database for search functionality...');
-            loadAllStarsForSearch();
 
             // Give scripts time to finish loading before initialising Three.js
             setTimeout(() => {

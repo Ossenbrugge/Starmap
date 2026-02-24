@@ -203,12 +203,12 @@
                                            onchange="toggleEraFilter(this.checked)">
                                     <label class="form-check-label small" for="eraFilterToggle">Enable Era Filter</label>
                                 </div>
-                                <input type="range" id="eraSlider" class="form-range" min="2738" max="2760"
-                                       value="2750" step="1" disabled
+                                <input type="range" id="eraSlider" class="form-range" min="2170" max="3000"
+                                       value="2350" step="1" disabled
                                        oninput="onEraChange(this.value)">
                                 <div class="d-flex justify-content-between">
-                                    <small class="text-muted">2738</small>
-                                    <small class="text-muted">2760</small>
+                                    <small class="text-muted">2170</small>
+                                    <small class="text-muted">3000</small>
                                 </div>
                             </div>
 
@@ -269,8 +269,8 @@
                                 <h6 class="text-muted small mb-2">📚 Story Moments</h6>
                                 <div class="d-grid gap-1">
                                     <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('felgenland_core_2750')">
-                                        🏛️ Felgenland Core 2750
+                                            onclick="applyStoryMoment('felgenland_core_2350')">
+                                        🏛️ Felgenland Core 2350
                                     </button>
                                     <button class="btn btn-outline-secondary story-btn"
                                             onclick="applyStoryMoment('tiefe_grenze')">
@@ -924,9 +924,22 @@
         function updateOverlays() {
             if (!threejsStarmap) return;
             if (threejsStarmap.nationsGroup)        threejsStarmap.nationsGroup.visible        = document.getElementById('nationsOverlay').checked;
-            if (threejsStarmap.tradeRoutesGroup)    threejsStarmap.tradeRoutesGroup.visible    = document.getElementById('tradeRoutesOverlay').checked;
             if (threejsStarmap.stellarRegionsGroup) threejsStarmap.stellarRegionsGroup.visible = document.getElementById('stellarRegionsOverlay').checked;
             if (threejsStarmap.exoplanetGroup)      threejsStarmap.exoplanetGroup.visible      = document.getElementById('exoplanetsOverlay').checked;
+
+            // Trade routes: set group + force material refresh on each line
+            // (LineDashedMaterial can stale-out after group.visible toggle in some Three.js builds)
+            const showTrade = document.getElementById('tradeRoutesOverlay').checked;
+            if (threejsStarmap.tradeRoutesGroup) {
+                threejsStarmap.tradeRoutesGroup.visible = showTrade;
+                threejsStarmap.tradeRoutesGroup.children.forEach(child => {
+                    child.visible = showTrade;
+                    if (child.material) {
+                        child.material.visible = showTrade;
+                        child.material.needsUpdate = true;
+                    }
+                });
+            }
             const showAxes = document.getElementById('galacticDirectionsOverlay').checked;
             if (threejsStarmap.axisLabels) threejsStarmap.axisLabels.forEach(l => l.visible = showAxes);
             if (threejsStarmap.axesHelper) threejsStarmap.axesHelper.visible = showAxes;
@@ -1091,12 +1104,12 @@
 
         // ── Story Moments ───────────────────────────────────────────────────
         const STORY_MOMENTS = {
-            felgenland_core_2750: {
-                label: 'Felgenland Core 2750',
+            felgenland_core_2350: {
+                label: 'Felgenland Core 2350',
                 nationId: 'felgenland_union',
                 target: { x: -11.09, y: 6.34, z: 7.96 },
                 cameraOffset: 200, showTradeRoutes: true, showNations: true, magLimit: 9,
-                era: 2750
+                era: 2350
             },
             tiefe_grenze: {
                 label: 'Tiefe-Grenze Frontier',
@@ -1110,14 +1123,14 @@
                 nationId: 'protelani_republic',
                 target: { x: -8, y: 4, z: 6 },
                 cameraOffset: 250, showTradeRoutes: true, showNations: true, magLimit: 9,
-                era: 2750
+                era: 2356
             },
             holsten_tor: {
                 label: 'Holsten Tor (Stahlburgh)',
                 nationId: 'felgenland_union',
                 target: { x: -11.09, y: 6.34, z: 7.96 },
                 cameraOffset: 80, showTradeRoutes: true, showNations: true, magLimit: 11,
-                era: 2750
+                era: 2350
             }
         };
 
@@ -1401,31 +1414,44 @@
             ctx.font = '9px monospace'; ctx.fillStyle = 'rgba(0,200,80,0.7)';
             ctx.fillText('HZ', cx + 1.25 * ringScale, cy - 4);
 
-            // Planet orbits — use exoplanets if available
-            const planets = (threejsStarmap && threejsStarmap.exoplanets)
-                ? threejsStarmap.exoplanets.filter(p => p.star_id === star.id || p.host_star === star.id)
-                : [];
+            // Planet orbits — check real + fictional exoplanets
+            const starNames = new Set([
+                star.proper_name, star.fictional_name, star.name,
+                star.bayer, String(star.id)
+            ].filter(Boolean));
+
+            const allLoadedPlanets = [
+                ...(threejsStarmap?.realExoplanets || []),
+                ...(threejsStarmap?.fictionalExoplanets || [])
+            ];
+            const planets = allLoadedPlanets.filter(p =>
+                starNames.has(p.host_star_name) || starNames.has(p.host_star)
+            );
 
             if (planets.length > 0) {
+                // Sort by semi_major_axis so inner planets draw first
+                planets.sort((a, b) => (a.semi_major_axis_au || 99) - (b.semi_major_axis_au || 99));
                 planets.forEach((planet, i) => {
                     const sma = planet.semi_major_axis_au || (0.4 + i * 0.5);
                     const r = Math.min(sma * ringScale, W * 0.48);
                     ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
                     ctx.strokeStyle = 'rgba(100,150,255,0.4)'; ctx.lineWidth = 0.8; ctx.stroke();
 
-                    // Planet dot
-                    const angle = (i * 137.5 * Math.PI / 180); // golden angle for spacing
+                    // Planet dot — golden angle spacing for visual clarity
+                    const angle = (i * 137.5 * Math.PI / 180);
                     const px = cx + r * Math.cos(angle), py = cy + r * Math.sin(angle);
-                    const pSize = planet.is_habitable ? 4 : 2.5;
+                    const isHabitable = planet.potentially_habitable === 1 || planet.is_habitable;
+                    const pSize = isHabitable ? 4 : 2.5;
                     ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
-                    ctx.fillStyle = planet.is_habitable ? '#00ff88' : '#8899cc'; ctx.fill();
+                    ctx.fillStyle = isHabitable ? '#00ff88' : '#8899cc'; ctx.fill();
 
                     if (planet.name) {
                         ctx.font = '8px monospace'; ctx.fillStyle = '#aabbdd';
-                        ctx.fillText(planet.name.substring(0, 12), px + 5, py - 3);
+                        ctx.fillText(planet.name.substring(0, 14), px + 5, py - 3);
                     }
                 });
-                info.textContent = `${planets.length} known world(s) · ${esc(star.spectral_class || '?')}-type star`;
+                const habCount = planets.filter(p => p.potentially_habitable === 1 || p.is_habitable).length;
+                info.textContent = `${planets.length} planet(s)${habCount ? ` · ${habCount} habitable` : ''} · ${esc(star.spectral_class || '?')}-type star`;
             } else {
                 // No planet data — show placeholder orbits
                 [0.5, 1.0, 1.5].forEach((au, i) => {
@@ -1442,6 +1468,39 @@
             ctx.strokeStyle = '#446'; ctx.lineWidth = 1.5; ctx.stroke();
             ctx.fillStyle = '#556'; ctx.font = '9px monospace';
             ctx.fillText('1 AU', barX + barLen + 4, barY + 3);
+
+            // Companion stars — find stars within 0.002 pc (≈400 AU) of this star
+            const sx = parseFloat(star.x) || 0, sy = parseFloat(star.y) || 0, sz = parseFloat(star.z) || 0;
+            const companions = (threejsStarmap?.currentStars || []).filter(s => {
+                if (s.id === star.id) return false;
+                const dx = (parseFloat(s.x)||0) - sx;
+                const dy = (parseFloat(s.y)||0) - sy;
+                const dz = (parseFloat(s.z)||0) - sz;
+                return Math.sqrt(dx*dx + dy*dy + dz*dz) < 0.002;
+            });
+            if (companions.length > 0) {
+                // Draw companion inset in top-right corner
+                const iW = 110, iH = 18 + companions.length * 18;
+                const iX = W - iW - 6, iY = 6;
+                ctx.fillStyle = 'rgba(0,10,30,0.7)';
+                ctx.fillRect(iX, iY, iW, iH);
+                ctx.strokeStyle = 'rgba(80,120,200,0.4)';
+                ctx.strokeRect(iX, iY, iW, iH);
+                ctx.font = '8px monospace'; ctx.fillStyle = '#7799bb';
+                ctx.fillText('Companion stars:', iX + 4, iY + 12);
+                const compSpecColors = { O:'#9bb0ff', B:'#aabfff', A:'#cad7ff', F:'#f8f7ff', G:'#fff4ea', K:'#ffd2a1', M:'#ffad51' };
+                companions.forEach((comp, ci) => {
+                    const cy2 = iY + 14 + (ci + 1) * 17;
+                    const csp = (comp.spectral_class || 'G').charAt(0).toUpperCase();
+                    const cCol = compSpecColors[csp] || '#fff4ea';
+                    ctx.beginPath(); ctx.arc(iX + 10, cy2 - 4, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = cCol; ctx.fill();
+                    const cLabel = comp.fictional_name || comp.proper_name || comp.name || `Star ${comp.id}`;
+                    const cSpec  = comp.spectral_class ? comp.spectral_class.substring(0,4) : '?';
+                    ctx.font = '8px monospace'; ctx.fillStyle = '#aabbdd';
+                    ctx.fillText(`${cLabel.substring(0,12)} (${cSpec})`, iX + 18, cy2);
+                });
+            }
         }
 
         // ── Saved Views ──────────────────────────────────────────────────────

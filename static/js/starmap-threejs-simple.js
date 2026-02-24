@@ -12,6 +12,7 @@ class ThreeJSStarmap {
         this.animationId = null;
         this.keys = {};
         this.fictionalExoplanets = [];
+        this.realExoplanets = [];
         this.nations = [];
         this.nationFilter = null;      // Set of star IDs for nation filter (nation 1)
         this.nationFilter2 = null;     // Set of star IDs for nation 2 (compare mode)
@@ -390,6 +391,8 @@ class ThreeJSStarmap {
             // Ignore WASD when the user is typing in an input or textarea
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             this.keys[e.code] = true;
+            // Prevent spacebar from scrolling the page
+            if (e.code === 'Space') e.preventDefault();
         });
         document.addEventListener('keyup', (e) => {
             this.keys[e.code] = false;
@@ -444,6 +447,17 @@ class ThreeJSStarmap {
         if (this.keys['KeyE']) {
             this.camera.position.addScaledVector(up, -speed);
             this.controls.target.addScaledVector(up, -speed);
+            moved = true;
+        }
+        // Spacebar = pan world Y+ (up), ShiftLeft = pan world Y- (down)
+        if (this.keys['Space']) {
+            this.camera.position.y += speed;
+            this.controls.target.y  += speed;
+            moved = true;
+        }
+        if (this.keys['ShiftLeft'] || this.keys['ShiftRight']) {
+            this.camera.position.y -= speed;
+            this.controls.target.y  -= speed;
             moved = true;
         }
 
@@ -613,12 +627,17 @@ class ThreeJSStarmap {
         const detailsContent = document.getElementById('starDetailsContent');
         if (!detailsContent) return;
 
-        const starName = star.fictional_name || star.name || 'Unknown Star';
-        const primaryName = star.name || star.fictional_name || 'Unknown Star';
+        const colonized = (this.eraYear == null)
+            || (star.discovery_year == null)
+            || (this.eraYear >= star.discovery_year);
+        const starName = (colonized && star.fictional_name) || star.name || 'Unknown Star';
+        const primaryName = star.name || (colonized ? star.fictional_name : null) || 'Unknown Star';
         const dist = star.distance ?? star.dist;
 
-        // Look up nation
-        const nation = this.nations.find(n => (n._id || n.id) === star.nation_id);
+        // Look up nation — only if colonized
+        const nation = colonized
+            ? this.nations.find(n => (n._id || n.id) === star.nation_id)
+            : null;
         const nationColor = nation ? ((nation.appearance && nation.appearance.color) || nation.color || '#888888') : null;
 
         // Find trade routes through this star
@@ -635,8 +654,10 @@ class ThreeJSStarmap {
             });
         }
 
+        const discTag = star.discovery_number != null
+            ? `<span class="badge bg-secondary ms-1" title="Discovery order">#${star.discovery_number}</span>` : '';
         let html = `
-            <h6 class="text-primary mb-1">${starName}</h6>
+            <h6 class="text-primary mb-1">${starName}${discTag}</h6>
             ${starName !== primaryName ? `<p class="small text-muted mb-1">${primaryName}</p>` : ''}
         `;
 
@@ -725,27 +746,33 @@ class ThreeJSStarmap {
             html += '</div>';
         }
 
-        // Known worlds
-        const starPlanets = this.fictionalExoplanets.filter(p =>
-            p.host_star_name === star.name ||
-            p.host_star_name === star.fictional_name
+        // Known worlds — check both real and fictional exoplanets
+        const starNames = new Set([star.proper_name, star.fictional_name, star.name, star.bayer].filter(Boolean));
+        const allPlanets = [...this.fictionalExoplanets, ...this.realExoplanets];
+        const starPlanets = allPlanets.filter(p =>
+            starNames.has(p.host_star_name) || starNames.has(p.host_star)
         );
         if (starPlanets.length > 0) {
+            // Sort by orbit distance
+            starPlanets.sort((a, b) => (a.semi_major_axis_au || a.orbit || 99) - (b.semi_major_axis_au || b.orbit || 99));
             html += `<div class="mt-2"><small class="text-muted">Known Worlds (${starPlanets.length})</small>`;
             for (const planet of starPlanets) {
+                const ptype = planet.planet_type || '';
                 const typeColor = {
                     'Earth-like': 'text-success', 'Rocky Moon': 'text-success',
                     'Gas Giant': 'text-warning', 'Ice Giant': 'text-info',
                     'Hot Neptune': 'text-danger', 'Hot Rocky': 'text-danger',
                     'Rocky': 'text-secondary', 'Ice/Rocky': 'text-info',
-                    'Terrestrial': 'text-light',
-                }[planet.planet_type] || 'text-muted';
+                    'Terrestrial': 'text-light', 'Super-Earth': 'text-success',
+                }[ptype] || 'text-muted';
+                const sma = planet.semi_major_axis_au || planet.orbit;
+                const habMark = (planet.potentially_habitable === 1 || planet.is_habitable) ? ' 🌱' : '';
                 html += `
                 <div class="mt-1 p-2 rounded" style="background:rgba(0,0,0,0.4)">
                     <small>
-                        <span class="text-info fw-bold">${planet.name}</span>
-                        <span class="${typeColor} ms-2">${planet.planet_type}</span>
-                        ${planet.orbit ? `<span class="text-muted ms-2">${planet.orbit} AU</span>` : ''}
+                        <span class="text-info fw-bold">${planet.name}${habMark}</span>
+                        ${ptype ? `<span class="${typeColor} ms-2">${ptype}</span>` : ''}
+                        ${sma ? `<span class="text-muted ms-2">${parseFloat(sma).toFixed(2)} AU</span>` : ''}
                         ${planet.description ? `<br><span class="text-muted">${planet.description}</span>` : ''}
                     </small>
                 </div>`;
@@ -829,18 +856,24 @@ class ThreeJSStarmap {
             document.body.appendChild(tooltip);
         }
 
-        const starName = star.fictional_name || star.name || 'Unknown Star';
+        const colonized = (this.eraYear == null)
+            || (star.discovery_year == null)
+            || (this.eraYear >= star.discovery_year);
+        const starName = (colonized && star.fictional_name) || star.name || 'Unknown Star';
         const magnitude = star.magnitude ? star.magnitude.toFixed(2) : '—';
         const spectral = star.spectral_class || '—';
 
-        // Look up nation for tooltip
-        const nation = this.nations.find(n => (n._id || n.id) === star.nation_id);
+        // Look up nation for tooltip — only if colonized
+        const nation = colonized
+            ? this.nations.find(n => (n._id || n.id) === star.nation_id)
+            : null;
         const nationName = nation ? nation.name : '';
         const nationColor = nation ? ((nation.appearance && nation.appearance.color) || '#888') : '';
         const safeColor = /^#[0-9A-Fa-f]{6}$/.test(nationColor) ? nationColor : '#888';
 
+        const discNum = star.discovery_number != null ? ` <span style="color:#aaa;font-size:10px">#${star.discovery_number}</span>` : '';
         tooltip.innerHTML = `
-            <strong>${starName}</strong><br>
+            <strong>${starName}</strong>${discNum}<br>
             <span style="color:#7cf">Mag:</span> ${magnitude} &nbsp;
             <span style="color:#fc7">Type:</span> ${spectral}
             ${nationName ? `<br><span style="color:${safeColor}">■</span> ${nationName}` : ''}
@@ -1193,7 +1226,13 @@ class ThreeJSStarmap {
             const allPlanets = [];
 
             if (realData.success && realData.data) {
-                allPlanets.push(...realData.data);
+                // Normalise host_star field for overlay lookup
+                const normalised = realData.data.map(p => ({
+                    ...p,
+                    host_star: p.host_star_name || p.host_star,
+                }));
+                this.realExoplanets = normalised;   // ← stored for system map lookup
+                allPlanets.push(...normalised);
             }
 
             if (fictionalData.success && fictionalData.data) {
@@ -1336,8 +1375,12 @@ class ThreeJSStarmap {
             // Nation filter(s): 1.0 if matches nation1 OR nation2 (or no filter)
             let nf = 1.0;
             if (this.nationFilter || this.nationFilter2) {
-                const inN1 = this.nationFilter  ? this.nationFilter.has(star.id)  : false;
-                const inN2 = this.nationFilter2 ? this.nationFilter2.has(star.id) : false;
+                // Uncolonized stars don't belong to any nation yet
+                const colonized = (this.eraYear == null)
+                    || (star.discovery_year == null)
+                    || (this.eraYear >= star.discovery_year);
+                const inN1 = colonized && this.nationFilter  ? this.nationFilter.has(star.id)  : false;
+                const inN2 = colonized && this.nationFilter2 ? this.nationFilter2.has(star.id) : false;
                 nf = (inN1 || inN2) ? 1.0 : 0.0;
             }
 
@@ -1375,6 +1418,7 @@ class ThreeJSStarmap {
     filterByEra(year) {
         this.eraYear = (year == null || isNaN(year)) ? null : parseInt(year);
         this._recomputeFilter();
+        if (this.politicalView) this._refreshNationColors();
 
         // Also dim/show nation overlays by era
         if (this.nationsGroup) {
@@ -1391,28 +1435,43 @@ class ThreeJSStarmap {
         }
     }
 
+    /** Rebuild aNationColor attribute respecting current eraYear + discovery_year. */
+    _refreshNationColors() {
+        if (!this.points) return;
+        const colorMap = {};
+        for (const n of this.nations) {
+            const hex = (n.appearance && n.appearance.color) || n.color || '#888888';
+            if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) continue;
+            colorMap[n._id || n.id] = [
+                parseInt(hex.slice(1, 3), 16) / 255,
+                parseInt(hex.slice(3, 5), 16) / 255,
+                parseInt(hex.slice(5, 7), 16) / 255,
+            ];
+        }
+        const attr = this.points.geometry.attributes.aNationColor;
+        const sc   = this.points.geometry.attributes.starColor;
+        for (let i = 0; i < this.currentStars.length; i++) {
+            const star = this.currentStars[i];
+            const colonized = (this.eraYear == null)
+                || (star.discovery_year == null)
+                || (this.eraYear >= star.discovery_year);
+            const c = colonized ? (colorMap[star.nation_id] || null) : null;
+            if (c) {
+                attr.setXYZ(i, c[0], c[1], c[2]);
+            } else {
+                // Uncolonized or no nation — fall back to spectral color
+                attr.setXYZ(i, sc.getX(i), sc.getY(i), sc.getZ(i));
+            }
+        }
+        attr.needsUpdate = true;
+    }
+
     setPoliticalView(enabled) {
         this.politicalView = enabled;
         if (this.starMaterial) {
             this.starMaterial.uniforms.uPoliticalView.value = enabled;
         }
-        if (enabled && this.points) {
-            const colorMap = {};
-            for (const n of this.nations) {
-                const hex = (n.appearance && n.appearance.color) || n.color || '#888888';
-                if (!/^#[0-9A-Fa-f]{6}$/.test(hex)) continue;
-                const r = parseInt(hex.slice(1, 3), 16) / 255;
-                const g = parseInt(hex.slice(3, 5), 16) / 255;
-                const b = parseInt(hex.slice(5, 7), 16) / 255;
-                colorMap[n._id || n.id] = [r, g, b];
-            }
-            const attr = this.points.geometry.attributes.aNationColor;
-            for (let i = 0; i < this.currentStars.length; i++) {
-                const c = colorMap[this.currentStars[i].nation_id] || [0.5, 0.5, 0.5];
-                attr.setXYZ(i, c[0], c[1], c[2]);
-            }
-            attr.needsUpdate = true;
-        }
+        if (enabled) this._refreshNationColors();
     }
 
     // ── Camera fly-to animation ──────────────────────────────────────────────

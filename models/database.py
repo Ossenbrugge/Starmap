@@ -52,16 +52,43 @@ class Database:
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _star_to_dict(row: Dict) -> Dict:
+    @staticmethod
+    def _clean_star_name(raw: str) -> str:
+        """Return empty string if name is nan/null garbage."""
+        if not raw:
+            return ""
+        s = str(raw).strip()
+        if s.lower() in ("nan", "nan; nan", "nan;nan", "none", "null", ""):
+            return ""
+        return s
+
+    def _star_to_dict(self, row: Dict) -> Dict:
         """Normalise a DB row into the client-facing star shape."""
         if row is None:
             return {}
+        proper   = self._clean_star_name(row.get("proper_name"))
+        fictional = self._clean_star_name(row.get("fictional_name"))
+        # Fallback name: catalog ID (HIP/HD) or generic
+        if not proper and not fictional:
+            hip = row.get("hip")
+            hd  = row.get("hd")
+            dn  = row.get("discovery_number")
+            if dn is not None:
+                fallback = f"Discovery-{int(dn):04d}"
+            elif hip:
+                fallback = f"HIP {int(hip)}"
+            elif hd:
+                fallback = f"HD {int(hd)}"
+            else:
+                fallback = f"Star {row.get('id')}"
+        else:
+            fallback = fictional or proper
         return {
             "id": row.get("id"),
             "_id": row.get("id"),
-            "name": row.get("proper_name") or row.get("fictional_name") or f"Star {row.get('id')}",
-            "proper_name": row.get("proper_name") or "",
-            "fictional_name": row.get("fictional_name") or "",
+            "name": proper or fictional or fallback,
+            "proper_name": proper,
+            "fictional_name": fictional,
             "fictional_description": row.get("fictional_description") or "",
             "x": row.get("x") or 0.0,
             "y": row.get("y") or 0.0,
@@ -84,6 +111,8 @@ class Database:
             "is_fictional": bool(row.get("is_fictional")),
             "era_start": row.get("era_start"),
             "era_end": row.get("era_end"),
+            "discovery_number": row.get("discovery_number"),
+            "discovery_year": row.get("discovery_year"),
         }
 
     # ── Stars ─────────────────────────────────────────────────────────────────
@@ -257,7 +286,18 @@ class Database:
         return self._q("SELECT * FROM exoplanets WHERE is_fictional = 0")
 
     def get_fictional_exoplanets(self) -> List[Dict]:
-        return self._q("SELECT * FROM fictional_exoplanets")
+        # Primary source: exoplanets table with is_fictional=1 (has full orbital data)
+        rows = self._q("SELECT * FROM exoplanets WHERE is_fictional = 1")
+        # Also include legacy fictional_exoplanets table entries
+        legacy = self._q("""
+            SELECT id, name, host_star_name, planet_type, description,
+                   orbit AS semi_major_axis_au, period AS orbital_period_days,
+                   mass AS planet_mass_earth, radius AS planet_radius_earth,
+                   NULL AS equilibrium_temp_k, NULL AS potentially_habitable,
+                   NULL AS star_id, 1 AS is_fictional
+            FROM fictional_exoplanets
+        """)
+        return rows + legacy
 
     # ── Nations ───────────────────────────────────────────────────────────────
 
@@ -375,7 +415,7 @@ class Database:
             "fictional_stars":      self._one("SELECT COUNT(*) AS c FROM stars WHERE is_fictional=1")["c"],
             "nations":              self._one("SELECT COUNT(*) AS c FROM nations")["c"],
             "exoplanets":           self._one("SELECT COUNT(*) AS c FROM exoplanets WHERE is_fictional=0")["c"],
-            "fictional_exoplanets": self._one("SELECT COUNT(*) AS c FROM fictional_exoplanets")["c"],
+            "fictional_exoplanets": self._one("SELECT COUNT(*) AS c FROM exoplanets WHERE is_fictional=1")["c"],
             "trade_routes":         self._one("SELECT COUNT(*) AS c FROM trade_routes")["c"],
             "stellar_regions":      self._one("SELECT COUNT(*) AS c FROM stellar_regions")["c"],
         }
@@ -391,7 +431,7 @@ class Database:
                 "SELECT * FROM exoplanets WHERE host_star_name = ?", (star_name,)
             ),
             "fictional_exoplanets": self._q(
-                "SELECT * FROM fictional_exoplanets WHERE host_star_name = ?", (star_name,)
+                "SELECT * FROM exoplanets WHERE is_fictional=1 AND host_star_name = ?", (star_name,)
             ),
         }
 

@@ -746,17 +746,38 @@ class ThreeJSStarmap {
             html += '</div>';
         }
 
-        // Known worlds — check both real and fictional exoplanets
+        // Known worlds — check both real and fictional exoplanets, dedup by name (fictional wins)
         const starNames = new Set([star.proper_name, star.fictional_name, star.name, star.bayer].filter(Boolean));
-        const allPlanets = [...this.fictionalExoplanets, ...this.realExoplanets];
-        const starPlanets = allPlanets.filter(p =>
-            starNames.has(p.host_star_name) || starNames.has(p.host_star)
-        );
+        const starPlanets = [];
+        const _seenPlanetNames = new Set();
+        for (const p of [...this.fictionalExoplanets, ...this.realExoplanets]) {
+            if (starNames.has(p.host_star_name) || starNames.has(p.host_star)) {
+                if (!_seenPlanetNames.has(p.name)) {
+                    _seenPlanetNames.add(p.name);
+                    starPlanets.push(p);
+                }
+            }
+        }
         if (starPlanets.length > 0) {
-            // Sort by orbit distance
-            starPlanets.sort((a, b) => (a.semi_major_axis_au || a.orbit || 99) - (b.semi_major_axis_au || b.orbit || 99));
-            html += `<div class="mt-2"><small class="text-muted">Known Worlds (${starPlanets.length})</small>`;
-            for (const planet of starPlanets) {
+            // Sort: main planets by orbit, then insert moons right after their parent
+            const moons = starPlanets.filter(p => p.parent_planet);
+            const mainPlanets = starPlanets.filter(p => !p.parent_planet);
+            mainPlanets.sort((a, b) => (a.semi_major_axis_au || a.orbit || 99) - (b.semi_major_axis_au || b.orbit || 99));
+            const orderedPlanets = [];
+            for (const pl of mainPlanets) {
+                orderedPlanets.push(pl);
+                for (const m of moons) {
+                    if (m.parent_planet === pl.name) orderedPlanets.push(m);
+                }
+            }
+            // Any orphan moons (parent not in list) at end
+            for (const m of moons) {
+                if (!orderedPlanets.includes(m)) orderedPlanets.push(m);
+            }
+            const moonCount = moons.length;
+            const planetCount = mainPlanets.length;
+            html += `<div class="mt-2"><small class="text-muted">Known Worlds (${planetCount} planet${planetCount !== 1 ? 's' : ''}${moonCount ? `, ${moonCount} moon${moonCount !== 1 ? 's' : ''}` : ''})</small>`;
+            for (const planet of orderedPlanets) {
                 const ptype = planet.planet_type || '';
                 const typeColor = {
                     'Earth-like': 'text-success', 'Rocky Moon': 'text-success',
@@ -767,14 +788,23 @@ class ThreeJSStarmap {
                 }[ptype] || 'text-muted';
                 const sma = planet.semi_major_axis_au || planet.orbit;
                 const habMark = (planet.potentially_habitable === 1 || planet.is_habitable) ? ' 🌱' : '';
+                const moonMark = planet.parent_planet ? ` <span class="text-muted" title="Moon of ${planet.parent_planet}">🌙</span>` : '';
+                const indent = planet.parent_planet ? 'ms-3' : '';
+                const mapBtn = planet.map_url
+                    ? `<button class="btn btn-sm btn-outline-secondary py-0 ms-1" style="font-size:0.65rem"
+                              onclick="window.openPlanetMap(${JSON.stringify(planet.map_url)}, ${JSON.stringify(planet.name)})">🗺 Map</button>`
+                    : '';
                 html += `
-                <div class="mt-1 p-2 rounded" style="background:rgba(0,0,0,0.4)">
-                    <small>
-                        <span class="text-info fw-bold">${planet.name}${habMark}</span>
-                        ${ptype ? `<span class="${typeColor} ms-2">${ptype}</span>` : ''}
-                        ${sma ? `<span class="text-muted ms-2">${parseFloat(sma).toFixed(2)} AU</span>` : ''}
-                        ${planet.description ? `<br><span class="text-muted">${planet.description}</span>` : ''}
-                    </small>
+                <div class="mt-1 p-2 rounded ${indent}" style="background:rgba(0,0,0,0.4)">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <small>
+                            <span class="text-info fw-bold">${planet.name}${habMark}${moonMark}</span>
+                            ${ptype ? `<span class="${typeColor} ms-2">${ptype}</span>` : ''}
+                            ${sma ? `<span class="text-muted ms-2">${parseFloat(sma).toFixed(2)} AU</span>` : ''}
+                        </small>
+                        ${mapBtn}
+                    </div>
+                    ${planet.description ? `<small class="text-muted" style="font-size:0.72rem">${planet.description}</small>` : ''}
                 </div>`;
             }
             html += `</div>`;
@@ -1060,10 +1090,10 @@ class ThreeJSStarmap {
         this.nationsGroup.add(sphere);
 
         // Add connections between stars in the same nation
-        this.createStarConnections(nationStars, color);
+        this.createStarConnections(nationStars, color, nation);
     }
 
-    createStarConnections(stars, color) {
+    createStarConnections(stars, color, nation) {
         // Create lines connecting all stars within the nation
         for (let i = 0; i < stars.length; i++) {
             for (let j = i + 1; j < stars.length; j++) {
@@ -1080,7 +1110,13 @@ class ThreeJSStarmap {
                 });
 
                 const line = new THREE.Line(geometry, material);
-                line.userData = { type: 'nation_connection' };
+                // Store nation + both endpoints so filterByEra() can check discovery_year
+                line.userData = {
+                    type: 'nation_connection',
+                    data: nation,
+                    starA: stars[i],
+                    starB: stars[j],
+                };
                 this.nationsGroup.add(line);
             }
         }
@@ -1423,14 +1459,36 @@ class ThreeJSStarmap {
         // Also dim/show nation overlays by era
         if (this.nationsGroup) {
             this.nationsGroup.children.forEach(child => {
-                const nation = child.userData?.data;
-                if (!nation) return;
                 if (this.eraYear == null) { child.visible = true; return; }
-                const ns = nation.era_start;
-                const ne = nation.era_end;
-                const inEra = (ns == null || this.eraYear >= ns) &&
-                              (ne == null || this.eraYear <= ne);
-                child.visible = inEra;
+                const type   = child.userData?.type;
+                const nation = child.userData?.data;
+
+                if (type === 'nation_territory') {
+                    // Check nation founding year first
+                    const ns = nation?.era_start, ne = nation?.era_end;
+                    const nationFounded = (ns == null || this.eraYear >= ns) &&
+                                         (ne == null || this.eraYear <= ne);
+                    if (!nationFounded) { child.visible = false; return; }
+                    // Also require the earliest territory star to be colonized
+                    const stars = child.userData?.stars || [];
+                    const minDisc = stars.reduce((mn, s) =>
+                        (s.discovery_year != null && s.discovery_year < mn) ? s.discovery_year : mn,
+                        Infinity);
+                    child.visible = (minDisc === Infinity || this.eraYear >= minDisc);
+
+                } else if (type === 'nation_connection') {
+                    // Check nation founding year
+                    const ns = nation?.era_start;
+                    if (ns != null && this.eraYear < ns) { child.visible = false; return; }
+                    // Show line only when BOTH endpoint stars are colonized
+                    const dyA = child.userData?.starA?.discovery_year;
+                    const dyB = child.userData?.starB?.discovery_year;
+                    child.visible = (dyA == null || this.eraYear >= dyA) &&
+                                    (dyB == null || this.eraYear >= dyB);
+
+                } else {
+                    child.visible = true;
+                }
             });
         }
     }

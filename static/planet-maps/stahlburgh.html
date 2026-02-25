@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stahlburgh Map</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #111; font-family: Arial, sans-serif; overflow: hidden; }
+        h1 { color: #ddd; text-align: center; padding: 8px 0; font-size: 1rem; letter-spacing: 1px; }
+        .map-container {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 36px);
+            overflow: hidden;
+        }
+        img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            object-fit: fill;
+        }
+        .pin {
+            position: absolute;
+            font-size: 2.2vw;
+            line-height: 1;
+            transform: translate(-50%, -100%);
+            text-shadow: 0 0 10px gold;
+            cursor: pointer;
+        }
+        .capital { font-size: 2.8vw; }
+        .label {
+            position: absolute;
+            font-size: 1vw;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 6px black;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌍 Stahlburgh — Felgenland Union Capital World</h1>
+    <div class="map-container">
+        <img src="stahlburgh-mercator.png" alt="Stahlburgh">
+
+        <!-- Bundstadt (capital) -->
+        <div class="pin capital" style="left:53.5%; top:47.1%;">⭐</div>
+        <div class="label" style="left:55%; top:49%;">Bundstadt</div>
+
+        <!-- Balquhidder -->
+        <div class="pin" style="left:55.6%; top:44.4%;">📍</div>
+        <div class="label" style="left:57%; top:46.2%;">Balquhidder</div>
+
+        <!-- Dunvegan -->
+        <div class="pin" style="left:59.9%; top:15.3%;">📍</div>
+        <div class="label" style="left:61.4%; top:17%;">Dunvegan</div>
+
+        <!-- Gilbraith City -->
+        <div class="pin" style="left:33.3%; top:49.4%;">📍</div>
+        <div class="label" style="left:34.8%; top:51.1%;">Gilbraith City</div>
+
+        <!-- Inveraray -->
+        <div class="pin" style="left:35.4%; top:26.0%;">📍</div>
+        <div class="label" style="left:36.9%; top:27.7%;">Inveraray</div>
+    </div>
+</body>
+</html>

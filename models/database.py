@@ -288,13 +288,14 @@ class Database:
     def get_fictional_exoplanets(self) -> List[Dict]:
         # Primary source: exoplanets table with is_fictional=1 (has full orbital data)
         rows = self._q("SELECT * FROM exoplanets WHERE is_fictional = 1")
-        # Also include legacy fictional_exoplanets table entries
+        # Also include legacy fictional_exoplanets table entries (include parent_planet and map_url)
         legacy = self._q("""
             SELECT id, name, host_star_name, planet_type, description,
                    orbit AS semi_major_axis_au, period AS orbital_period_days,
                    mass AS planet_mass_earth, radius AS planet_radius_earth,
                    NULL AS equilibrium_temp_k, NULL AS potentially_habitable,
-                   NULL AS star_id, 1 AS is_fictional
+                   NULL AS star_id, 1 AS is_fictional,
+                   parent_planet, map_url
             FROM fictional_exoplanets
         """)
         return rows + legacy

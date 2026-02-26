@@ -656,8 +656,11 @@ class ThreeJSStarmap {
 
         const discTag = star.discovery_number != null
             ? `<span class="badge bg-secondary ms-1" title="Discovery order">#${star.discovery_number}</span>` : '';
+        const eraTag = star.discovery_year != null
+            ? `<span class="badge ms-1" style="background:rgba(80,160,80,0.22);color:#88cc88;border:1px solid rgba(80,160,80,0.45);font-size:0.62rem;" title="Year colonized">⬡ ${star.discovery_year}</span>`
+            : '';
         let html = `
-            <h6 class="text-primary mb-1">${starName}${discTag}</h6>
+            <h6 class="text-primary mb-1">${starName}${discTag}${eraTag}</h6>
             ${starName !== primaryName ? `<p class="small text-muted mb-1">${primaryName}</p>` : ''}
         `;
 

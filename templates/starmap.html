@@ -206,9 +206,14 @@
                                 <input type="range" id="eraSlider" class="form-range" min="2170" max="3000"
                                        value="2350" step="1" disabled
                                        oninput="onEraChange(this.value)">
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted">2170</small>
-                                    <small class="text-muted">3000</small>
+                                <!-- Key date tick marks; positions = (year-2170)/830*100 % -->
+                                <div style="position:relative;height:28px;margin-top:1px;pointer-events:none;user-select:none;">
+                                    <span style="position:absolute;left:0%;transform:translateX(-50%);font-size:8px;color:#888;text-align:center;line-height:1.3;">2170<br>🔥</span>
+                                    <span style="position:absolute;left:3.6%;transform:translateX(-50%);font-size:8px;color:#666;text-align:center;">2200</span>
+                                    <span style="position:absolute;left:11.7%;transform:translateX(-50%);font-size:8px;color:#667;text-align:center;">2267</span>
+                                    <span style="position:absolute;left:21.9%;transform:translateX(-50%);font-size:8px;color:#994444;text-align:center;line-height:1.3;">52–57<br>⚔</span>
+                                    <span style="position:absolute;left:25.2%;transform:translateX(-50%);font-size:8px;color:#668;text-align:center;">2379</span>
+                                    <span style="position:absolute;right:0%;transform:translateX(50%);font-size:8px;color:#555;text-align:center;">3000</span>
                                 </div>
                             </div>
 
@@ -269,20 +274,25 @@
                                 <h6 class="text-muted small mb-2">📚 Story Moments</h6>
                                 <div class="d-grid gap-1">
                                     <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('felgenland_core_2350')">
-                                        🏛️ Felgenland Core 2350
+                                            onclick="applyStoryMoment('phoenix_exodus_2170')">
+                                        🔥 Phoenix Exodus — 2170
                                     </button>
                                     <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('tiefe_grenze')">
-                                        🌌 Tiefe-Grenze Frontier
+                                            onclick="applyStoryMoment('felgenland_founding_2200')">
+                                        🏕 First Settlement — 2200
                                     </button>
                                     <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('protelani_summit')">
-                                        🤝 Protelani Trade Summit
+                                            onclick="applyStoryMoment('union_founded_2267')">
+                                        🏛 Union Founded — 2267
                                     </button>
                                     <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('holsten_tor')">
-                                        ⚓ Holsten Tor (Stahlburgh)
+                                            onclick="applyStoryMoment('war_height_2355')"
+                                            style="border-color:rgba(180,60,60,0.5);color:#cc8888;">
+                                        ⚔ War at its Height — 2355
+                                    </button>
+                                    <button class="btn btn-outline-secondary story-btn"
+                                            onclick="applyStoryMoment('age_of_exploration_2379')">
+                                        🚀 Age of Exploration — 2379
                                     </button>
                                 </div>
                             </div>
@@ -1117,35 +1127,47 @@
             updateUrl();
         }
 
-        // ── Story Moments ───────────────────────────────────────────────────
+        // ── Story Moments — keyed to canonical Felgenland Saga dates ────────
+        // 2170: Lena's death, Phoenix Exodus from Sol
+        // 2200: First Felgenland settlement (Stahlburgh / Holsten Tor)
+        // 2267: Felgenland Union founded (Bundstadt, 21 Jun)
+        // 2352–2357: Union-Directorate War
+        // 2379: Raimond dies → Henry becomes Protector → Age of Exploration
         const STORY_MOMENTS = {
-            felgenland_core_2350: {
-                label: 'Felgenland Core 2350',
+            phoenix_exodus_2170: {
+                label: 'Phoenix Exodus — 2170',
+                nationId: null,
+                target: { x: 0, y: 0, z: 0 },
+                cameraOffset: 400, showTradeRoutes: false, showNations: false, magLimit: 8,
+                era: 2170
+            },
+            felgenland_founding_2200: {
+                label: 'First Settlement — 2200',
                 nationId: 'felgenland_union',
                 target: { x: -11.09, y: 6.34, z: 7.96 },
-                cameraOffset: 200, showTradeRoutes: true, showNations: true, magLimit: 9,
-                era: 2350
+                cameraOffset: 200, showTradeRoutes: false, showNations: true, magLimit: 9,
+                era: 2200
             },
-            tiefe_grenze: {
-                label: 'Tiefe-Grenze Frontier',
+            union_founded_2267: {
+                label: 'Union Founded — 2267',
+                nationId: 'felgenland_union',
+                target: { x: -11.09, y: 6.34, z: 7.96 },
+                cameraOffset: 180, showTradeRoutes: true, showNations: true, magLimit: 9,
+                era: 2267
+            },
+            war_height_2355: {
+                label: 'War at its Height — 2355',
+                nationId: 'felgenland_union',
+                target: { x: -11.09, y: 6.34, z: 7.96 },
+                cameraOffset: 280, showTradeRoutes: true, showNations: true, magLimit: 9,
+                era: 2355
+            },
+            age_of_exploration_2379: {
+                label: 'Age of Exploration — 2379',
                 nationId: 'felgenland_union',
                 target: { x: -12.8, y: 7.02, z: 8.43 },
-                cameraOffset: 120, showTradeRoutes: true, showNations: true, magLimit: 10,
-                era: 2350
-            },
-            protelani_summit: {
-                label: 'Protelani Trade Summit',
-                nationId: 'protelani_republic',
-                target: { x: -8, y: 4, z: 6 },
-                cameraOffset: 250, showTradeRoutes: true, showNations: true, magLimit: 9,
-                era: 2356
-            },
-            holsten_tor: {
-                label: 'Holsten Tor (Stahlburgh)',
-                nationId: 'felgenland_union',
-                target: { x: -11.09, y: 6.34, z: 7.96 },
-                cameraOffset: 80, showTradeRoutes: true, showNations: true, magLimit: 11,
-                era: 2350
+                cameraOffset: 350, showTradeRoutes: true, showNations: true, magLimit: 10,
+                era: 2379
             }
         };
 

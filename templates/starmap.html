@@ -113,6 +113,28 @@
         .saved-view-item { display: flex; align-items: center; justify-content: space-between;
             padding: 3px 6px; border-radius: 4px; font-size: 0.78rem; cursor: pointer; }
         .saved-view-item:hover { background: #1a1a3e; }
+        /* ── Help overlay ── */
+        #helpOverlay {
+            position: fixed; inset: 0; background: rgba(0,0,12,0.88);
+            z-index: 3000; display: none; align-items: center; justify-content: center;
+        }
+        #helpOverlay .help-box {
+            background: #0d0d2a; border: 1px solid #334; border-radius: 10px;
+            padding: 28px 32px; max-width: 540px; width: 90%; color: #ccc;
+        }
+        #helpOverlay .help-box h5 { color: #a0c4ff; margin-bottom: 16px; }
+        .help-row { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.82rem; }
+        .help-key { background: #1a2a3e; border: 1px solid #445; border-radius: 4px;
+            padding: 2px 8px; font-family: monospace; color: #88bbff; flex-shrink: 0; min-width: 70px; text-align:center; }
+        /* ── Help button (fixed) ── */
+        #helpBtn {
+            position: fixed; bottom: 18px; right: 18px;
+            width: 34px; height: 34px; border-radius: 50%;
+            background: #1a2a3e; border: 1px solid #445; color: #88bbff;
+            font-size: 1rem; font-weight: bold; cursor: pointer; z-index: 1200;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #helpBtn:hover { background: #223350; }
     </style>
 </head>
 <body>
@@ -203,9 +225,18 @@
                                            onchange="toggleEraFilter(this.checked)">
                                     <label class="form-check-label small" for="eraFilterToggle">Enable Era Filter</label>
                                 </div>
-                                <input type="range" id="eraSlider" class="form-range" min="2170" max="3000"
-                                       value="2350" step="1" disabled
-                                       oninput="onEraChange(this.value)">
+                                <!-- War range highlight behind the slider -->
+                                <div style="position:relative;">
+                                    <div title="Union–Directorate War (2352–2357)"
+                                         style="position:absolute;top:50%;transform:translateY(-50%);
+                                                left:21.93%;width:0.72%;height:8px;
+                                                background:rgba(200,50,50,0.55);border-radius:2px;
+                                                pointer-events:none;z-index:1;"></div>
+                                    <input type="range" id="eraSlider" class="form-range" min="2170" max="3000"
+                                           value="2350" step="1" disabled
+                                           oninput="onEraChange(this.value)"
+                                           style="position:relative;z-index:2;">
+                                </div>
                                 <!-- Key date tick marks; positions = (year-2170)/830*100 % -->
                                 <div style="position:relative;height:28px;margin-top:1px;pointer-events:none;user-select:none;">
                                     <span style="position:absolute;left:0%;transform:translateX(-50%);font-size:8px;color:#888;text-align:center;line-height:1.3;">2170<br>🔥</span>
@@ -300,10 +331,17 @@
                             <!-- Nation selector -->
                             <div class="mb-2">
                                 <h6 class="text-muted small mb-1">🌍 Nation / Faction</h6>
-                                <select id="nationSelector" class="form-select form-select-sm mb-2"
-                                        onchange="onNationSelect(this.value)">
-                                    <option value="">— Show All Nations —</option>
-                                </select>
+                                <div class="d-flex gap-1 mb-2">
+                                    <select id="nationSelector" class="form-select form-select-sm flex-grow-1"
+                                            onchange="onNationSelect(this.value)">
+                                        <option value="">— Show All Nations —</option>
+                                    </select>
+                                    <button id="flyCapitalBtn" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                            onclick="flyToNationCapital()" title="Fly to capital system" style="display:none;white-space:nowrap;">
+                                        ★ Capital
+                                    </button>
+                                </div>
+                                <div id="nationEraNote" class="small text-warning mb-1" style="display:none;font-size:0.7rem;"></div>
                                 <div class="form-check form-switch mb-1">
                                     <input class="form-check-input" type="checkbox" id="showOnlyNation"
                                            onchange="toggleShowOnlyNation(this.checked)">
@@ -510,6 +548,33 @@
     <!-- Wiki export success banner -->
     <div id="wikiExportBanner"></div>
 
+    <!-- Help overlay -->
+    <div id="helpOverlay" onclick="if(event.target===this)closeHelp()">
+        <div class="help-box">
+            <h5>🌌 Starmap Keyboard Shortcuts &amp; Tips</h5>
+            <div class="help-row"><span class="help-key">?</span><span>Toggle this help overlay</span></div>
+            <div class="help-row"><span class="help-key">W A S D</span><span>Pan camera (hold Shift for faster)</span></div>
+            <div class="help-row"><span class="help-key">Q / E</span><span>Zoom in / out</span></div>
+            <div class="help-row"><span class="help-key">R</span><span>Reset camera to origin</span></div>
+            <div class="help-row"><span class="help-key">P</span><span>Toggle political colours</span></div>
+            <div class="help-row"><span class="help-key">T</span><span>Toggle trade routes</span></div>
+            <div class="help-row"><span class="help-key">N</span><span>Toggle nation borders</span></div>
+            <div class="help-row"><span class="help-key">Esc</span><span>Close details / deselect star</span></div>
+            <div class="help-row"><span class="help-key">Ctrl+/</span><span>Focus search bar</span></div>
+            <hr style="border-color:#334;margin:12px 0;">
+            <div style="font-size:0.78rem;color:#888;">
+                <b style="color:#a0c4ff;">Era slider:</b> drag to travel through history.
+                The <span style="color:#cc6666;">red band</span> marks the Union–Directorate War (2352–2357).<br>
+                <b style="color:#a0c4ff;">★ Capital</b> button flies to a nation's capital star.<br>
+                <b style="color:#a0c4ff;">Share link</b> encodes era, nation, mag limit &amp; camera center in the URL.
+            </div>
+            <button class="btn btn-outline-secondary btn-sm mt-3 w-100" onclick="closeHelp()">Close (Esc or ?)</button>
+        </div>
+    </div>
+
+    <!-- Help button (fixed, bottom-right) -->
+    <button id="helpBtn" onclick="toggleHelp()" title="Keyboard shortcuts &amp; tips">?</button>
+
     <!-- Planet Map Modal -->
     <div class="modal fade" id="planetMapModal" tabindex="-1">
         <div class="modal-dialog modal-xl" style="max-width:90vw">
@@ -699,6 +764,15 @@
             if (tradeEl  && !tradeEl.checked)  params.set('trade', '0');
             if (nationsO && nationsO.checked)   params.set('nations', '1');
 
+            // Encode camera target position as center=x,y,z (rounded to 2dp)
+            if (threejsStarmap?.controls?.target) {
+                const t = threejsStarmap.controls.target;
+                const cx = (t.x/10).toFixed(2), cy = (t.y/10).toFixed(2), cz = (t.z/10).toFixed(2);
+                if (!(cx === '0.00' && cy === '0.00' && cz === '0.00')) {
+                    params.set('center', `${cx},${cy},${cz}`);
+                }
+            }
+
             const str = params.toString();
             history.replaceState(null, '', str ? `?${str}` : location.pathname);
         }
@@ -742,6 +816,14 @@
             if (params.get('nations') === '1') {
                 const nationsEl = document.getElementById('nationsOverlay');
                 if (nationsEl) { nationsEl.checked = true; updateOverlays(); }
+            }
+
+            // Restore camera center position (delegate to ThreeJSStarmap to avoid THREE module scope)
+            if (params.has('center') && threejsStarmap?.setCameraCenter) {
+                const parts = params.get('center').split(',').map(Number);
+                if (parts.length === 3 && !parts.some(isNaN)) {
+                    threejsStarmap.setCameraCenter(parts[0], parts[1], parts[2]);
+                }
             }
         }
 
@@ -1222,7 +1304,39 @@
             if (document.getElementById('showOnlyNation')?.checked) {
                 if (threejsStarmap) threejsStarmap.filterByNation(nationId || null);
             }
+
+            // Show/hide fly-to-capital button and founding era note
+            const capBtn  = document.getElementById('flyCapitalBtn');
+            const eraNote = document.getElementById('nationEraNote');
+            if (nationId && threejsStarmap?.nations) {
+                const n = threejsStarmap.nations.find(n => (n._id||n.id) === nationId);
+                if (capBtn)  capBtn.style.display = n?.capital?.star_id ? '' : 'none';
+                if (eraNote && (n?.era_start || n?.era_end)) {
+                    eraNote.textContent = `Founded ${n.era_start||'?'} · Active through ${n.era_end||'?'}`;
+                    eraNote.style.display = '';
+                } else if (eraNote) {
+                    eraNote.style.display = 'none';
+                }
+            } else {
+                if (capBtn)  capBtn.style.display = 'none';
+                if (eraNote) eraNote.style.display = 'none';
+            }
+
             updateUrl();
+        }
+
+        function flyToNationCapital() {
+            if (!threejsStarmap) return;
+            const nationId = document.getElementById('nationSelector')?.value;
+            if (!nationId) return;
+            const nation = threejsStarmap.nations.find(n => (n._id||n.id) === nationId);
+            const capitalId = nation?.capital?.star_id;
+            if (!capitalId) return;
+            const star = threejsStarmap.currentStars.find(s => s.id === capitalId);
+            if (!star) return;
+            threejsStarmap.flyToStar(star, 80);
+            threejsStarmap.highlightStar(star);
+            threejsStarmap.displayStarDetails(star);
         }
 
         function toggleShowOnlyNation(checked) {
@@ -1683,6 +1797,36 @@
             } catch(e) { console.error(e); }
         }
         {% endif %}
+
+        // ── Help overlay ─────────────────────────────────────────────────────
+        function toggleHelp() {
+            const ov = document.getElementById('helpOverlay');
+            ov.style.display = ov.style.display === 'flex' ? 'none' : 'flex';
+        }
+        function closeHelp() {
+            document.getElementById('helpOverlay').style.display = 'none';
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === '?') { e.preventDefault(); toggleHelp(); }
+            if (e.key === 'Escape') {
+                const ov = document.getElementById('helpOverlay');
+                if (ov.style.display === 'flex') { closeHelp(); return; }
+            }
+            // Shortcut: P = political view, T = trade routes, N = nations, R = reset
+            if (e.key === 'p' || e.key === 'P') {
+                const tog = document.getElementById('politicalViewToggle');
+                if (tog) { tog.checked = !tog.checked; togglePoliticalView(tog.checked); }
+            }
+            if (e.key === 't' || e.key === 'T') {
+                const tog = document.getElementById('tradeRoutesOverlay');
+                if (tog) { tog.checked = !tog.checked; updateOverlays(); }
+            }
+            if (e.key === 'n' || e.key === 'N') {
+                const tog = document.getElementById('nationsOverlay');
+                if (tog) { tog.checked = !tog.checked; updateOverlays(); }
+            }
+        });
 
         // ── DOMContentLoaded ─────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {

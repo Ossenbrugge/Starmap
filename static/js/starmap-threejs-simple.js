@@ -1459,6 +1459,18 @@ class ThreeJSStarmap {
         this._recomputeFilter();
         if (this.politicalView) this._refreshNationColors();
 
+        // Filter trade routes by era (era_start/era_end on each route)
+        if (this.tradeRoutesGroup) {
+            this.tradeRoutesGroup.children.forEach(child => {
+                if (this.eraYear == null) { child.visible = true; return; }
+                const route = child.userData?.data;
+                if (!route) return;
+                const rs = route.era_start, re = route.era_end;
+                child.visible = (rs == null || this.eraYear >= rs) &&
+                                (re == null || this.eraYear <= re);
+            });
+        }
+
         // Also dim/show nation overlays by era
         if (this.nationsGroup) {
             this.nationsGroup.children.forEach(child => {
@@ -1533,6 +1545,14 @@ class ThreeJSStarmap {
             this.starMaterial.uniforms.uPoliticalView.value = enabled;
         }
         if (enabled) this._refreshNationColors();
+    }
+
+    /** Set the camera orbit target (star-coords) and position the camera above it. */
+    setCameraCenter(cx, cy, cz) {
+        if (!this.controls || !this.camera) return;
+        this.controls.target.set(cx * 10, cy * 10, cz * 10);
+        this.camera.position.set(cx * 10, cy * 10 + 200, cz * 10 + 200);
+        this.controls.update();
     }
 
     // ── Camera fly-to animation ──────────────────────────────────────────────

@@ -120,6 +120,10 @@ def create_app():
     from app.routes.saved_views_blueprint import saved_views_bp
     app.register_blueprint(saved_views_bp)
 
+    # Timeline snapshot
+    from app.routes.timeline_blueprint import timeline_bp
+    app.register_blueprint(timeline_bp)
+
     print("All blueprints registered successfully")
 
     # ── Error handlers ───────────────────────────────────────────────────────

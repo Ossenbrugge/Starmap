@@ -442,8 +442,8 @@
                             <div class="d-grid gap-2">
                                 <button class="btn btn-outline-info btn-sm" onclick="resetView()">🎯 Reset View</button>
                                 <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()">📷 Screenshot</button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="generateWikiMap()" title="Top-down PNG + DokuWiki markup">
-                                    🗺️ Generate Wiki Map
+                                <button class="btn btn-outline-warning btn-sm" onclick="openPrintExport()" title="Generate print-ready PNG / SVG map">
+                                    🗺️ Print Map
                                 </button>
                                 <button class="btn btn-outline-light btn-sm" onclick="copyShareableLink()" title="Copy link with current filters">
                                     🔗 Copy Shareable Link
@@ -585,6 +585,88 @@
                 </div>
                 <div class="modal-body p-0" style="height:calc(85vh - 52px)">
                     <iframe id="planetMapFrame" src="" style="width:100%;height:100%;border:none;"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Export Modal -->
+    <div class="modal fade" id="printExportModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background:#0d0d2a;border:1px solid #334;color:#ccc;">
+                <div class="modal-header py-2" style="border-bottom:1px solid #334;">
+                    <h6 class="modal-title text-info">🗺️ Generate Print-Ready Map</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Options column -->
+                        <div class="col-md-5">
+                            <div class="mb-2">
+                                <label class="form-label small">Map Title</label>
+                                <input type="text" id="pex-title" class="form-control form-control-sm"
+                                       style="background:#1a1a3e;border-color:#334;color:#ccc;"
+                                       oninput="updatePrintPreview()" value="Felgenland Saga">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">View Radius (light-years from center)</label>
+                                <select id="pex-radius" class="form-select form-select-sm"
+                                        style="background:#1a1a3e;border-color:#334;color:#ccc;"
+                                        onchange="updatePrintPreview()">
+                                    <option value="10">10 ly — close-up</option>
+                                    <option value="20" selected>20 ly — regional</option>
+                                    <option value="30">30 ly — sector</option>
+                                    <option value="50">50 ly — full saga</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Output Resolution</label>
+                                <select id="pex-res" class="form-select form-select-sm"
+                                        style="background:#1a1a3e;border-color:#334;color:#ccc;">
+                                    <option value="HD">HD — 1920×1080</option>
+                                    <option value="2K">2K — 2560×1440</option>
+                                    <option value="4K" selected>4K — 3840×2160</option>
+                                    <option value="8K">8K — 7680×4320</option>
+                                </select>
+                            </div>
+                            <div class="mb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pex-political" checked onchange="updatePrintPreview()">
+                                    <label class="form-check-label small" for="pex-political">Political colours</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pex-trade" checked onchange="updatePrintPreview()">
+                                    <label class="form-check-label small" for="pex-trade">Trade routes</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pex-legend" checked onchange="updatePrintPreview()">
+                                    <label class="form-check-label small" for="pex-legend">Nation legend</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pex-scalebar" checked onchange="updatePrintPreview()">
+                                    <label class="form-check-label small" for="pex-scalebar">Scale bar (10 ly)</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="pex-grid" onchange="updatePrintPreview()">
+                                    <label class="form-check-label small" for="pex-grid">Grid lines (5 ly)</label>
+                                </div>
+                            </div>
+                            <hr style="border-color:#334;">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success" onclick="generatePrintPNG()">⬇ Export PNG</button>
+                                <button class="btn btn-outline-info btn-sm" onclick="generatePrintSVG()">⬇ Export SVG (vector)</button>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0" style="font-size:0.7rem;">
+                                DokuWiki + Markdown markup copied to clipboard on PNG export.
+                            </p>
+                        </div>
+                        <!-- Preview column -->
+                        <div class="col-md-7">
+                            <label class="form-label small">Preview <span id="pex-preview-label" class="text-muted"></span></label>
+                            <canvas id="pex-preview" width="640" height="360"
+                                    style="width:100%;border:1px solid #334;border-radius:4px;background:#050510;"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1076,6 +1158,423 @@
         }
 
         // ── Wiki map export ─────────────────────────────────────────────────
+        // ── Print-Ready Map Export (PR 2) ────────────────────────────────────
+
+        const PRINT_RESOLUTIONS = {
+            HD:  { w: 1920,  h: 1080 },
+            '2K': { w: 2560, h: 1440 },
+            '4K': { w: 3840, h: 2160 },
+            '8K': { w: 7680, h: 4320 },
+        };
+
+        const SPECTRAL_COLORS = {
+            O:'#9bb0ff', B:'#aabfff', A:'#cad7ff',
+            F:'#f8f7ff', G:'#fff4ea', K:'#ffd2a1', M:'#ffad51',
+        };
+
+        function openPrintExport() {
+            if (!threejsStarmap) { alert('Starmap not ready yet.'); return; }
+            // Pre-fill title from current era
+            const eraEl = document.getElementById('eraFilterToggle');
+            const eraSlider = document.getElementById('eraSlider');
+            const year = (eraEl && eraEl.checked) ? parseInt(eraSlider.value) : null;
+            const titleEl = document.getElementById('pex-title');
+            if (titleEl) titleEl.value = year ? `Felgenland Saga — Year ${year}` : 'Felgenland Saga';
+            updatePrintPreview();
+            new bootstrap.Modal(document.getElementById('printExportModal')).show();
+        }
+
+        function getPrintOptions() {
+            const eraEl    = document.getElementById('eraFilterToggle');
+            const eraSlider = document.getElementById('eraSlider');
+            return {
+                title:       document.getElementById('pex-title')?.value || 'Starmap',
+                year:        (eraEl?.checked) ? parseInt(eraSlider.value) : null,
+                viewRadius:  parseFloat(document.getElementById('pex-radius')?.value || '20'),
+                resolution:  document.getElementById('pex-res')?.value || '4K',
+                showPolitical: document.getElementById('pex-political')?.checked ?? true,
+                showTrade:   document.getElementById('pex-trade')?.checked ?? true,
+                showLegend:  document.getElementById('pex-legend')?.checked ?? true,
+                showScaleBar: document.getElementById('pex-scalebar')?.checked ?? true,
+                showGrid:    document.getElementById('pex-grid')?.checked ?? false,
+            };
+        }
+
+        function updatePrintPreview() {
+            const canvas = document.getElementById('pex-preview');
+            const label  = document.getElementById('pex-preview-label');
+            if (!canvas || !threejsStarmap?.currentStars) return;
+            const opts = getPrintOptions();
+            if (label) label.textContent = opts.year ? `· Era ${opts.year}` : '· All eras';
+            renderPrintCanvas(canvas, opts);
+        }
+
+        // ── Core 2D canvas renderer ───────────────────────────────────────────
+
+        function renderPrintCanvas(canvas, opts) {
+            const stars   = threejsStarmap.currentStars;
+            const nations = threejsStarmap.nations || [];
+            const year    = opts.year;
+            const r       = opts.viewRadius;
+            const W = canvas.width, H = canvas.height;
+            const magCutoff = threejsStarmap.starMaterial?.uniforms?.uMagLimit?.value ?? 10;
+
+            // Camera center in star-coords (ly)
+            const mapCX = threejsStarmap.controls?.target ? threejsStarmap.controls.target.x / 10 : 0;
+            const mapCZ = threejsStarmap.controls?.target ? threejsStarmap.controls.target.z / 10 : 0;
+
+            const scale = Math.min(W, H) / 2 / r;   // pixels per light-year
+            const toCanvas = (sx, sz) => [
+                W / 2 + (sx - mapCX) * scale,
+                H / 2 - (sz - mapCZ) * scale,       // flip Z: south down
+            ];
+
+            // Build nation color map
+            const nationColor = {};
+            for (const n of nations) {
+                nationColor[n._id || n.id] = (n.appearance?.color) || n.color || '#888888';
+            }
+
+            const ctx = canvas.getContext('2d');
+
+            // ── Background ──
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, W, H);
+
+            // ── Grid ──
+            if (opts.showGrid) {
+                ctx.strokeStyle = 'rgba(80,110,180,0.13)';
+                ctx.lineWidth = Math.max(0.5, W / 3000);
+                const step = 5;
+                for (let g = -Math.ceil(r / step) * step; g <= r + step; g += step) {
+                    const [gx] = toCanvas(mapCX + g, mapCZ);
+                    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+                    const [, gy] = toCanvas(mapCX, mapCZ - g);
+                    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+                }
+                // Axes
+                ctx.strokeStyle = 'rgba(120,150,220,0.25)';
+                const [ox] = toCanvas(mapCX, mapCZ); ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, H); ctx.stroke();
+                const [, oy] = toCanvas(mapCX, mapCZ); ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(W, oy); ctx.stroke();
+            }
+
+            // ── Trade routes ──
+            if (opts.showTrade && threejsStarmap.tradeRoutesGroup) {
+                threejsStarmap.tradeRoutesGroup.children.forEach(child => {
+                    if (!child.visible) return;
+                    const route = child.userData?.data;
+                    if (!route?.endpoints) return;
+                    const fromStar = stars.find(s => s.id === route.endpoints.from?.star_id);
+                    const toStar   = stars.find(s => s.id === route.endpoints.to?.star_id);
+                    if (!fromStar || !toStar) return;
+                    const [fx, fy] = toCanvas(fromStar.x, fromStar.z);
+                    const [tx, ty] = toCanvas(toStar.x, toStar.z);
+                    const isPrimary = route.route_type === 'Primary Trade';
+                    ctx.strokeStyle = isPrimary ? 'rgba(0,255,136,0.60)' : 'rgba(110,130,200,0.35)';
+                    ctx.lineWidth   = isPrimary ? Math.max(1, W / 1400) : Math.max(0.5, W / 2500);
+                    ctx.setLineDash(isPrimary ? [6, 4] : [3, 6]);
+                    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+                    ctx.setLineDash([]);
+                });
+            }
+
+            // ── Stars ──
+            const fontSize = Math.max(9, W / 280);
+            ctx.font = `${fontSize}px sans-serif`;
+
+            for (const star of stars) {
+                if (star.magnitude > magCutoff) continue;
+                // Era / discovery filter
+                if (year != null) {
+                    if (star.era_start != null && year < star.era_start) continue;
+                    if (star.era_end   != null && year > star.era_end)   continue;
+                }
+
+                const [px, py] = toCanvas(star.x, star.z);
+                if (px < -40 || px > W + 40 || py < -40 || py > H + 40) continue;
+
+                const colonized = (year == null)
+                    || (star.discovery_year == null)
+                    || (year >= star.discovery_year);
+
+                const radius = Math.max(0.9, (magCutoff - star.magnitude) * scale * 0.045);
+                const brightness = 0.4 + 0.6 * Math.max(0, (magCutoff - star.magnitude) / magCutoff);
+
+                let color;
+                if (opts.showPolitical && colonized && star.nation_id && nationColor[star.nation_id]) {
+                    color = nationColor[star.nation_id];
+                } else {
+                    color = SPECTRAL_COLORS[star.spectral_class?.charAt(0)] || '#ffffff';
+                }
+
+                // Glow for named systems
+                if (colonized && star.fictional_name) {
+                    ctx.globalAlpha = 0.22;
+                    ctx.beginPath(); ctx.arc(px, py, radius * 3.5, 0, Math.PI * 2);
+                    ctx.fillStyle = color; ctx.fill();
+                }
+
+                ctx.globalAlpha = brightness;
+                ctx.beginPath(); ctx.arc(px, py, radius, 0, Math.PI * 2);
+                ctx.fillStyle = color; ctx.fill();
+                ctx.globalAlpha = 1;
+
+                // Label for named systems
+                if (colonized && star.fictional_name) {
+                    ctx.fillStyle = '#dde8ff';
+                    ctx.globalAlpha = 0.92;
+                    ctx.fillText(star.fictional_name, px + radius + 2, py - 2);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // ── Print overlays ──
+            _drawPrintOverlays(ctx, W, H, opts, nations, nationColor, scale);
+        }
+
+        function _drawPrintOverlays(ctx, W, H, opts, nations, nationColor, scale) {
+            const pad  = Math.max(12, W * 0.014);
+            const fs   = Math.max(11, W / 130);   // base font size
+
+            // Title bar
+            ctx.fillStyle = 'rgba(4,4,18,0.78)';
+            ctx.fillRect(0, 0, W, fs * 3.8);
+
+            ctx.fillStyle   = '#e8eeff';
+            ctx.font        = `bold ${fs * 1.85}px Georgia, serif`;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign   = 'left';
+            ctx.fillText(opts.title, pad, fs * 1.9);
+
+            const subtitle = opts.year
+                ? `In-universe year ${opts.year}  ·  Felgenland Saga`
+                : 'Felgenland Saga';
+            ctx.fillStyle = '#8899bb';
+            ctx.font      = `${fs * 0.88}px sans-serif`;
+            ctx.fillText(subtitle, pad, fs * 3.3);
+
+            // Scale bar (bottom-left)
+            if (opts.showScaleBar) {
+                const barLen = 10 * scale;          // 10 ly in pixels
+                const barY   = H - pad - fs * 2;
+                const barX   = pad;
+                const lw     = Math.max(1, W / 1500);
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth   = lw;
+                // Horizontal bar
+                ctx.beginPath();
+                ctx.moveTo(barX, barY); ctx.lineTo(barX + barLen, barY);
+                // End ticks
+                ctx.moveTo(barX, barY - fs * 0.4); ctx.lineTo(barX, barY + fs * 0.4);
+                ctx.moveTo(barX + barLen, barY - fs * 0.4); ctx.lineTo(barX + barLen, barY + fs * 0.4);
+                ctx.stroke();
+
+                ctx.fillStyle    = '#ffffff';
+                ctx.font         = `${fs * 0.82}px sans-serif`;
+                ctx.textBaseline = 'top';
+                ctx.fillText('10 ly', barX, barY + fs * 0.5);
+            }
+
+            // Nation legend (bottom-right)
+            if (opts.showLegend && nations.length) {
+                const active = nations.filter(n => {
+                    if (!opts.year) return true;
+                    return (n.era_start == null || opts.year >= n.era_start) &&
+                           (n.era_end   == null || opts.year <= n.era_end);
+                });
+                if (active.length) {
+                    const legW = Math.max(160, W * 0.19);
+                    const entH = fs * 1.65;
+                    const legH = entH * (active.length + 1) + pad * 0.8;
+                    const legX = W - legW - pad;
+                    const legY = H - legH - pad;
+
+                    ctx.fillStyle   = 'rgba(4,4,18,0.82)';
+                    ctx.fillRect(legX - pad * 0.4, legY - pad * 0.4, legW + pad * 0.8, legH + pad * 0.8);
+                    ctx.strokeStyle = 'rgba(90,110,190,0.35)';
+                    ctx.lineWidth   = 1;
+                    ctx.strokeRect(legX - pad * 0.4, legY - pad * 0.4, legW + pad * 0.8, legH + pad * 0.8);
+
+                    ctx.fillStyle    = '#99aacc';
+                    ctx.font         = `bold ${fs * 0.78}px sans-serif`;
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign    = 'left';
+                    ctx.fillText('NATIONS', legX, legY + entH * 0.5);
+
+                    active.forEach((n, i) => {
+                        const color = nationColor[n._id || n.id] || '#888';
+                        const ey    = legY + entH * (i + 1.5);
+                        ctx.fillStyle = color;
+                        ctx.beginPath(); ctx.arc(legX + fs * 0.6, ey, fs * 0.5, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = '#dde0f0';
+                        ctx.font      = `${fs * 0.72}px sans-serif`;
+                        ctx.fillText(n.name, legX + fs * 1.5, ey);
+                    });
+                }
+            }
+
+            // Attribution (bottom-center)
+            ctx.fillStyle    = 'rgba(100,120,160,0.55)';
+            ctx.font         = `${fs * 0.62}px sans-serif`;
+            ctx.textBaseline = 'bottom';
+            ctx.textAlign    = 'center';
+            ctx.fillText('Felgenland Saga · Starmap Tool · Generated for creative use', W / 2, H - 3);
+
+            ctx.textAlign    = 'left';
+            ctx.textBaseline = 'alphabetic';
+        }
+
+        // ── PNG export ────────────────────────────────────────────────────────
+
+        function generatePrintPNG() {
+            if (!threejsStarmap?.currentStars) return;
+            const opts = getPrintOptions();
+            const res  = PRINT_RESOLUTIONS[opts.resolution] || PRINT_RESOLUTIONS['4K'];
+
+            const canvas = document.createElement('canvas');
+            canvas.width  = res.w;
+            canvas.height = res.h;
+            renderPrintCanvas(canvas, opts);
+
+            canvas.toBlob(blob => {
+                const url  = URL.createObjectURL(blob);
+                const slug = opts.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                const year = opts.year || 'all-eras';
+                const a = document.createElement('a');
+                a.href     = url;
+                a.download = `starmap-${slug}-${year}-${opts.resolution.toLowerCase()}.png`;
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                if (navigator.clipboard) navigator.clipboard.writeText(_markupSnippets(opts, a.download));
+                _showExportBanner(`✅ ${opts.resolution} PNG exported. Markup copied to clipboard.`);
+            }, 'image/png');
+        }
+
+        // ── SVG export ────────────────────────────────────────────────────────
+
+        function generatePrintSVG() {
+            if (!threejsStarmap?.currentStars) return;
+            const opts  = getPrintOptions();
+            const stars   = threejsStarmap.currentStars;
+            const nations = threejsStarmap.nations || [];
+            const year  = opts.year;
+            const r     = opts.viewRadius;
+            const W = 1200, H = 900;
+            const magCutoff = threejsStarmap.starMaterial?.uniforms?.uMagLimit?.value ?? 10;
+
+            const mapCX = threejsStarmap.controls?.target ? threejsStarmap.controls.target.x / 10 : 0;
+            const mapCZ = threejsStarmap.controls?.target ? threejsStarmap.controls.target.z / 10 : 0;
+            const scale = Math.min(W, H) / 2 / r;
+            const toSVG = (sx, sz) => [
+                (W / 2 + (sx - mapCX) * scale).toFixed(1),
+                (H / 2 - (sz - mapCZ) * scale).toFixed(1),
+            ];
+
+            const nationColor = {};
+            for (const n of nations) nationColor[n._id || n.id] = (n.appearance?.color) || n.color || '#888888';
+
+            const lines = [], circles = [], labels = [];
+
+            if (opts.showTrade && threejsStarmap.tradeRoutesGroup) {
+                threejsStarmap.tradeRoutesGroup.children.forEach(child => {
+                    if (!child.visible) return;
+                    const route = child.userData?.data;
+                    if (!route?.endpoints) return;
+                    const fs2 = stars.find(s => s.id === route.endpoints.from?.star_id);
+                    const ts2 = stars.find(s => s.id === route.endpoints.to?.star_id);
+                    if (!fs2 || !ts2) return;
+                    const [x1, y1] = toSVG(fs2.x, fs2.z);
+                    const [x2, y2] = toSVG(ts2.x, ts2.z);
+                    const pri = route.route_type === 'Primary Trade';
+                    lines.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${pri ? '#00ff88' : '#7080c0'}" stroke-opacity="${pri ? 0.6 : 0.3}" stroke-width="${pri ? 1.5 : 0.8}" stroke-dasharray="${pri ? '6,4' : '3,6'}"/>`);
+                });
+            }
+
+            for (const star of stars) {
+                if (star.magnitude > magCutoff) continue;
+                if (year != null) {
+                    if (star.era_start != null && year < star.era_start) continue;
+                    if (star.era_end   != null && year > star.era_end)   continue;
+                }
+                const [px, py] = toSVG(star.x, star.z);
+                if (parseFloat(px) < -30 || parseFloat(px) > W + 30) continue;
+                if (parseFloat(py) < -30 || parseFloat(py) > H + 30) continue;
+                const colonized = year == null || star.discovery_year == null || year >= star.discovery_year;
+                const rad = Math.max(0.8, (magCutoff - star.magnitude) * scale * 0.045).toFixed(1);
+                const color = (opts.showPolitical && colonized && star.nation_id && nationColor[star.nation_id])
+                    ? nationColor[star.nation_id]
+                    : (SPECTRAL_COLORS[star.spectral_class?.charAt(0)] || '#ffffff');
+                circles.push(`<circle cx="${px}" cy="${py}" r="${rad}" fill="${color}" opacity="0.88"/>`);
+                if (colonized && star.fictional_name) {
+                    const esc2 = star.fictional_name.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                    labels.push(`<text x="${(parseFloat(px) + parseFloat(rad) + 3).toFixed(1)}" y="${(parseFloat(py) - 1).toFixed(1)}" fill="#dde8ff" font-size="10" opacity="0.88">${esc2}</text>`);
+                }
+            }
+
+            const active = nations.filter(n => !year ||
+                ((n.era_start == null || year >= n.era_start) && (n.era_end == null || year <= n.era_end)));
+
+            let legend = '';
+            if (opts.showLegend && active.length) {
+                const lx = W - 195, ly = H - active.length * 18 - 50;
+                legend = `<rect x="${lx - 6}" y="${ly - 22}" width="194" height="${active.length * 18 + 34}" fill="rgba(4,4,18,0.82)" stroke="rgba(90,110,190,0.35)" stroke-width="1"/>
+<text x="${lx}" y="${ly}" fill="#99aacc" font-size="11" font-weight="bold">NATIONS</text>`;
+                active.forEach((n, i) => {
+                    const c = nationColor[n._id || n.id] || '#888';
+                    const nm = n.name.replace(/&/g, '&amp;');
+                    legend += `<circle cx="${lx + 6}" cy="${ly + 16 + i * 18}" r="5" fill="${c}"/>
+<text x="${lx + 16}" y="${ly + 20 + i * 18}" fill="#dde0f0" font-size="10">${nm}</text>`;
+                });
+            }
+
+            const barLen = (10 * scale).toFixed(1);
+            const scaleBar = opts.showScaleBar
+                ? `<line x1="18" y1="${H - 26}" x2="${(18 + parseFloat(barLen)).toFixed(1)}" y2="${H - 26}" stroke="white" stroke-width="2"/>
+<line x1="18" y1="${H - 31}" x2="18" y2="${H - 21}" stroke="white" stroke-width="2"/>
+<line x1="${(18 + parseFloat(barLen)).toFixed(1)}" y1="${H - 31}" x2="${(18 + parseFloat(barLen)).toFixed(1)}" y2="${H - 21}" stroke="white" stroke-width="2"/>
+<text x="20" y="${H - 9}" fill="white" font-size="10">10 ly</text>` : '';
+
+            const titleEsc = opts.title.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+            const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+  <rect width="${W}" height="${H}" fill="#050510"/>
+  <rect width="${W}" height="46" fill="rgba(4,4,18,0.78)"/>
+  <text x="${W / 2}" y="28" fill="#e8eeff" font-size="22" font-weight="bold" font-family="Georgia,serif" text-anchor="middle">${titleEsc}</text>
+  ${opts.year ? `<text x="${W / 2}" y="42" fill="#8899bb" font-size="11" text-anchor="middle">In-universe year ${opts.year} · Felgenland Saga</text>` : ''}
+  <g id="routes">${lines.join('')}</g>
+  <g id="stars">${circles.join('')}</g>
+  <g id="labels" font-family="sans-serif">${labels.join('')}</g>
+  ${scaleBar ? `<g id="scale">${scaleBar}</g>` : ''}
+  ${legend ? `<g id="legend" font-family="sans-serif">${legend}</g>` : ''}
+  <text x="${W / 2}" y="${H - 4}" fill="rgba(100,120,160,0.5)" font-size="9" text-anchor="middle" font-family="sans-serif">Felgenland Saga · Starmap Tool</text>
+</svg>`;
+
+            const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+            const url  = URL.createObjectURL(blob);
+            const slug = opts.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            const a = document.createElement('a');
+            a.href     = url;
+            a.download = `starmap-${slug}-${opts.year || 'all'}.svg`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            _showExportBanner('✅ SVG exported.');
+        }
+
+        // ── Markup snippets helper ────────────────────────────────────────────
+
+        function _markupSnippets(opts, filename) {
+            const caption = `${opts.title}${opts.year ? ` — Year ${opts.year}` : ''}`;
+            return `== DokuWiki ==\n{{:starmap:${filename}|${caption}}}\n\n== Markdown ==\n![${caption}](starmap/${filename})\n\n== Caption ==\n*${caption}* — Generated with the Felgenland Starmap tool.`;
+        }
+
+        function _showExportBanner(msg) {
+            const b = document.getElementById('wikiExportBanner');
+            if (b) { b.textContent = msg; b.style.display = 'block'; setTimeout(() => { b.style.display = 'none'; }, 5000); }
+        }
+
+        // ── Legacy wiki export (kept for backward compat) ─────────────────────
         function generateWikiMap() {
             if (!threejsStarmap) { alert('Starmap not ready yet.'); return; }
             const eraEl = document.getElementById('eraFilterToggle');

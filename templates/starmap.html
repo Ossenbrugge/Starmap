@@ -1566,7 +1566,9 @@
 
         function _markupSnippets(opts, filename) {
             const caption = `${opts.title}${opts.year ? ` — Year ${opts.year}` : ''}`;
-            return `== DokuWiki ==\n{{:starmap:${filename}|${caption}}}\n\n== Markdown ==\n![${caption}](starmap/${filename})\n\n== Caption ==\n*${caption}* — Generated with the Felgenland Starmap tool.`;
+            // Split {{ and }} so Jinja2 doesn't treat them as template expressions
+            const ob = '{{', cb = '}}';
+            return `== DokuWiki ==\n${ob}:starmap:${filename}|${caption}${cb}\n\n== Markdown ==\n![${caption}](starmap/${filename})\n\n== Caption ==\n*${caption}* — Generated with the Felgenland Starmap tool.`;
         }
 
         function _showExportBanner(msg) {

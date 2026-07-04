@@ -31,6 +31,22 @@ def get_nations() -> Dict[str, Any]:
         logger.error(f"Error in get_nations: {e}")
         return error_response("Failed to retrieve nations", 500)
 
+@nations_bp.route('/provinces')
+def get_provinces() -> Dict[str, Any]:
+    """Union provinces, optionally filtered by ?world= or ?star_id=."""
+    try:
+        from models.database import Database
+        db = Database()
+        rows = db.get_provinces(
+            world=request.args.get('world'),
+            star_id=request.args.get('star_id', type=int),
+        )
+        return success_response(rows, count=len(rows))
+    except Exception as e:
+        logger.error(f"Error in get_provinces: {e}")
+        return error_response("Failed to retrieve provinces", 500)
+
+
 @nations_bp.route('/nations/<nation_id>')
 @api_auth_required
 def get_nation_by_id(nation_id: str) -> Dict[str, Any]:

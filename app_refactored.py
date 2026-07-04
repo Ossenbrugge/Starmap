@@ -48,6 +48,14 @@ def create_app():
     # Apply security configuration
     app.config.update(auth_config_module.auth_config)
 
+    # Gzip/brotli compression — the 24k-star JSON payload shrinks ~5x.
+    # Optional so a dev env without the package still runs.
+    try:
+        from flask_compress import Compress
+        Compress(app)
+    except ImportError:
+        logger.info("flask-compress not installed — responses served uncompressed")
+
     # Apply security headers to every response
     @app.after_request
     def apply_security_headers(response):

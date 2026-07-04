@@ -1,0 +1,140 @@
+Province Number,Province Name,Dynasty Name,Centroid Latitude,Centroid Longitude,Area (km²),NE Latitude,NE Longitude,SW Latitude,SW Longitude,Population,Dynast Rank
+1,Kaiserstadt Administrative District,Machthaber,38.7,25.4,1500,39.2,25.9,38.2,24.9,15800000,Kaiser
+2,Glückstadt Salzknotenpunkt,Stahlberg,5.0,10.0,1600,5.5,10.5,4.5,9.5,16000000,Lord Mayor
+3,Hesse-am-Saltz,Saltz,38.7,25.4,1200000,39.2,25.9,38.2,24.9,3000000,High King
+4,Saltzenheim,Saltzenheim,5.0,20.0,1100000,5.5,20.5,4.5,19.5,2500000,King
+5,Austria Salzimperium,Habsburg,125.0,260.0,1080000,125.5,260.5,124.5,259.5,2600000,GrossHerzog
+6,Bavaria-am-Salzheim,Schlieffen,34.5,122.7,440000,35.0,123.2,34.0,122.2,40304000,GrossHerzog
+7,Brunswick Salzstadt,Bergmann,65.0,140.0,1080000,65.5,140.5,64.5,139.5,2600000,GrossHerzog
+8,Frankfurt Salzhafen,Kreuz,80.0,170.0,1070000,80.5,170.5,79.5,169.5,2700000,GrossHerzog
+9,Palatinate Salzpfalz,Rothenberg,155.0,320.0,1080000,155.5,320.5,154.5,319.5,2600000,GrossHerzog
+10,Saxony Salzherz,Vogel,20.0,50.0,1080000,20.5,50.5,19.5,49.5,2600000,GrossHerzog
+11,Havenknot Salzrand,Bremensburg,25.0,60.0,1150000,25.5,60.5,24.5,59.5,2200000,Herzog
+12,Jülich Salzherzog,Leubecker,145.0,300.0,1090000,145.5,300.5,144.5,299.5,2400000,Herzog
+13,Neuwied-im-Saltz,Neuwied-im-Saltz,10.0,30.0,1090000,10.5,30.5,9.5,29.5,2400000,Herzog
+14,Prussia Knotenpunkt Anordnung,Preussenheim,20.0,50.0,1090000,20.5,50.5,19.5,49.5,2400000,Herzog
+15,Saltzstadt-von-Freiburg,Freiburgheim,135.0,280.0,1090000,135.5,280.5,134.5,279.5,2400000,Herzog
+16,Saxony Matrix Knotenpunkt,Sachsenberg,50.0,110.0,1080000,50.5,110.5,49.5,109.5,2500000,Herzog
+17,Aachen Markierung Drehscheibe,Sternberg,65.0,140.0,1090000,65.5,140.5,64.5,139.5,2000000,Herzog
+18,Anhalt Grenzland Gitter,Wolfsburg,70.0,150.0,1120000,70.5,150.5,69.5,149.5,1800000,Herzog
+19,Augsburg Knotenpunkt Kern,Ravensburg,75.0,160.0,1080000,75.5,160.5,74.5,159.5,2500000,Herzog
+20,Frankfurt Hafen Knotenpunkt,Frankenberg,110.0,230.0,1080000,110.5,230.5,109.5,229.5,2500000,Herzog
+21,Das Bruckland Salzfeld,Bruckner,15.0,40.0,1080000,15.5,40.5,14.5,39.5,2300000,Margrave
+22,Saltzenthal,Sternfahrer,20.0,50.0,1100000,20.5,50.5,19.5,49.5,2500000,Margrave
+23,Aachen Saltzdorf,Ritter,35.0,80.0,1100000,35.5,80.5,34.5,79.5,1900000,Margrave
+24,Anhalt Salzberg,Hohenberg,40.0,90.0,1120000,40.5,90.5,39.5,89.5,1800000,Margrave
+25,Augsburg-im-Saltz,Adler,45.0,100.0,1090000,45.5,100.5,44.5,99.5,2500000,Margrave
+26,Baden Rand Sektor,Hohenlohe,80.0,170.0,1130000,80.5,170.5,79.5,169.5,1800000,Margrave
+27,Baden Salzthal,Waldstein,50.0,110.0,1100000,50.5,110.5,49.5,109.5,2000000,Margrave
+28,Berg Kolonie Vorposten,Falkenstein,85.0,180.0,1120000,85.5,180.5,84.5,179.5,1800000,Margrave
+29,Berg Saltzkrone,Grunwald,55.0,120.0,1110000,55.5,120.5,54.5,119.5,1900000,Margrave
+30,Brandenburg Salzmark,Hohenzollern,60.0,130.0,1090000,60.5,130.5,59.5,129.5,2000000,Margrave
+31,Brandenburg Stadt Matrix,Wittelsbach,90.0,190.0,1090000,90.5,190.5,89.5,189.5,2000000,Margrave
+32,Brunswick Stadt Verbindung,Lüneburg,95.0,200.0,1100000,95.5,200.5,94.5,199.5,1900000,Margrave
+33,Aachen Saltzdorf,Ritter,35.0,80.0,1100000,35.5,80.5,34.5,79.5,1900000,Graf
+34,Anhalt Salzberg,Hohenberg,40.0,90.0,1120000,40.5,90.5,39.5,89.5,1800000,Graf
+35,Augsburg-im-Saltz,Adler,45.0,100.0,1090000,45.5,100.5,44.5,99.5,2500000,Graf
+36,Baden Salzthal,Waldstein,50.0,110.0,1100000,50.5,110.5,49.5,109.5,2000000,Graf
+37,Berg Saltzkrone,Grunwald,55.0,120.0,1110000,55.5,120.5,54.5,119.5,1900000,Graf
+38,Bohemia Salzgeschichte,Richter,90.0,190.0,1090000,90.5,190.5,89.5,189.5,2000000,Graf
+39,Bonn-Markierung Basis,Bonnheim,140.0,290.0,1100000,140.5,290.5,139.5,289.5,1900000,Graf
+40,Brandenburg Salzmark,Hohenzollern,60.0,130.0,1090000,60.5,130.5,59.5,129.5,2000000,Graf
+41,Burgenland Saltzfest,Fest,130.0,270.0,1100000,130.5,270.5,129.5,269.5,1900000,Graf
+42,Carinthia Salzgebirge,Stein,135.0,280.0,1120000,135.5,280.5,134.5,279.5,1800000,Graf
+43,Carniola Saltzjuwel,Juwel,140.0,290.0,1100000,140.5,290.5,139.5,289.5,1900000,Graf
+44,Cologne Rand Endstation,Bremer,100.0,210.0,1120000,100.5,210.5,99.5,209.5,1800000,Graf
+45,Cologne Salzfluss,Schwarz,70.0,150.0,1100000,70.5,150.5,69.5,149.5,2100000,Graf
+46,Darmstadt Basis Cluster,Darmstadt,105.0,220.0,1090000,105.5,220.5,104.5,219.5,2000000,Graf
+47,Darmstadt Saltzgrund,Müller,75.0,160.0,1090000,75.5,160.5,74.5,159.5,2000000,Graf
+48,Hanover Rand Anordnung,Hannover,115.0,240.0,1120000,115.5,240.5,114.5,239.5,1800000,Graf
+49,Hanover Salzweide,Krüger,85.0,180.0,1120000,85.5,180.5,84.5,179.5,1900000,Graf
+50,Hesse Markierung Station,Hessenberg,120.0,250.0,1130000,120.5,250.5,119.5,249.5,1800000,Graf
+51,Hesse Salzklippe,Schäfer,90.0,190.0,1150000,90.5,190.5,89.5,189.5,1800000,Graf
+52,Holstein Grenzland Drehscheibe,Holsteinburg,125.0,260.0,1120000,125.5,260.5,124.5,259.5,1800000,Graf
+53,Holstein Saltzmoor,Fischer,95.0,200.0,1130000,95.5,200.5,94.5,199.5,1700000,Graf
+54,Kassel Salzbach,Hartmann,100.0,210.0,1090000,100.5,210.5,99.5,209.5,2000000,Graf
+55,Kassel Sektor Gitter,Kasselheim,130.0,270.0,1110000,130.5,270.5,129.5,269.5,1800000,Graf
+56,Liechtenstein Kern Vorposten,Liechtenberg,135.0,280.0,1120000,135.5,280.5,134.5,279.5,1800000,Graf
+57,Liechtenstein Salzstein,Schmidt,105.0,220.0,1110000,105.5,220.5,104.5,219.5,1900000,Graf
+58,Lippe Matrix Stadt,Lippewald,140.0,290.0,1100000,140.5,290.5,139.5,289.5,1900000,Graf
+59,Lippe Saltzhügel,Weber,110.0,230.0,1100000,110.5,230.5,109.5,229.5,1900000,Graf
+60,Lorraine Endstation Rand,Lorrenheim,145.0,300.0,1120000,145.5,300.5,144.5,299.5,1800000,Graf
+61,Lorraine Salzgrenze,Krause,115.0,240.0,1150000,115.5,240.5,114.5,239.5,1800000,Graf
+62,Luxembourg Salzlicht,Augsberg,120.0,250.0,1080000,120.5,250.5,119.5,249.5,2100000,Graf
+63,Luxembourg Verbindung Knotenpunkt,Luxemburg,150.0,310.0,1090000,150.5,310.5,149.5,309.5,2000000,Graf
+64,Mainz Cluster Basis,Falkenberg,155.0,320.0,1100000,155.5,320.5,154.5,319.5,1900000,Graf
+65,Mainz Salztor,Steinholz,125.0,260.0,1090000,125.5,260.5,124.5,259.5,2000000,Graf
+66,Mecklenburg Anordnung Hafen,Mecklenheim,160.0,330.0,1110000,160.5,330.5,159.5,329.5,1900000,Graf
+67,Mecklenburg Saltzsee,Mackensen,130.0,270.0,1100000,130.5,270.5,129.5,269.5,1900000,Graf
+68,Montfort Rand Station,Montfort,165.0,340.0,1120000,165.5,340.5,164.5,339.5,1800000,Graf
+69,Moravia Saltzmärchen,Braun,95.0,200.0,1100000,95.5,200.5,94.5,199.5,1900000,Graf
+70,Nassau Gitter Kolonie,Nassauer,170.0,350.0,1130000,170.5,350.5,169.5,349.5,1800000,Graf
+71,Nassau Saltzbrücke,Holzhauser,140.0,290.0,1090000,140.5,290.5,139.5,289.5,2000000,Graf
+72,Nuremberg Drehscheibe Sektor,Nürnberger,175.0,0.0,1090000,175.5,0.5,174.5,-0.5,2000000,Graf
+73,Nuremberg Salzwerk,Neidermeyer,145.0,300.0,1080000,145.5,300.5,144.5,299.5,2100000,Graf
+74,Oldenburg Salzaltstadt,Lacheln,150.0,310.0,1090000,150.5,310.5,149.5,309.5,2000000,Graf
+75,Oldenburg Stadt Grenzland,Oldenheim,180.0,10.0,1100000,180.5,10.5,179.5,9.5,1900000,Graf
+76,Palatinate Kern Matrix,Pfalzheim,5.0,20.0,1090000,5.5,20.5,4.5,19.5,2000000,Graf
+77,Pomerania Endstation Vorposten,Pommernberg,10.0,30.0,1120000,10.5,30.5,9.5,29.5,1800000,Graf
+78,Pomerania Saltzstrand,Köhler,160.0,330.0,1100000,160.5,330.5,159.5,329.5,1900000,Graf
+79,Posen Salzacker,Tobias,165.0,340.0,1110000,165.5,340.5,164.5,339.5,1800000,Graf
+80,Posen Verbindung Rand,Posenheim,15.0,40.0,1130000,15.5,40.5,14.5,39.5,1800000,Graf
+81,Prussia Salzmacht,Andreas,170.0,350.0,1090000,170.5,350.5,169.5,349.5,2000000,Graf
+82,Regensburg Basis Cluster,Regensberg,25.0,60.0,1100000,25.5,60.5,24.5,59.5,1900000,Graf
+83,Regensburg Saltzfurt,Schuller,175.0,0.0,1100000,175.5,0.5,174.5,-0.5,1900000,Graf
+84,Reuss Hafen Gitter,Reussen,30.0,70.0,1110000,30.5,70.5,29.5,69.5,1800000,Graf
+85,Rhine Salzstrom,Schreiben,5.0,20.0,1080000,5.5,20.5,4.5,19.5,2100000,Graf
+86,Rhine Station Rand,Rheinwald,35.0,80.0,1120000,35.5,80.5,34.5,79.5,1800000,Graf
+87,Rhineland Kolonie Drehscheibe,Rheinheim,40.0,90.0,1100000,40.5,90.5,39.5,89.5,1900000,Graf
+88,Rhineland Saltzland,Lang,10.0,30.0,1090000,10.5,30.5,9.5,29.5,2000000,Graf
+89,Saarland Salzquelle,Zimmermann,15.0,40.0,1100000,15.5,40.5,14.5,39.5,1900000,Graf
+90,Saarland Sektor Stadt,Saarburg,45.0,100.0,1090000,45.5,100.5,44.5,99.5,2000000,Graf
+91,Salzburg-im-Saltz,Bergruber,100.0,210.0,1080000,100.5,210.5,99.5,209.5,2500000,Graf
+92,Salzbach Stadt,Bach,40.0,90.0,1100000,40.5,90.5,39.5,89.5,1900000,Graf
+93,Salzflur der Pfalz,Pfalz,150.0,310.0,1100000,150.5,310.5,149.5,309.5,1900000,Graf
+94,Salzfluss Sektor,Fluss,10.0,30.0,1100000,10.5,30.5,9.5,29.5,1900000,Graf
+95,Salzgrund Drehscheibe,Dreh,15.0,40.0,1090000,15.5,40.5,14.5,39.5,2000000,Graf
+96,Salzhafen Kolonie,Hafen,20.0,50.0,1100000,20.5,50.5,19.5,49.5,1900000,Graf
+97,Salzheim-am-Grenzgitter,Grenzgitter,115.0,240.0,1120000,115.5,240.5,114.5,239.5,1800000,Graf
+98,Salzkamm-im-Dunklen Sektor,Dunkelsektor,125.0,260.0,1120000,125.5,260.5,124.5,259.5,1800000,Graf
+99,Salzklippe Knotenpunkt,Klippe,30.0,70.0,1130000,30.5,70.5,29.5,69.5,1800000,Graf
+100,Salzlicht Hafen,Lichthafen,60.0,130.0,1100000,60.5,130.5,59.5,129.5,1900000,Graf
+101,Salzlichtstadt,Licht,155.0,320.0,1080000,155.5,320.5,154.5,319.5,2100000,Graf
+102,Salzmark Gitter,Gitter,180.0,10.0,1120000,180.5,10.5,179.5,9.5,1800000,Graf
+103,Salzmoor Vorposten,Hochthal,35.0,80.0,1120000,35.5,80.5,34.5,79.5,1800000,Graf
+104,Salzstadt Grenzland,Grenz,5.0,20.0,1090000,5.5,20.5,4.5,19.5,2000000,Graf
+105,Salzstein Basis,Steinmann,45.0,100.0,1110000,45.5,100.5,44.5,99.5,1800000,Graf
+106,Salzweide Rand,Rand,25.0,60.0,1120000,25.5,60.5,24.5,59.5,1800000,Graf
+107,Salzfurt-der-Neuen Kolonie,Neukolonie,120.0,250.0,1130000,120.5,250.5,119.5,249.5,1800000,Graf
+108,Salzkragenfeld,Feld,160.0,330.0,1110000,160.5,330.5,159.5,329.5,1900000,Graf
+109,Salzschimmerthal,Schimmer,170.0,350.0,1100000,170.5,350.5,169.5,349.5,1900000,Graf
+110,Silesia Gitter Basis,Schlesienberg,65.0,140.0,1120000,65.5,140.5,64.5,139.5,1800000,Graf
+111,Silesia Saltzschatten,Felk,35.0,80.0,1110000,35.5,80.5,34.5,79.5,1800000,Graf
+112,Speyer Cluster Hafen,Speyerheim,70.0,150.0,1100000,70.5,150.5,69.5,149.5,1900000,Graf
+113,Speyer Salzdom,Stahlgeist,40.0,90.0,1090000,40.5,90.5,39.5,89.5,2000000,Graf
+114,Styria Saltzeisen,Eisen,105.0,220.0,1120000,105.5,220.5,104.5,219.5,1800000,Graf
+115,Sudetenland Anordnung Station,Sudetenheim,75.0,160.0,1120000,75.5,160.5,74.5,159.5,1800000,Graf
+116,Sudetenland Saltzhöhe,Nochte,45.0,100.0,1120000,45.5,100.5,44.5,99.5,1800000,Graf
+117,Swabia Rand Kolonie,Schwabenheim,80.0,170.0,1130000,80.5,170.5,79.5,169.5,1800000,Graf
+118,Swabia Salztradition,Hohenstaufen,50.0,110.0,1100000,50.5,110.5,49.5,109.5,1900000,Graf
+119,Thuringia Drehscheibe Sektor,Thüringenheim,85.0,180.0,1090000,85.5,180.5,84.5,179.5,2000000,Graf
+120,Thuringia Salzwald,Eisenheim,55.0,120.0,1110000,55.5,120.5,54.5,119.5,1900000,Graf
+121,Trier Salztempel,Schwarzwald,60.0,130.0,1090000,60.5,130.5,59.5,129.5,2000000,Graf
+122,Trier Stadt Matrix,Trierheim,90.0,190.0,1100000,90.5,190.5,89.5,189.5,1900000,Graf
+123,Tübingen-Kern Station,Tübingenheim,145.0,300.0,1120000,145.5,300.5,144.5,299.5,1800000,Graf
+124,Tyrol Salzalp,Sturm,110.0,230.0,1130000,110.5,230.5,109.5,229.5,1900000,Graf
+125,Ulm Endstation Knotenpunkt,Ulmberg,95.0,200.0,1120000,95.5,200.5,94.5,199.5,1800000,Graf
+126,Vorarlberg Saltzpanorama,Falke,115.0,240.0,1100000,115.5,240.5,114.5,239.5,1900000,Graf
+127,Vorpommern Salzküste,Meer,120.0,250.0,1110000,120.5,250.5,119.5,249.5,1800000,Graf
+128,Waldeck Rand Gitter,Waldeckheim,100.0,210.0,1130000,100.5,210.5,99.5,209.5,1800000,Graf
+129,Westphalia Grenzland Basis,Westfalenheim,105.0,220.0,1120000,105.5,220.5,104.5,219.5,1800000,Graf
+130,Westphalia Saltzfriede,Hoch,75.0,160.0,1100000,75.5,160.5,74.5,159.5,1900000,Graf
+131,Württemberg Markierung Stadt,Württembergheim,110.0,230.0,1100000,110.5,230.5,109.5,229.5,1900000,Graf
+132,Württemberg Salzkrone,Becker,80.0,170.0,1090000,80.5,170.5,79.5,169.5,2000000,Graf
+133,Würzburg Saltzwein,Meier,85.0,180.0,1100000,85.5,180.5,84.5,179.5,1900000,Graf
+134,Montfort Salzfestung,Steinbach,135.0,280.0,1120000,135.5,280.5,134.5,279.5,1500000,Lord Governor
+135,Reuss Salzklein,Waldheim,180.0,10.0,1120000,180.5,10.5,179.5,9.5,1500000,Lord Governor
+136,Salzbrunn-am-Harten Rand,Hartenrand,130.0,270.0,1130000,130.5,270.5,129.5,269.5,1500000,Lord Governor
+137,Salzheim Markierung,Mark,175.0,0.0,1130000,175.5,0.5,174.5,-0.5,1500000,Lord Governor
+138,Salzweissenburg,Weiss,165.0,340.0,1120000,165.5,340.5,164.5,339.5,1500000,Lord Governor
+139,Waldeck Salzklamm,Kliest,70.0,150.0,1130000,70.5,150.5,69.5,149.5,1500000,Lord Governor

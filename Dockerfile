@@ -11,4 +11,7 @@ ENV FLASK_APP=app_refactored.py
 
 EXPOSE 8080
 
-CMD ["python", "app_refactored.py"]
+# Production WSGI server; app_refactored exposes `app` at module level.
+# Workers=2/threads=4: the SQLite Database singleton is per-process and its
+# lock serializes queries, so a couple of threaded workers is the sweet spot.
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "60", "app_refactored:app"]

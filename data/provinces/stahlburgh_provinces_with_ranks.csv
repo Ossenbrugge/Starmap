@@ -1,0 +1,65 @@
+Province Number,Province Name,Dynasty Name,Centroid Latitude (°N),Centroid Longitude (°E),Area (km²),NE Latitude (°N),NE Longitude (°E),SW Latitude (°N),SW Longitude (°E),Population,Dynast Rank
+0,Bundstadt Administrative District,von Kessler,5.2,12.7,2827,5.68,13.18,4.72,12.22,12600000,Lord Mayor
+1,Gilbraith-on-Heather,Fraser,1,-60,3321362,7.5,-53.5,-5.5,-66.5,3000000,Herzog
+2,The Skye Isles,MacDonald,62.5,35.7,10600000,67.5,42.2,57.5,29.2,21000000,Great King
+3,Inveraray and the Argylle Islands,Campbell,45,-10,100000,45.5,-9.5,44.5,-10.5,5000000,King
+4,Huntly-on-the-Aberdeen,Gordon,2,-58,500000,4.5,-55.5,-0.5,-60.5,10000000,GrossHerzog
+5,Cambusmore-on-the-Stirling,Buchanan,0,0,2000000,6.5,6.5,-6.5,-6.5,1750000,GrossHerzog
+6,Neuwest-Silesia-on-Meer,von Heugel,10,10,2100000,16.5,16.5,3.5,3.5,1800000,Margrave
+7,Greiff-im-Wald,von Machthaber,6.8,25.5,2083523,13.3,32,-0.2,19,667000,GrossHerzog
+8,Valley of the First Farmers,MacDonald,8.5,15.3,3200,8.51,15.31,8.49,15.29,85000,Lord Governor
+9,Chemnitz-on-the-Zschopau,Bauerhof,15,20,1250000,20,25,10,15,1000000,Graf
+10,Haldersmere,Bosdottir (von Saltzenheim),5.5,13.5,3000,5.99,13.99,5.01,13.01,100000,GrossHerzog
+11,New Aberdeenshire,MacInnes,25,40,1500000,30.5,45.5,19.5,34.5,1200000,Graf
+12,Saint Andrews-on-the-Kinness,MacTaggart,30,50,1750000,35.5,55.5,24.5,44.5,1400000,Herzog
+13,Argyll-on-Loch Fyne,MacNair,28,-20,2000000,34.5,-13.5,21.5,-26.5,1750000,Graf
+14,Ayrshire-on-the-Clyde,MacBride,26,-30,2250000,32.5,-23.5,19.5,-36.5,2000000,Graf
+15,Bute-on-the-Firth,MacDoughall,24,-40,2500000,30.5,-33.5,17.5,-46.5,2250000,Margrave
+16,Clackmannanshire-on-the-Forth,MacRory,22,-50,2750000,28.5,-43.5,15.5,-56.5,2500000,Margrave
+17,Dumfries-on-the-Nith,MacDiarmid,20,-60,3000000,26.5,-53.5,13.5,-66.5,2750000,Herzog
+18,Dunbartonshire-on-New Lomond,MacAulay,18,-70,3250000,24.5,-63.5,11.5,-76.5,3000000,Herzog
+19,Dundee-on-the-Tay Estuary,Ross,16,-80,2000000,22.5,-73.5,9.5,-86.5,1750000,Graf
+20,Edinburgh-on-the-Forth,MacCorquodale,14,-90,1750000,20.5,-83.5,7.5,-96.5,1400000,Herzog
+21,Falkirk-on-the-Carron,MacKintyre,12,-100,1500000,18.5,-93.5,5.5,-106.5,1200000,Graf
+22,Fife-on-the-Eden,MacLeod,10,-110,1250000,16.5,-103.5,3.5,-116.5,1000000,Lord Governor
+23,Galloway-on-the-Cree,MacNiven,8,-120,2000000,14.5,-113.5,1.5,-126.5,1750000,Graf
+24,Glasgow-on-the-Second Clyde,MacBheathain,6,-130,2250000,12.5,-123.5,-0.5,-136.5,2000000,Herzog
+25,Berwich-on-the East Plains,MacGowan,4,-140,2500000,10.5,-133.5,-2.5,-146.5,2250000,Margrave
+26,Inverclyde-on-the-Gryfe,MacIntosh,2,-150,2750000,8.5,-143.5,-4.5,-156.5,2500000,Margrave
+27,Kinross-on-New Leven,MacFadden,0,-160,3000000,6.5,-153.5,-6.5,-166.5,2750000,Herzog
+28,Lanarkshire-on-the-Avon,MacLaren,-2,-170,3250000,4.5,-163.5,-8.5,-176.5,3000000,Herzog
+29,Lothian-on-the-Almond,MacEwan,-4,-180,2000000,2.5,-173.5,-10.5,-186.5,1750000,Graf
+30,Midlothian-on-the-Esk,MacGregor,-6,170,1750000,0.5,176.5,-12.5,163.5,1400000,Graf
+31,Moray-on-the-Spey,MacNeil,-8,160,1500000,-1.5,166.5,-14.5,153.5,1200000,Graf
+32,Orkney Isles-on-the-Scapa Flow,MacKinnon,-10,150,1250000,-3.5,156.5,-16.5,143.5,1000000,Lord Governor
+33,Perth-on-the-Tay River,MacFarlane,-12,140,2000000,-5.5,146.5,-18.5,133.5,1750000,Graf
+34,Renfrewshire-on-the-Cart,MacAlister,-14,130,2250000,-7.5,136.5,-20.5,123.5,2000000,Graf
+35,Shetland Islands-on-the-North Ocean,MacPhee,-16,120,2500000,-9.5,126.5,-22.5,113.5,2250000,Margrave
+36,Isles of Paradise-on-the-Nordmeer,MacVicar,-18,110,2750000,-11.5,116.5,-24.5,103.5,2500000,Margrave
+37,Frankfurt-am-Windkamm,von Wettin,-20,100,3000000,-13.5,106.5,-26.5,93.5,2750000,Herzog
+38,München-am-Wildklamm,von Stahlgeist,-22,90,3250000,-15.5,96.5,-28.5,83.5,3000000,Herzog
+39,Berlin-im-Dunkelwald,von Falkenhayn,-24,80,2000000,-17.5,86.5,-30.5,73.5,1750000,Graf
+40,Osnabrück-am-Felsgrat,von Lang,-26,70,1750000,-19.5,76.5,-32.5,63.5,1400000,Graf
+41,Leipzig-am-Schneeberg,von Hohenzollern,-28,60,1500000,-21.5,66.5,-34.5,53.5,1200000,Graf
+42,Ulm-am-Eisfluss,von Wittelsbach,-30,50,1250000,-23.5,56.5,-36.5,43.5,1000000,Lord Governor
+43,Karlsruhe-im-Steinhang,von Obersturmheim,30,60,2000000,36.5,66.5,23.5,53.5,1750000,Graf
+44,Regensburg-am-Kaltengrat,von Schwarz,28,70,2250000,34.5,76.5,21.5,63.5,2000000,Graf
+45,Köln-im-Nebeltal,von Hartmann,26,80,2500000,32.5,86.5,19.5,73.5,2250000,Margrave
+46,Darmstadt-am-Frostgipfel,von Müller,24,90,2750000,30.5,96.5,17.5,83.5,2500000,Margrave
+47,Lübeck-am-Sturmsee,von Schultz,22,100,3000000,28.5,106.5,15.5,93.5,2750000,Herzog
+48,Bremen-am-Sturmhang,von Nordlinger,20,110,3250000,26.5,116.5,13.5,103.5,3000000,Herzog
+49,Bremen-im-Eiswald,von Schäfer,18,120,2000000,24.5,126.5,11.5,113.5,1750000,Graf
+50,Kassel-am-Rauhplateau,von Fischer,16,130,1750000,22.5,136.5,9.5,123.5,1400000,Graf
+51,Stuttgart-im-Felsental,von Keller,14,140,1500000,20.5,146.5,7.5,133.5,1200000,Lord Governor
+52,Dortmund-am-Wildbach,von Neidermeyer,12,150,1250000,18.5,156.5,5.5,143.5,1000000,Lord Governor
+53,Mainz-im-Schattenberg,von Sachsen,10,160,2000000,16.5,166.5,3.5,153.5,1750000,Graf
+54,Düsseldorf-am-Kliffgrat,von Hoch,8,170,2250000,14.5,176.5,1.5,163.5,2000000,Graf
+55,Nürnberg-im-Dornwald,von Becker,6,180,2500000,12.5,186.5,-0.5,173.5,2250000,Margrave
+56,Oldenburg-am-Eishang,von Meier,4,-170,2750000,10.5,-163.5,-2.5,-176.5,2500000,Margrave
+57,Dresden-am-Sturmfels,von Richter,2,-160,3000000,8.5,-153.5,-4.5,-166.5,2750000,Herzog
+58,Dortmund-am-Gletscherkamm,von Braun,0,-150,3250000,6.5,-143.5,-6.5,-156.5,3000000,Herzog
+59,Erfurt-im-Wintertal,von König,-2,-140,2000000,4.5,-133.5,-8.5,-146.5,1750000,Graf
+60,Wiesbaden-am-Frostklamm,von Frost,-4,-130,1750000,2.5,-123.5,-10.5,-136.5,1400000,Graf
+61,Kilmarnock-on-the-Irvine,MacBain,-6,-120,1500000,0.5,-113.5,-12.5,-126.5,1200000,Graf
+62,Elgin-on-the-Lossie,MacKay,-8,-110,1250000,-1.5,-103.5,-14.5,-116.5,1000000,Lord Governor
+63,Heidelberg-am-Eisgrat,von Donau,-10,-100,2000000,-3.5,-93.5,-16.5,-106.5,1750000,Graf

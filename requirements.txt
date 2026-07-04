@@ -1,5 +1,6 @@
 Flask==3.0.0
 Werkzeug==3.0.1
-montydb==2.5.3
 Flask-Login==0.6.3
+Flask-Compress==1.15
 PyJWT==2.9.0
+gunicorn==22.0.0

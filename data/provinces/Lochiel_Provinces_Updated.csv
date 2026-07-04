@@ -1,0 +1,62 @@
+Province Number,Province Name,Dynasty Name,Centroid Latitude,Centroid Longitude,Area (km²),NE Coordinates,SW Coordinates,Population,Dynast Rank
+1,Kildromey,Strass,50.0N,5.0W,4500000,52.5N 2.5W,47.5N 7.5W,1600000,Margrave
+2,Galway Rogue Reef,O’Driscoll,51.0N,6.0W,4300000,53.4N 3.6W,48.6N 8.4W,1550000,Margrave
+3,Dublin Cutlass Cove,O’Sullivan,53.0N,7.0W,4200000,55.3N 4.7W,50.7N 9.3W,1500000,Margrave
+4,Cork Brigantine Harbor,O’Malley,52.0N,8.0W,4100000,54.2N 5.8W,49.8N 10.2W,1450000,Margrave
+5,Limerick Plunder Bay,O’Shea,54.0N,9.0W,4000000,56.1N 6.9W,51.9N 11.1W,1400000,Margrave
+6,Edinburgh Sea-Wolf Bay,MacLean,55.0N,3.0E,3500000,57.0N 5.0E,53.0N 1.0E,1300000,Graf
+7,Glasgow Ironclad Inlet,MacKintyre,56.0N,4.0W,3500000,58.0N 2.0W,54.0N 6.0W,1300000,Graf
+8,Aberdeen Dreadnought Isles,MacTavis,57.0N,2.0W,3400000,59.0N 0.0E,55.0N 4.0W,1250000,Graf
+9,Stirling Nexus Neap Tide,MacLaren,56.0N,3.0W,3400000,58.0N 1.0W,54.0N 5.0W,1250000,Graf
+10,Lothian Orbital Outlaw Bay,MacPhee,55.0N,2.0E,3300000,57.0N 4.0E,53.0N 0.0E,1200000,Graf
+11,Falkirk Flintlock Harbor,MacEwan,56.0N,1.0W,3300000,58.0N 1.0E,54.0N 3.0W,1200000,Graf
+12,Kerry Starport Strait,O’Flaherty,52.0N,10.0W,3200000,54.0N 8.0W,50.0N 12.0W,1150000,Graf
+13,Sligo Nova Nautical Haven,MacDonagh,54.0N,8.0W,3200000,56.0N 6.0W,52.0N 10.0W,1150000,Graf
+14,Mayo Grid Galleon,Burke,53.0N,9.0W,3100000,55.0N 7.0W,51.0N 11.0W,1100000,Graf
+15,O’Connell’s Blackwater Isles,O’Connell,51.0N,7.0W,3100000,53.0N 5.0W,49.0N 9.0W,1100000,Graf
+16,Dundee Kraken Cove,MacLeod,56.0N,3.0E,3000000,58.0N 5.0E,54.0N 1.0E,1100000,Graf
+17,Stockholm Dreki-Dock Cove,Skoglund,59.0N,18.0E,3000000,61.0N 20.0E,57.0N 16.0E,1050000,Graf
+18,Bergen Fjord-Fury Harbor,Larsen,60.0N,5.0E,2900000,62.0N 7.0E,58.0N 3.0E,1050000,Graf
+19,Oslo Vik-Viper Islands,Nordvik,59.0N,10.0E,2900000,61.0N 12.0E,57.0N 8.0E,1050000,Graf
+20,Göteborg Longship Lagoon,Lindholm,57.0N,11.0E,2800000,59.0N 13.0E,55.0N 9.0E,1000000,Graf
+21,Copenhagen Sea-Raider Reef,Sorenson,55.0N,12.0E,2800000,57.0N 14.0E,53.0N 10.0E,1000000,Graf
+22,Sydney Outback Outlaw Islands,Thompson,33.0S,151.0E,2700000,31.0S 153.0E,35.0S 149.0E,1000000,Graf
+23,Hobart Tasman-Terror Harbor,Harris,42.0S,147.0E,2700000,40.0S 149.0E,44.0S 145.0E,1000000,Graf
+24,Auckland Maori-Marauder Isles,Smith,36.0S,174.0E,2600000,34.0S 176.0E,38.0S 172.0E,950000,Graf
+25,Gold Coast Grog-Grid Lagoon,Cooper,28.0S,153.0E,2600000,26.0S 155.0E,30.0S 151.0E,950000,Graf
+26,Hamilton Taniwha-Tide Harbor,Young,37.0S,175.0E,2500000,35.0S 177.0E,39.0S 173.0E,950000,Graf
+27,Galveston Starboard-Station Harbor,Nelson,29.0N,94.0W,2500000,31.0N 92.0W,27.0N 96.0W,950000,Graf
+28,Boston Liberty-Loot Islands,Johnson,42.0N,71.0W,2400000,44.0N 69.0W,40.0N 73.0W,900000,Graf
+29,Charleston Privateer Port,Davis,32.0N,79.0W,2400000,34.0N 77.0W,30.0N 81.0W,900000,Graf
+30,Perth Down-Under Dread Reef,Ashwood,31.0S,115.0E,2300000,29.0S 117.0E,33.0S 113.0E,900000,Graf
+31,Adelaide Matey’s Mooring,Clark,34.0S,138.0E,2300000,32.0S 140.0E,36.0S 136.0E,900000,Graf
+32,Shannon Buccaneer Islands,O’Brien,52.0N,9.0W,1000000,52.9N 8.1W,51.1N 9.9W,1000000,Lord Governor
+33,Kilkenny Scoundrel Shoal,Walsh,52.0N,7.0W,1000000,52.9N 6.1W,51.1N 7.9W,950000,Lord Governor
+34,Donegal Marauder Lagoon,Doherty,54.0N,8.0W,950000,54.8N 7.2W,53.2N 8.8W,950000,Lord Governor
+35,Louth Corsair Atoll,Byrne,53.0N,6.0W,950000,53.8N 5.2W,52.2N 6.8W,950000,Lord Governor
+36,Perth Rumrunner Reef,MacFarlane,56.0N,3.0W,900000,56.8N 2.2W,55.2N 3.8W,900000,Lord Governor
+37,Inverclyde Scallywag Islands,MacGregor,55.0N,4.0W,900000,55.8N 3.2W,54.2N 4.8W,900000,Lord Governor
+38,Fife Sabre Shoal,MacKinnon,56.0N,2.0W,850000,56.7N 1.3W,55.3N 2.7W,900000,Lord Governor
+39,Ayr Blackbeard Lagoon,MacAlister,55.0N,4.0W,850000,55.7N 3.3W,54.3N 4.7W,900000,Lord Governor
+40,Moray Stormship Atoll,MacNeil,57.0N,3.0W,800000,57.7N 2.3W,56.3N 3.7W,900000,Lord Governor
+41,Uppsala Blackflag Bay,Bergstrom,59.0N,17.0E,800000,59.7N 17.7E,58.3N 16.3E,850000,Lord Governor
+42,Reykjavik Ice-Pirate Isles,Sigurdsson,64.0N,21.0W,750000,64.6N 20.4W,63.4N 21.6W,850000,Lord Governor
+43,Melbourne Dingo-Deck Cove,Grayson,37.0S,144.0E,750000,36.4S 144.6E,37.6S 143.4E,850000,Lord Governor
+44,Brisbane Bushranger Bay,Haverford,27.0S,153.0E,700000,26.4S 153.6E,27.6S 152.4E,850000,Lord Governor
+45,Wellington Kiwi-Knave Cove,Jones,41.0S,174.0E,700000,40.4S 174.6E,41.6S 173.4E,850000,Lord Governor
+46,Christchurch Shearwater Bay,King,43.0S,172.0E,650000,42.4S 172.6E,43.6S 171.4E,850000,Lord Governor
+47,Dunedin Haka-Haven Reef,Wright,45.0S,170.0E,650000,44.4S 170.6E,45.6S 169.4E,850000,Lord Governor
+48,Skaggston Isle,MacInnes,55.0N,6.0W,400000,55.4N 5.6W,54.6N 6.4W,850000,Lord Mayor
+49,Thackeray Shire,Thackeray,29.0N,95.0W,400000,29.4N 94.6W,28.6N 95.4W,850000,Lord Mayor
+50,Trondheim Raider’s Rest,Olsen,63.0N,10.0E,300000,63.3N 10.3E,62.7N 9.7E,800000,Lord Mayor
+51,Stavanger Stormvessel Shoal,Pedersen,58.0N,5.0E,300000,58.3N 5.3E,57.7N 4.7E,800000,Lord Mayor
+52,Waterford Shamrock-Skull Isles,Ryan,52.0N,7.0W,250000,52.3N 6.7W,51.7N 7.3W,800000,Lord Mayor
+53,Darwin Digger-Dreadnought Bay,Campbell,12.0S,130.0E,250000,11.7S 130.3E,12.3S 129.7E,800000,Lord Mayor
+54,Cairns Coral-Cutlass Shoal,Walker,16.0S,145.0E,200000,16.2S 145.2E,15.8S 144.8E,750000,Lord Mayor
+55,Newport Rum-Runner Bay,Durand,41.0N,71.0W,200000,41.2N 70.8W,40.8N 71.2W,750000,Lord Mayor
+56,Portland Anchor-Array Cove,Lee,45.0N,122.0W,150000,45.2N 121.8W,44.8N 122.2W,750000,Lord Mayor
+57,Key West Coral-Corsair Reef,Adams,24.0N,81.0W,150000,24.2N 80.8W,23.8N 81.2W,750000,Lord Mayor
+58,Savannah Seafarer’s Scourge,Moore,32.0N,81.0W,100000,32.1N 80.9W,31.9N 81.1W,700000,Lord Mayor
+59,Nantucket Nova-Nautilus Shoal,Parker,41.0N,70.0W,100000,41.1N 69.9W,40.9N 70.1W,700000,Lord Mayor
+60,Seattle Starship-Scurvy Islands,Thackeray,47.0N,122.0W,7000,47.1N 121.9W,46.9N 122.1W,700000,Lord Mayor
+61,Tauranga Moana-Mutiny Shoal,Allen,37.0S,176.0E,7000,37.1S 176.1E,36.9S 175.9E,700000,Lord Mayor

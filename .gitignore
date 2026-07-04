@@ -162,3 +162,10 @@ installation_log.txt
 # Flask-Specific
 instance/
 .webassets-cache
+
+# Quarantined legacy files (delete _attic/ when confident nothing is missed)
+_attic/
+
+# SQLite sidecar files
+*.sqlite-shm
+*.sqlite-wal

@@ -244,6 +244,8 @@
                                 <div class="d-flex align-items-center gap-1 mt-1">
                                     <button id="eraPlayBtn" class="btn btn-outline-warning btn-sm py-0 px-2"
                                             onclick="toggleEraPlayback()" title="Play the timeline (auto-enables era filter)">▶</button>
+                                    <button id="eraTourBtn" class="btn btn-outline-info btn-sm py-0 px-2"
+                                            onclick="toggleEraTour()" title="Guided tour: fly through galactic history event by event">🎬</button>
                                     <select id="eraPlaySpeed" class="form-select form-select-sm py-0"
                                             style="width:auto;font-size:0.7rem;" title="Playback speed">
                                         <option value="5">5 yr/s</option>
@@ -583,7 +585,8 @@
             <div class="help-row"><span class="help-key">Ctrl+/</span><span>Focus search bar</span></div>
             <hr style="border-color:#334;margin:12px 0;">
             <div style="font-size:0.78rem;color:#888;">
-                <b style="color:#a0c4ff;">Era slider:</b> drag to travel through history, or press ▶ to watch it unfold.
+                <b style="color:#a0c4ff;">Era slider:</b> drag to travel through history, press ▶ to watch it unfold,
+                or 🎬 for a guided tour that flies to each event (Esc stops it).
                 Markers below the slider are historical events — click one for details.
                 The <span style="color:#cc6666;">red band</span> marks the Union–Directorate War (2352–2357).<br>
                 <b style="color:#a0c4ff;">★ Capital</b> button flies to a nation's capital star.<br>
@@ -693,14 +696,54 @@
         </div>
     </div>
 
+    <!-- Province Browser Modal -->
+    <div class="modal fade" id="provinceBrowserModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="background:#0d0d2a;border:1px solid #334;color:#ccc;">
+                <div class="modal-header py-2" style="border-bottom:1px solid #334">
+                    <h6 class="modal-title text-info">🏙 Provinces of the Felgenland Union</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-2">
+                    <div class="d-flex gap-1 flex-wrap mb-2" id="provinceWorldTabs"></div>
+                    <input id="provinceSearch" class="form-control form-control-sm mb-2"
+                           placeholder="Search province or dynasty…" oninput="renderProvinceTable()">
+                    <div style="max-height:52vh;overflow-y:auto;">
+                        <table class="table table-dark table-sm table-hover mb-1" style="font-size:0.78rem">
+                            <thead style="position:sticky;top:0;background:#10102a;z-index:1;"><tr>
+                                <th style="width:2.2rem">#</th><th>Province</th><th>Dynasty</th><th>Rank</th>
+                                <th class="text-end">Population</th><th class="text-end">Area km²</th>
+                            </tr></thead>
+                            <tbody id="provinceTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="provinceSummary" class="small text-muted mt-1"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- System Map panel -->
     <div id="systemMapPanel">
         <div class="panel-header">
             <span id="systemMapTitle" class="small fw-bold text-info">System Map</span>
+            <span class="d-flex align-items-center gap-1 ms-auto me-2">
+                <button id="sysMapPauseBtn" onclick="sysMapTogglePause()"
+                        class="btn btn-outline-warning btn-sm py-0 px-2"
+                        title="Pause / resume orbits (hovering a world also pauses)">⏸</button>
+                <select id="sysMapSpeed" class="form-select form-select-sm py-0"
+                        style="width:auto;font-size:0.7rem;" title="Orbit speed">
+                    <option value="0.25">Slow</option>
+                    <option value="1" selected>Normal</option>
+                    <option value="3">Fast</option>
+                </select>
+            </span>
             <button onclick="closeSystemMap()" class="btn-close btn-close-white btn-sm"></button>
         </div>
         <canvas id="systemMapCanvas" width="398" height="280"></canvas>
-        <div id="systemMapInfo" class="px-3 py-1" style="font-size:0.75rem;color:#888;border-top:1px solid #334;min-height:28px;"></div>
+        <!-- Fixed height: the panel is bottom-anchored, so a growing info bar
+             would push the whole map upward ("jumping" on hover) -->
+        <div id="systemMapInfo" class="px-3 py-1" style="font-size:0.75rem;color:#888;border-top:1px solid #334;height:96px;overflow-y:auto;"></div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -866,8 +909,15 @@
 
         // ── Historical events ───────────────────────────────────────────────
         const ERA_MIN = 2170, ERA_MAX = 3000;
-        const EVENT_GLYPHS = { war:'⚔', founding:'★', colonization:'⬡', exodus:'🔥', era:'✦' };
-        const EVENT_COLORS = { war:'#e06c5f', founding:'#f0ad4e', colonization:'#7fb3d5', exodus:'#ff8c42', era:'#b07fd5' };
+        const EVENT_GLYPHS = {
+            war:'⚔', battle:'⚔', founding:'★', colonization:'⬡', exodus:'🔥', era:'✦',
+            treaty:'🕊', election:'🗳', religious:'✝', disaster:'☄', political:'◆', contact:'👁',
+        };
+        const EVENT_COLORS = {
+            war:'#e06c5f', battle:'#e06c5f', founding:'#f0ad4e', colonization:'#7fb3d5',
+            exodus:'#ff8c42', era:'#b07fd5', treaty:'#8fd48f', election:'#e8d56f',
+            religious:'#d5b8ff', disaster:'#ff9d9d', political:'#9fb6d9', contact:'#7fd9d9',
+        };
         let allEvents = [];
         let tickerYear = null;   // year behind the ticker text (click → details)
 
@@ -882,52 +932,78 @@
             } catch (e) { console.warn('events load failed', e); }
         }
 
+        // Glyph priority when a cluster mixes event types
+        const EVENT_SIGNIFICANCE = ['founding','war','battle','treaty','exodus','era',
+                                    'political','religious','election','disaster','contact','colonization'];
+
         function renderEventMarkers() {
             const strip = document.getElementById('eraEventMarkers');
             if (!strip) return;
             strip.querySelectorAll('.era-event-marker').forEach(el => el.remove());
 
-            // One marker per year; a year's most significant event picks the glyph
+            // Group events by year, position on the slider scale (pre-2170
+            // events clamp to the left edge), then greedily merge years that
+            // would collide into cluster markers.
             const byYear = new Map();
             allEvents.forEach(ev => {
                 if (!byYear.has(ev.year)) byYear.set(ev.year, []);
                 byYear.get(ev.year).push(ev);
             });
+            const years = [...byYear.entries()]
+                .sort((a, b) => a[0] - b[0])
+                .map(([year, evs]) => ({
+                    year, evs,
+                    pct: Math.max(0, Math.min(100, (year - ERA_MIN) / (ERA_MAX - ERA_MIN) * 100)),
+                }));
+
+            const clusters = [];
+            for (const y of years) {
+                const last = clusters[clusters.length - 1];
+                if (last && (y.pct - last.startPct) < 3.2) {
+                    last.years.push(y);
+                } else {
+                    clusters.push({ startPct: y.pct, years: [y] });
+                }
+            }
+
             let i = 0;
-            for (const [year, evs] of [...byYear.entries()].sort((a, b) => a[0] - b[0])) {
-                const pct = (year - ERA_MIN) / (ERA_MAX - ERA_MIN) * 100;
-                const primary = evs.find(e => e.event_type !== 'colonization') || evs[0];
+            for (const cl of clusters) {
+                const evs = cl.years.flatMap(y => y.evs);
+                const minY = cl.years[0].year, maxY = cl.years[cl.years.length - 1].year;
+                const pct = cl.years.reduce((s, y) => s + y.pct, 0) / cl.years.length;
+                const primary = [...evs].sort((a, b) =>
+                    EVENT_SIGNIFICANCE.indexOf(a.event_type) - EVENT_SIGNIFICANCE.indexOf(b.event_type))[0];
+                const glyph = EVENT_GLYPHS[primary.event_type] || '•';
+
                 const el = document.createElement('span');
                 el.className = 'era-event-marker';
-                el.textContent = EVENT_GLYPHS[primary.event_type] || '•';
+                el.textContent = evs.length > 1 ? `${glyph}${evs.length}` : glyph;
                 el.style.cssText =
                     `position:absolute;left:${pct}%;top:${i % 2 ? 16 : 1}px;` +
-                    `transform:translateX(-50%);font-size:9px;line-height:1;` +
+                    `transform:translateX(-50%);font-size:9px;line-height:1;white-space:nowrap;` +
                     `color:${EVENT_COLORS[primary.event_type] || '#aaa'};` +
                     `cursor:pointer;pointer-events:auto;`;
                 el.title = evs.map(e => `${e.year}${e.end_year ? '–' + e.end_year : ''} — ${e.title}`).join('\n');
-                el.onclick = () => showEventsAt(year);
+                el.onclick = () => (minY === maxY ? showEventsAt(minY) : showEventsRange(minY, maxY));
                 strip.appendChild(el);
                 i++;
             }
         }
 
-        function showEventsAt(year) {
-            // Jump the era filter to the event year
+        function _jumpEraTo(year) {
             const tog = document.getElementById('eraFilterToggle');
             const slider = document.getElementById('eraSlider');
             if (tog && !tog.checked) { tog.checked = true; slider.disabled = false; }
-            slider.value = year;
+            slider.value = year;   // clamps to slider range for pre-2170 events
             onEraChange(year);
+        }
 
+        function _renderEventCard(header, evs) {
             const card = document.getElementById('eraEventCard');
-            const evs = allEvents.filter(e =>
-                e.year === year || (e.end_year != null && year >= e.year && year <= e.end_year));
             if (!card || !evs.length) return;
-
             card.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <strong style="font-size:0.72rem;color:#cfae60;">Year ${year}</strong>
+                    <strong style="font-size:0.72rem;color:#cfae60;">${esc(header)}</strong>
                     <button class="btn-close btn-close-white" style="font-size:0.55rem;"
                             onclick="hideEventCard()"></button>
                 </div>` +
@@ -943,6 +1019,21 @@
                         onclick="flyToEventStar(${Number(ev.star_id)})">📍 Fly to system</button>` : ''}
                 </div>`).join('');
             card.style.display = 'block';
+        }
+
+        function showEventsAt(year) {
+            _jumpEraTo(year);
+            const evs = allEvents.filter(e =>
+                e.year === year || (e.end_year != null && year >= e.year && year <= e.end_year));
+            _renderEventCard(`Year ${year}`, evs);
+        }
+
+        function showEventsRange(y1, y2) {
+            _jumpEraTo(y2);
+            const evs = allEvents
+                .filter(e => e.year >= y1 && e.year <= y2)
+                .sort((a, b) => a.year - b.year);
+            _renderEventCard(`Years ${y1}–${y2}`, evs);
         }
 
         function hideEventCard() {
@@ -984,6 +1075,7 @@
 
         function toggleEraPlayback() {
             if (eraPlayback) { stopEraPlayback(); return; }
+            if (typeof stopEraTour === 'function') stopEraTour();
             const tog = document.getElementById('eraFilterToggle');
             const slider = document.getElementById('eraSlider');
             if (!tog.checked) { tog.checked = true; slider.disabled = false; }
@@ -1016,11 +1108,88 @@
 
         function stopEraPlayback() {
             if (!eraPlayback) return;
-            if (eraPlayback.raf) cancelAnimationFrame(eraPlayback.raf);
+            if (eraPlayback.timer) clearInterval(eraPlayback.timer);
             eraPlayback = null;
             const btn = document.getElementById('eraPlayBtn');
             if (btn) btn.textContent = '▶';
             updateUrl();   // one history entry for the final position
+        }
+
+        // ── Cinematic tour: step through history, flying to each event ──────
+        let eraTour = null;   // {stops, idx, timer, saved}
+
+        function toggleEraTour() {
+            if (eraTour) { stopEraTour(); return; }
+            if (!allEvents.length) return;
+            stopEraPlayback();
+
+            const politicalEl = document.getElementById('politicalViewToggle');
+            const tradeEl = document.getElementById('tradeRoutesOverlay');
+            eraTour = {
+                stops: [...new Set(allEvents.map(e => e.year))].sort((a, b) => a - b),
+                idx: 0, timer: null,
+                saved: {   // view state to restore when the tour ends
+                    political: politicalEl?.checked ?? false,
+                    trade: tradeEl?.checked ?? true,
+                },
+            };
+
+            // Storytelling defaults while touring: political colors + routes on
+            if (politicalEl && !politicalEl.checked) { politicalEl.checked = true; togglePoliticalView(true); }
+            if (tradeEl && !tradeEl.checked) { tradeEl.checked = true; updateOverlays(); }
+            const tog = document.getElementById('eraFilterToggle');
+            const slider = document.getElementById('eraSlider');
+            tog.checked = true; slider.disabled = false;
+
+            const btn = document.getElementById('eraTourBtn');
+            btn.textContent = '⏹'; btn.title = 'Stop the tour';
+            _tourStep();
+        }
+
+        function _tourStep() {
+            if (!eraTour) return;
+            if (eraTour.idx >= eraTour.stops.length) { stopEraTour(); return; }
+            const year = eraTour.stops[eraTour.idx];
+
+            showEventsAt(year);   // moves slider, applies era, opens the event card
+
+            // Ticker becomes the tour progress line (after showEventsAt rewrites it)
+            const t = document.getElementById('eraEventTicker');
+            if (t) {
+                t.style.display = 'block';
+                t.innerHTML = `🎬 Tour ${eraTour.idx + 1}/${eraTour.stops.length} — Year ${year}`;
+            }
+
+            // Fly to the first event of the year that has a system attached
+            const ev = allEvents.find(e => e.year === year && e.star_id != null);
+            const star = ev && threejsStarmap?.currentStars.find(s => s.id === ev.star_id);
+            if (star) {
+                threejsStarmap.highlightStar(star);
+                threejsStarmap.flyToStar(star, 60);
+            }
+
+            eraTour.idx++;
+            eraTour.timer = setTimeout(_tourStep, 6000);
+        }
+
+        function stopEraTour() {
+            if (!eraTour) return;
+            clearTimeout(eraTour.timer);
+            const saved = eraTour.saved;
+            eraTour = null;
+            const btn = document.getElementById('eraTourBtn');
+            if (btn) { btn.textContent = '🎬'; btn.title = 'Guided tour: fly through galactic history event by event'; }
+            hideEventCard();
+            // Restore the pre-tour view state (era stays at the last stop)
+            const politicalEl = document.getElementById('politicalViewToggle');
+            if (politicalEl && politicalEl.checked !== saved.political) {
+                politicalEl.checked = saved.political; togglePoliticalView(saved.political);
+            }
+            const tradeEl = document.getElementById('tradeRoutesOverlay');
+            if (tradeEl && tradeEl.checked !== saved.trade) {
+                tradeEl.checked = saved.trade; updateOverlays();
+            }
+            updateUrl();
         }
 
         // ── Era filter ──────────────────────────────────────────────────────
@@ -1032,6 +1201,7 @@
                 onEraChange(slider.value);
             } else {
                 stopEraPlayback();
+                stopEraTour();
                 label.textContent = 'All Eras';
                 if (threejsStarmap) threejsStarmap.filterByEra(null);
                 updateEventTicker(null);
@@ -2152,6 +2322,20 @@
                     <small class="text-muted d-block mb-1">${esc(nation.government?.type || nation.government_type || '')}</small>
                     ${eraLine}
                     <p class="small mb-2" style="font-size:0.75rem">${esc(nation.description || '')}</p>
+                    ${[['🏛', 'Capital', nation.lore?.capital_city],
+                       ['👥', 'Population', nation.lore?.population],
+                       ['🪙', 'Currency', nation.lore?.currency],
+                       ['⚖', 'Economy', nation.lore?.economy_summary],
+                       ['🛡', 'Military', nation.lore?.military_summary]]
+                        .filter(([,, v]) => v)
+                        .map(([icon, label, v]) => `
+                        <div class="mb-1" style="font-size:0.72rem">
+                            <span title="${label}">${icon}</span>
+                            <span class="text-muted">${label}:</span> ${esc(v)}
+                        </div>`).join('')}
+                    ${(nation._id || nation.id) === 'felgenland_union' ? `
+                        <button class="btn btn-outline-warning btn-sm w-100 mb-2" style="font-size:0.72rem"
+                                onclick="openProvinceBrowser()">🏙 Province Browser (331 provinces)</button>` : ''}
                     ${territories.length ? `<div class="mb-1"><strong class="small">Key Systems (${territories.length})</strong></div>` : ''}
                     ${territories.map(t => `
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -2236,6 +2420,66 @@
                     navInfo.setAttribute('value', '🌌 Felgenland Starfield — Use mouse/WASD — Click stars for details');
                 }, 5000);
             }
+        }
+
+        // ── Province Browser ─────────────────────────────────────────────────
+        let allProvinces = null;          // fetched once
+        let provinceWorld = 'Stahlburgh'; // active world tab
+
+        window.openProvinceBrowser = async function(world) {
+            if (!allProvinces) {
+                try {
+                    const r = await fetch('/api/v1/provinces');
+                    const d = await r.json();
+                    if (d.success) allProvinces = d.data;
+                } catch (e) { console.warn('provinces load failed', e); return; }
+            }
+            if (!allProvinces?.length) return;
+            const worlds = [...new Set(allProvinces.map(p => p.world))];
+            provinceWorld = (world && worlds.includes(world)) ? world : worlds[0];
+            document.getElementById('provinceSearch').value = '';
+            renderProvinceTabs();
+            renderProvinceTable();
+            new bootstrap.Modal(document.getElementById('provinceBrowserModal')).show();
+        };
+
+        function renderProvinceTabs() {
+            const tabs = document.getElementById('provinceWorldTabs');
+            const worlds = [...new Set(allProvinces.map(p => p.world))];
+            tabs.innerHTML = worlds.map(w => {
+                const n = allProvinces.filter(p => p.world === w).length;
+                const active = w === provinceWorld;
+                return `<button class="btn btn-sm ${active ? 'btn-info' : 'btn-outline-secondary'}"
+                    style="font-size:0.72rem" onclick="provinceWorld=${JSON.stringify(w)};renderProvinceTabs();renderProvinceTable();">
+                    ${esc(w)} <span class="opacity-75">${n}</span></button>`;
+            }).join('');
+        }
+
+        function renderProvinceTable() {
+            const body = document.getElementById('provinceTableBody');
+            const q = (document.getElementById('provinceSearch').value || '').toLowerCase().trim();
+            let rows = allProvinces.filter(p => p.world === provinceWorld);
+            if (q) rows = rows.filter(p =>
+                (p.name || '').toLowerCase().includes(q) ||
+                (p.dynasty || '').toLowerCase().includes(q) ||
+                (p.dynast_rank || '').toLowerCase().includes(q));
+
+            body.innerHTML = rows.map(p => `
+                <tr title="${p.notes ? esc(p.notes) : ''}">
+                    <td class="text-muted">${p.province_number ?? ''}</td>
+                    <td>${esc(p.name)}</td>
+                    <td class="text-info">${esc(p.dynasty || '—')}</td>
+                    <td class="text-warning" style="font-size:0.72rem">${esc(p.dynast_rank || '—')}</td>
+                    <td class="text-end">${p.population != null ? p.population.toLocaleString() : '—'}</td>
+                    <td class="text-end text-muted">${p.area_km2 != null ? p.area_km2.toLocaleString() : '—'}</td>
+                </tr>`).join('') ||
+                `<tr><td colspan="6" class="text-muted">No provinces match "${esc(q)}"</td></tr>`;
+
+            const pop = rows.reduce((s, p) => s + (p.population || 0), 0);
+            document.getElementById('provinceSummary').textContent =
+                `${rows.length} province${rows.length !== 1 ? 's' : ''}` +
+                (pop ? ` · population ${pop.toLocaleString()}` : '') +
+                (q ? ` (filtered from ${allProvinces.filter(p => p.world === provinceWorld).length})` : '');
         }
 
         // Fly to a star by id (used by route-details endpoint buttons)
@@ -2344,8 +2588,11 @@
                 star, canvas, W, H, planets, moons, bodies, radiusOf,
                 hzIn, hzOut, lo, hi, L, sp,
                 t: 0, last: performance.now(), raf: null,
-                hover: null, selected: null, hit: [],
+                hover: null, selected: null, hit: [], paused: false,
             };
+
+            const pauseBtn = document.getElementById('sysMapPauseBtn');
+            if (pauseBtn) pauseBtn.textContent = '⏸';
 
             _sysWireCanvas();
             _sysUpdateInfo();
@@ -2353,12 +2600,24 @@
             const tick = () => {
                 if (!sysMap) return;
                 const now = performance.now();
-                sysMap.t += Math.min((now - sysMap.last) / 1000, 0.1);
+                // Freeze while paused OR while the mouse is over a world —
+                // no more chasing Mercury with the cursor.
+                if (!sysMap.paused && !sysMap.hover) {
+                    const mult = parseFloat(document.getElementById('sysMapSpeed')?.value) || 1;
+                    sysMap.t += Math.min((now - sysMap.last) / 1000, 0.1) * mult;
+                }
                 sysMap.last = now;
                 drawSystemFrame();
                 sysMap.raf = requestAnimationFrame(tick);
             };
             sysMap.raf = requestAnimationFrame(tick);
+        }
+
+        function sysMapTogglePause() {
+            if (!sysMap) return;
+            sysMap.paused = !sysMap.paused;
+            const btn = document.getElementById('sysMapPauseBtn');
+            if (btn) btn.textContent = sysMap.paused ? '▶' : '⏸';
         }
 
         function stopSystemMap() {
@@ -2400,8 +2659,6 @@
         function _sysUpdateInfo() {
             if (!sysMap) return;
             const info = document.getElementById('systemMapInfo');
-            info.style.maxHeight = '110px';
-            info.style.overflowY = 'auto';
             const p = sysMap.selected || sysMap.hover;
             if (p) {
                 const sma = p.semi_major_axis_au || p.orbit;
@@ -2663,6 +2920,7 @@
             if (e.key === 'Escape') {
                 const ov = document.getElementById('helpOverlay');
                 if (ov.style.display === 'flex') { closeHelp(); return; }
+                if (eraTour) { stopEraTour(); return; }
             }
             // Shortcut: P = political view, T = trade routes, N = nations, R = reset
             if (e.key === 'p' || e.key === 'P') {

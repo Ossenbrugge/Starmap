@@ -1,0 +1,53 @@
+Province Number,Province Name,Dynasty Name,Centroid Latitude,Centroid Longitude,Area (km²),NE Coordinates,SW Coordinates,Population,Dynast Rank
+1,Emerald Hills-on-the-Cork,O’Cruadhlaoich,45.0N,10.0E,3500000,47.0N 12.0E,43.0N 8.0E,1500000,Duke
+2,Galway-on-the-Meer,MacCarthy,50.0N,5.0W,3200000,52.0N 3.0W,48.0N 7.0W,1400000,Marquess
+3,Dún Ruadh-on-Dubh-Gorm,O’Riordan,48.0N,8.0W,3000000,50.0N 6.0W,46.0N 10.0W,1350000,Margrave
+4,Limerick-am-Wyrmstrom,O’Shea,52.0N,8.0W,2800000,54.0N 6.0W,50.0N 10.0W,1300000,Margrave
+5,Hamburgh-on-the-Neu-Rhone,Vogelstein,53.0N,10.0E,2500000,55.0N 12.0E,51.0N 8.0E,1250000,Graf
+6,Edinburgh-am-Dunklen Fluss,MacTavis,55.0N,3.0E,2500000,57.0N 5.0E,53.0N 1.0E,1250000,Graf
+7,Wien-im-Dunklen Urwald,Habsburg,48.0N,16.0E,2500000,50.0N 18.0E,46.0N 14.0E,1200000,Graf
+8,Frankfurt-am-Wyrmfluss,Steinbach,50.0N,8.0E,2500000,52.0N 10.0E,48.0N 6.0E,1200000,Graf
+9,Oslo-im-Grünen Dschungel,Nordvik,59.0N,10.0E,2000000,60.5N 11.5E,57.5N 8.5E,1150000,Graf
+10,Stockholm-im-Wyrmwald,Skoglund,59.0N,18.0E,2000000,60.5N 19.5E,57.5N 16.5E,1150000,Graf
+11,Kyoto-no-Ryu Mori,Tanaka,35.0N,135.0E,2000000,36.5N 136.5E,33.5N 133.5E,1150000,Graf
+12,Fukuoka-no-Ryu Gawa,Nakamura,33.0N,130.0E,2000000,34.5N 131.5E,31.5N 128.5E,1150000,Graf
+13,Niigata-no-Ryu Tal,Mori,37.0N,138.0E,1800000,38.4N 139.4E,35.6N 136.6E,1100000,Graf
+14,Nagano-no-Ryu Kante,Ito,36.0N,138.0E,1800000,37.4N 139.4E,34.6N 136.6E,1100000,Graf
+15,Dublin-am-Smaragdmoor,O’Flaherty,53.0N,6.0W,1800000,54.4N 4.6W,51.6N 7.4W,1100000,Graf
+16,Paris-in-der-Wilden Forêt,Dubois,48.0N,2.0E,1800000,49.4N 3.4E,46.6N 0.6E,1100000,Graf
+17,Marseille-sur-le-Vert Abîme,Renault,43.0N,5.0E,1600000,44.3N 6.3E,41.7N 3.7E,1050000,Graf
+18,Genf-am-Drachensee,Keller,46.0N,6.0E,1600000,47.3N 7.3E,44.7N 4.7E,1050000,Graf
+19,Warszawa-am-Dichten Dorn,Nowak,52.0N,21.0E,1600000,53.3N 22.3E,50.7N 19.7E,1050000,Graf
+20,Gdańsk-in-der-Grünen Festung,Wiśniewski,54.0N,18.0E,1600000,55.3N 19.3E,52.7N 16.7E,1050000,Graf
+21,Kobe-na-Grüne Barriere,Inoue,34.0N,135.0E,1500000,35.2N 136.2E,32.8N 133.8E,1000000,Graf
+22,Manchester-am-Dragonmoor,Grayson,53.0N,2.0W,1500000,54.2N 0.8W,51.8N 3.2W,1000000,Graf
+23,München-am-Drachenfels,Rudel,47.0N,11.0E,1500000,48.2N 12.2E,45.8N 9.8E,1000000,Graf
+24,Lyon-am-Draquebach,Durand,45.0N,4.0E,1500000,46.2N 5.2E,43.8N 2.8E,1000000,Graf
+25,Zürich-am-Steilen Dschungelhang,Weber,47.0N,8.0E,1400000,48.1N 9.1E,45.9N 6.9E,950000,Graf
+26,Salzburg-am-Harten Grat,Eisenhart,47.0N,13.0E,1400000,48.1N 14.1E,45.9N 11.9E,950000,Graf
+27,Kraków-im-Wyrmschatten,Kowalski,50.0N,19.0E,1400000,51.1N 20.1E,48.9N 17.9E,950000,Graf
+28,Poznań-am-Harten Ufer,Lewandowski,52.0N,16.0E,1400000,53.1N 17.1E,50.9N 14.9E,950000,Graf
+29,Osaka-na-Dschungel Kante,Yamamoto,34.0N,135.0E,1400000,35.1N 136.1E,32.9N 133.9E,950000,Graf
+30,Sapporo-no-Drachen Höhle,Suzuki,43.0N,141.0E,1400000,44.1N 142.1E,41.9N 139.9E,950000,Graf
+31,Hiroshima-na-Dichte Ranke,Kobayashi,34.0N,132.0E,1400000,35.1N 133.1E,32.9N 130.9E,950000,Graf
+32,Yokohama-no-Drachen Nest,Yamaguchi,35.0N,139.0E,1400000,36.1N 140.1E,33.9N 137.9E,950000,Graf
+33,Kanazawa-na-Dschungel Festung,Hashimoto,36.0N,136.0E,1200000,37.0N 137.0E,35.0N 135.0E,900000,Graf
+34,Matsuyama-no-Dschungel Rand,Ishii,33.0N,132.0E,1200000,34.0N 133.0E,32.0N 131.0E,900000,Graf
+35,Liverpool-in-the-Verdant Maze,Haverford,53.0N,3.0W,1200000,54.0N 2.0W,52.0N 4.0W,900000,Graf
+36,Belfast-on-the-Harsh Lagoon,O’Malley,54.0N,5.0W,1200000,55.0N 4.0W,53.0N 6.0W,900000,Graf
+37,Malmö-im-Dreki-Dschungel,Bergstrom,55.0N,13.0E,1200000,56.0N 14.0E,54.0N 12.0E,900000,Graf
+38,Strasbourg-in-der-Eisernen Forêt,Schmidt,48.0N,7.0E,1200000,49.0N 8.0E,47.0N 6.0E,900000,Graf
+39,Nagoya-na-Wilde Sumpfbucht,Takahashi,35.0N,136.0E,1000000,35.9N 136.9E,34.1N 135.1E,900000,Graf
+40,Sendai-no-Harte Lichtung,Saito,38.0N,140.0E,1000000,38.9N 140.9E,37.1N 139.1E,900000,Graf
+41,Nara-no-Wyrmschutz,Shimizu,34.0N,135.0E,1000000,34.9N 135.9E,33.1N 134.1E,900000,Graf
+42,Okayama-na-Harte Lichtung,Hayashi,34.0N,133.0E,1000000,34.9N 133.9E,33.1N 132.1E,900000,Graf
+43,Copenhagen-in-the-Green Gauntlet,Sorenson,55.0N,12.0E,1000000,55.9N 12.9E,54.1N 11.1E,900000,Graf
+44,Dresden-am-Wilden Drachengrat,Wolfrath,51.0N,13.0E,1000000,51.9N 13.9E,50.1N 12.1E,900000,Graf
+45,Cardiff-am-Drachenhang,Evans,51.0N,3.0W,1000000,51.9N 2.1W,50.1N 3.9W,900000,Graf
+46,Göteborg-am-Drekibach,Lindholm,57.0N,11.0E,1000000,57.9N 11.9E,56.1N 10.1E,900000,Graf
+47,Tokyo-no-Unyielding Yama,Sato,35.0N,139.0E,900000,35.8N 139.8E,34.2N 138.2E,850000,Lord Governor
+48,Swansea-im-Dichten Sumpf,Davies,51.0N,4.0W,7000,51.1N 3.9W,50.9N 4.1W,850000,Lord Governor
+49,Bern-in-der-Wilden Schlucht,Feldmann,46.0N,7.0E,7000,46.1N 7.1E,45.9N 6.9E,850000,Lord Governor
+50,Innsbruck-in-der-Drachenklamm,Stromberg,47.0N,11.0E,7000,47.1N 11.1E,46.9N 10.9E,850000,Lord Governor
+51,Łódź-im-Wilden Dickicht,Zieliński,51.0N,19.0E,7000,51.1N 19.1E,50.9N 18.9E,850000,Lord Governor
+52,Bristol-in-the-Iron Thicket,Ashwood,51.0N,2.0W,7000,51.1N 1.9W,50.9N 2.1W,850000,Lord Governor

@@ -321,7 +321,16 @@ class Database:
         nation["capital"] = {
             "system": nation.get("full_name", "").replace("The ", "") or nation["name"],
             "star_id": nation.get("capital_star_id"),
-            "planet": "",
+            "planet": nation.get("capital_city") or "",
+        }
+        # Lore fields (added by scripts/migrate_nation_lore.py; may be absent
+        # on an un-migrated DB — .get() keeps the payload shape stable)
+        nation["lore"] = {
+            "population":       nation.get("population"),
+            "capital_city":     nation.get("capital_city"),
+            "currency":         nation.get("currency"),
+            "economy_summary":  nation.get("economy_summary"),
+            "military_summary": nation.get("military_summary"),
         }
         nation["era_start"] = nation.get("era_start")
         nation["era_end"] = nation.get("era_end")
@@ -437,6 +446,26 @@ class Database:
                 "SELECT star_id, nation_id, era_start, era_end "
                 "FROM star_ownership ORDER BY star_id, era_start"
             )
+        except sqlite3.OperationalError:
+            return []
+
+    def get_provinces(self, world: Optional[str] = None,
+                      star_id: Optional[int] = None) -> List[Dict]:
+        """Union provinces (table built by scripts/import_provinces.py)."""
+        sql = "SELECT * FROM provinces"
+        clauses: List[str] = []
+        params: List[Any] = []
+        if world:
+            clauses.append("world = ?")
+            params.append(world)
+        if star_id is not None:
+            clauses.append("star_id = ?")
+            params.append(star_id)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY world, province_number"
+        try:
+            return self._q(sql, tuple(params))
         except sqlite3.OperationalError:
             return []
 

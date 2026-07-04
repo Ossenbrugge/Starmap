@@ -893,6 +893,16 @@ class ThreeJSStarmap {
             html += `</div>`;
         }
 
+        // Province browser shortcuts for Union worlds hosted at this star
+        const PROVINCE_WORLDS = { 48941: ['Stahlburgh', 'Eisenwald'], 46945: ['Hansaburgh'], 999999: ['Brandstadt'] };
+        const hostedWorlds = PROVINCE_WORLDS[star.id];
+        if (hostedWorlds && window.openProvinceBrowser) {
+            html += `<div class="mt-2 d-flex gap-1 flex-wrap">` + hostedWorlds.map(w =>
+                `<button class="btn btn-sm btn-outline-warning py-0" style="font-size:0.7rem"
+                     onclick='window.openProvinceBrowser(${JSON.stringify(w)})'>🏙 ${w} Provinces</button>`
+            ).join('') + `</div>`;
+        }
+
         // System map + star ID row
         html += `
         <div class="mt-2 d-flex justify-content-between align-items-center">
@@ -1250,12 +1260,14 @@ class ThreeJSStarmap {
     }
 
     createSingleStarTerritory(nation, star, color) {
-        // Create a sphere around single star with larger radius
-        let sphereRadius = 3.0; // Increased base radius
+        // Influence sphere around a single-system nation. Needs to read at
+        // galaxy zoom next to the multi-star boundaries, so ~2.4 pc radius
+        // (stars are plotted at 10 units/pc).
+        let sphereRadius = 16.0;
 
-        // Special handling for specific nations to show their greater influence
+        // Slightly larger for full interstellar polities vs trade outposts
         if (nation._id === 'protelani_republic' || nation._id === 'dorsai_republic') {
-            sphereRadius *= 2.0; // Double the sphere size for these nations
+            sphereRadius = 24.0;
         }
 
         const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
@@ -1363,6 +1375,27 @@ class ThreeJSStarmap {
         }
     }
 
+    /**
+     * Visual style for a trade route: color follows the controlling nation,
+     * dash rhythm and flow speed follow the route's role —
+     * military supply lines pulse fast and staccato, bulk logistics crawl.
+     */
+    _routeStyle(route) {
+        const nation = this.nations.find(n => (n._id || n.id) === route.nation_id);
+        const hex = nation ? ((nation.appearance && nation.appearance.color) || nation.color) : null;
+        const color = (hex && /^#[0-9A-Fa-f]{6}$/.test(hex)) ? parseInt(hex.slice(1), 16) : 0x888888;
+
+        const t = route.route_type || '';
+        if (/Military|Defense/.test(t)) {
+            return { color, dashSize: 2, gapSize: 2, opacity: 0.9, flowSpeed: 14 };
+        }
+        if (/Primary|Internal|Colonial|Neutral|Multi/.test(t)) {
+            return { color, dashSize: 4, gapSize: 2, opacity: 0.8, flowSpeed: 8 };
+        }
+        // Supply / mining / frontier / administrative logistics
+        return { color, dashSize: 3, gapSize: 3.5, opacity: 0.55, flowSpeed: 3.5 };
+    }
+
     createTradeRoutesOverlay(routes) {
         // Clear existing trade route objects
         while (this.tradeRoutesGroup.children.length > 0) {
@@ -1385,14 +1418,14 @@ class ThreeJSStarmap {
 
                     const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-                    // Animated dashed lines — dashOffset updated each frame in animate()
-                    const isPrimary = route.route_type === 'Primary Trade';
+                    // Style: color = controlling nation, dash rhythm + flow speed = route class
+                    const style = this._routeStyle(route);
                     const material = new THREE.LineDashedMaterial({
-                        color: isPrimary ? 0x00ff88 : 0x888888,
-                        dashSize: isPrimary ? 4 : 3,
-                        gapSize:  isPrimary ? 2 : 3,
+                        color: style.color,
+                        dashSize: style.dashSize,
+                        gapSize:  style.gapSize,
                         transparent: true,
-                        opacity: isPrimary ? 0.85 : 0.55,
+                        opacity: style.opacity,
                     });
 
                     const line = new THREE.Line(geometry, material);
@@ -1402,7 +1435,8 @@ class ThreeJSStarmap {
                     // lineDistance attribute against these each frame.
                     const distAttr = line.geometry.attributes.lineDistance;
                     line.userData = {
-                        type: 'trade_route', data: route, isPrimary,
+                        type: 'trade_route', data: route,
+                        flowSpeed: style.flowSpeed,
                         fromStar, toStar,
                         baseLineDistances: Array.from(distAttr.array),
                     };
@@ -1617,8 +1651,7 @@ class ThreeJSStarmap {
         this.tradeRoutesGroup.children.forEach(child => {
             const base = child.userData?.baseLineDistances;
             if (!base || !child.material?.isLineDashedMaterial) return;
-            // Primary routes flow faster for visual distinction
-            const speed = child.userData.isPrimary ? 8.0 : 3.0;
+            const speed = child.userData.flowSpeed ?? 3.0;
             const attr = child.geometry.attributes.lineDistance;
             const cycle = child.material.dashSize + child.material.gapSize;
             const off = (this._dashFlowOffset * speed) % cycle;
@@ -1627,13 +1660,19 @@ class ThreeJSStarmap {
             attr.needsUpdate = true;
         });
 
-        // Star labels: only show near the camera, scaled with distance so they
-        // keep a roughly constant (and modest) on-screen size
+        // Star labels: scaled with distance for constant on-screen size, and
+        // eased opacity instead of a hard visibility pop — labels fade out
+        // across the 330–430 unit band and fade in/out on era changes.
         if (this.labelsGroup.visible && this.labelsGroup.children.length) {
             const camPos = this.camera.position;
+            const ease = Math.min(1, delta * 6);
             this.labelsGroup.children.forEach(sp => {
                 const d = camPos.distanceTo(sp.position);
-                sp.visible = (sp.userData.eraVisible !== false) && d < 420;
+                const distFactor = 1 - Math.max(0, Math.min(1, (d - 330) / 100));
+                const target = (sp.userData.eraVisible === false) ? 0 : 0.92 * distFactor;
+                const o = sp.material.opacity + (target - sp.material.opacity) * ease;
+                sp.material.opacity = o;
+                sp.visible = o > 0.02;
                 if (sp.visible) {
                     const w = Math.max(3, Math.min(16, d * 0.05));
                     sp.scale.set(w, w * 0.19, 1);

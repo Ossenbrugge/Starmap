@@ -1,9 +1,77 @@
--- Starmap SQLite Schema
--- Generated during rebuild. Run scripts/migrate_to_sqlite.py to populate.
-
-PRAGMA journal_mode = WAL;
-PRAGMA foreign_keys = ON;
-
+-- Auto-generated from the live DB on 2026-07-04 (source of truth).
+CREATE TABLE IF NOT EXISTS exoplanets (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    name             TEXT NOT NULL,
+    host_star_name   TEXT,
+    ra               REAL,
+    dec              REAL,
+    distance         REAL,
+    discovery_method TEXT,
+    is_fictional     INTEGER NOT NULL DEFAULT 0
+, semi_major_axis_au REAL, orbital_period_days REAL, planet_radius_earth REAL, planet_mass_earth REAL, equilibrium_temp_k REAL, planet_type TEXT, potentially_habitable INTEGER DEFAULT 0, star_id INTEGER);
+CREATE TABLE IF NOT EXISTS fictional_exoplanets (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    name             TEXT NOT NULL,
+    host_star_name   TEXT,
+    planet_type      TEXT,
+    description      TEXT,
+    orbit            REAL,
+    period           REAL,
+    mass             REAL,
+    radius           REAL
+, parent_planet TEXT DEFAULT NULL, map_url TEXT DEFAULT NULL);
+CREATE TABLE IF NOT EXISTS historical_events (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            year        INTEGER NOT NULL,
+            end_year    INTEGER,              -- NULL = point event
+            title       TEXT NOT NULL,
+            description TEXT,
+            event_type  TEXT NOT NULL,        -- founding|colonization|war|exodus|era|other
+            star_id     INTEGER,              -- optional map pin
+            nation_id   TEXT                  -- optional nation association
+        );
+CREATE TABLE IF NOT EXISTS nation_territories (
+    nation_id        TEXT NOT NULL,
+    star_id          INTEGER NOT NULL,
+    PRIMARY KEY (nation_id, star_id),
+    FOREIGN KEY (nation_id) REFERENCES nations(id)
+    -- star_id has no FK: some territory IDs use alternate catalog numbering
+);
+CREATE TABLE IF NOT EXISTS nations (
+    id               TEXT PRIMARY KEY,
+    name             TEXT NOT NULL,
+    full_name        TEXT,
+    description      TEXT,
+    color            TEXT,
+    government_type  TEXT,
+    capital_star_id  INTEGER
+, era_start INTEGER DEFAULT NULL, era_end INTEGER DEFAULT NULL, population TEXT, capital_city TEXT, currency TEXT, economy_summary TEXT, military_summary TEXT);
+CREATE TABLE IF NOT EXISTS provinces (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            world           TEXT NOT NULL,
+            star_id         INTEGER,           -- NULL when the host system is not yet canon
+            province_number INTEGER,
+            name            TEXT NOT NULL,
+            dynasty         TEXT,
+            dynast_rank     TEXT,
+            population      INTEGER,
+            area_km2        INTEGER,
+            notes           TEXT
+        );
+CREATE TABLE IF NOT EXISTS saved_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    params TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS star_ownership (
+            star_id    INTEGER NOT NULL,
+            nation_id  TEXT NOT NULL,
+            era_start  INTEGER NOT NULL,
+            era_end    INTEGER NOT NULL DEFAULT 3000,
+            PRIMARY KEY (star_id, era_start)
+        );
 CREATE TABLE IF NOT EXISTS stars (
     id               INTEGER PRIMARY KEY,
     hip              REAL,
@@ -27,75 +95,7 @@ CREATE TABLE IF NOT EXISTS stars (
     luminosity       REAL,
     nation_id        TEXT,
     is_fictional     INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_stars_magnitude     ON stars(magnitude);
-CREATE INDEX IF NOT EXISTS idx_stars_spectral      ON stars(spectral_class);
-CREATE INDEX IF NOT EXISTS idx_stars_nation        ON stars(nation_id);
-CREATE INDEX IF NOT EXISTS idx_stars_x             ON stars(x);
-CREATE INDEX IF NOT EXISTS idx_stars_y             ON stars(y);
-CREATE INDEX IF NOT EXISTS idx_stars_z             ON stars(z);
-CREATE INDEX IF NOT EXISTS idx_stars_proper_name   ON stars(proper_name);
-
-CREATE TABLE IF NOT EXISTS exoplanets (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    name             TEXT NOT NULL,
-    host_star_name   TEXT,
-    ra               REAL,
-    dec              REAL,
-    distance         REAL,
-    discovery_method TEXT,
-    is_fictional     INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_exoplanets_host ON exoplanets(host_star_name);
-
-CREATE TABLE IF NOT EXISTS fictional_exoplanets (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    name             TEXT NOT NULL,
-    host_star_name   TEXT,
-    planet_type      TEXT,
-    description      TEXT,
-    orbit            REAL,
-    period           REAL,
-    mass             REAL,
-    radius           REAL
-);
-
-CREATE INDEX IF NOT EXISTS idx_fictional_exo_host ON fictional_exoplanets(host_star_name);
-
-CREATE TABLE IF NOT EXISTS nations (
-    id               TEXT PRIMARY KEY,
-    name             TEXT NOT NULL,
-    full_name        TEXT,
-    description      TEXT,
-    color            TEXT,
-    government_type  TEXT,
-    capital_star_id  INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS nation_territories (
-    nation_id        TEXT NOT NULL,
-    star_id          INTEGER NOT NULL,
-    PRIMARY KEY (nation_id, star_id),
-    FOREIGN KEY (nation_id) REFERENCES nations(id)
-    -- star_id has no FK: some territory IDs use alternate catalog numbering
-);
-
-CREATE INDEX IF NOT EXISTS idx_nation_territories_nation ON nation_territories(nation_id);
-CREATE INDEX IF NOT EXISTS idx_nation_territories_star   ON nation_territories(star_id);
-
-CREATE TABLE IF NOT EXISTS trade_routes (
-    id               TEXT PRIMARY KEY,
-    name             TEXT,
-    from_star_id     INTEGER,
-    to_star_id       INTEGER,
-    nation_id        TEXT,
-    route_type       TEXT,
-    category         TEXT,
-    frequency        TEXT
-);
-
+, era_start INTEGER DEFAULT NULL, era_end INTEGER DEFAULT NULL, discovery_number INTEGER DEFAULT NULL, discovery_year INTEGER DEFAULT NULL);
 CREATE TABLE IF NOT EXISTS stellar_regions (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     name             TEXT NOT NULL,
@@ -112,3 +112,29 @@ CREATE TABLE IF NOT EXISTS stellar_regions (
     color_g          INTEGER,
     color_b          INTEGER
 );
+CREATE TABLE IF NOT EXISTS trade_routes (
+    id               TEXT PRIMARY KEY,
+    name             TEXT,
+    from_star_id     INTEGER,
+    to_star_id       INTEGER,
+    nation_id        TEXT,
+    route_type       TEXT,
+    category         TEXT,
+    frequency        TEXT
+, era_start INTEGER DEFAULT NULL, era_end INTEGER DEFAULT NULL, is_fictional INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS idx_events_year ON historical_events(year);
+CREATE INDEX IF NOT EXISTS idx_exoplanets_host ON exoplanets(host_star_name);
+CREATE INDEX IF NOT EXISTS idx_fictional_exo_host ON fictional_exoplanets(host_star_name);
+CREATE INDEX IF NOT EXISTS idx_nation_territories_nation ON nation_territories(nation_id);
+CREATE INDEX IF NOT EXISTS idx_nation_territories_star   ON nation_territories(star_id);
+CREATE INDEX IF NOT EXISTS idx_ownership_star ON star_ownership(star_id);
+CREATE INDEX IF NOT EXISTS idx_provinces_star  ON provinces(star_id);
+CREATE INDEX IF NOT EXISTS idx_provinces_world ON provinces(world);
+CREATE INDEX IF NOT EXISTS idx_saved_views_user ON saved_views(user_id);
+CREATE INDEX IF NOT EXISTS idx_stars_magnitude     ON stars(magnitude);
+CREATE INDEX IF NOT EXISTS idx_stars_nation        ON stars(nation_id);
+CREATE INDEX IF NOT EXISTS idx_stars_proper_name   ON stars(proper_name);
+CREATE INDEX IF NOT EXISTS idx_stars_spectral      ON stars(spectral_class);
+CREATE INDEX IF NOT EXISTS idx_stars_x             ON stars(x);
+CREATE INDEX IF NOT EXISTS idx_stars_y             ON stars(y);
+CREATE INDEX IF NOT EXISTS idx_stars_z             ON stars(z);

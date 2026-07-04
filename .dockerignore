@@ -1,0 +1,43 @@
+# Virtual environments and caches (platform-specific / regenerated)
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Quarantined legacy + backups + old release bundles
+_attic/
+data_backup/
+release/
+backup/
+backup_*/
+
+# VCS, IDE, session tooling
+.git/
+.github/
+.claude/
+.claudeignore
+.idea/
+.vscode/
+.DS_Store
+
+# Local runtime artifacts (the image builds its own DB from JSON/CSV sources)
+data/starmap.sqlite
+data/starmap.sqlite-shm
+data/starmap.sqlite-wal
+data/starmap.db
+data/montydb_repo*/
+*.log
+htmlcov/
+coverage.xml
+test-results.xml
+
+# Secrets — pass at runtime via env_file, never bake into the image
+.env
+.env.*
+!.env.example
+
+# Docs and test html not needed at runtime
+screenshots/
+test_*.html

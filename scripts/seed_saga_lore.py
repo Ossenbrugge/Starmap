@@ -106,6 +106,12 @@ EVENTS = [
     (2379, None, "Protector Election of 2379",
      "Henry von Machthaber wins 738 of 973 electors on an Expansionist platform, defeating Maria Therese's Preservationists.",
      "election", None, "felgenland_union"),
+    # Cultural Renaissance (wiki: stars/helvetia_tor.txt, planets/neu_helvetica.txt)
+    (2371, None, "Neu Helvetica Chartered",
+     "The Union's first purpose-built peace colony: alpine émigrés from Stahlburgh settle "
+     "Neu Helvetica under the Cultural Renaissance, governing as a confederation of cantons. "
+     "Its capital Nielsenstadt honors the engineer-financier Aksel Nielsen.",
+     "colonization", 47977, "felgenland_union"),
 ]
 
 # nation_id → column → value (sources: Constitution, Union Provinces.md,
@@ -249,11 +255,202 @@ SYSTEM_WORLDS = [
 STALE_PLANETS_SQL = [
     "DELETE FROM exoplanets WHERE is_fictional=1 AND host_star_name='11 LMi' "
     "AND name IN ('Hansaburgh','Kaiserstadt','Glückstadt Nexus','Havenknot Verge')",
-    "DELETE FROM fictional_exoplanets WHERE host_star_name='Brandenburg Tor' AND name='Hansaburgh'",
+    # only the old wrong-orbit row (1.5 AU) — the canonical 0.85 AU row stays
+    "DELETE FROM fictional_exoplanets WHERE host_star_name='Brandenburg Tor' AND name='Hansaburgh' AND orbit=1.5",
     # Brandstadt relics from before its move to Tiefe-Grenze Tor (the correct
     # row lives in fictional_exoplanets with host 'Tiefe-Grenze Tor')
     "DELETE FROM exoplanets WHERE name='Brandstadt' AND host_star_name IN ('Copernicus','Star 999999')",
 ]
+
+
+# ── Missing worlds (drift backlog, DokuWiki dossiers, user-ruled 2026-07-04) ──
+# (name, host_star_name, planet_type, orbit_au, period_days, mass, radius, parent_planet, description)
+# Skipped on purpose: L 98-59 f (exists as 'Foxtrot'; the dossier's 'Fortress
+# Echelon' is the installation on it), the Protelan moon (already present).
+MISSING_WORLDS = [
+    # Hawking system (Alpha Centauri): A = Hawking, B = Toliman, plus Proxima
+    ("Hawking", "Hawking", "Earth-like", 1.1, 438, 1.1, 1.1, None,
+     "Temperate capital world of the Centauran Assembly, a Directorate client state of "
+     "700–900 million. Called Hawking Prime by the Directorate."),
+    ("Galileo", "Hawking", "Gas Giant", 5.2, 4383, None, 11.0, None,
+     "Jupiter-like giant whose moons host mining outposts of 5–10 million."),
+    ("Kepler", "Toliman", "Rocky", 0.7, 219, 0.8, 0.9, None,
+     "Arid world orbiting Toliman, used for military training; 3–5 million residents."),
+    ("Hubble Outpost", "Proxima Centauri", "Rocky", 0.0485, 11.2, 1.07, 1.1, None,
+     "Flare-battered habitable-zone world; its orbital station shelters 2–4 million."),
+    # L 98-59 — the Directorate fortress system (Foxtrot = planet f, already present)
+    ("Outpost Scorch", "L 98-59", "Hot Rocky", 0.02191, 2.25, 0.40, 0.85, None,
+     "Scorched, airless sensor-array world fortified to watch the Felgenland Union."),
+    ("Ironhold", "L 98-59", "Super-Earth", 0.0304, 3.69, 2.22, 1.385, None,
+     "Volcanic forge world — the Directorate's major source of rare metals; 20–30 million."),
+    ("Tidal Bastion", "L 98-59", "Water-rich", 0.045, 7.5, 2.31, 1.57, None,
+     "Ocean world hosting floating naval fortresses; 15–20 million."),
+    ("Viper's Cauldron", "L 98-59", "Super-Venus", 0.06, 12.8, 3.0, None, None,
+     "Hellish pressure-cooker used for experimental weapons testing."),
+    ("Stormhold", "L 98-59", "Gas Giant", 0.15, 45.2, None, 3.5, None,
+     "Turbulent gas dwarf serving as a refueling depot; 10–15 million on orbital platforms."),
+    ("Frostspire", "L 98-59", "Ice Giant", 0.22, 78.9, 1.8, 1.3, None,
+     "Frozen prison world and interrogation center of the Directorate."),
+    # Pentothia Prime (GJ 380)
+    ("Vulcara", "Pentothia Prime", "Hot Rocky", 0.05, 4.5, 0.8, 0.9, None,
+     "Scorched, mineral-rich Pentothian mining outpost."),
+    ("Auricore", "Pentothia Prime", "Super-Earth", 0.1, 10, 1.5, 1.2, None,
+     "Warm-temperate capital of the Pentothian Trade Conglomerate — Auricore City and its "
+     "orbital trade stations."),
+    ("Ferrum Belt", "Pentothia Prime", "Asteroid Belt", 0.3, 45, None, None, None,
+     "Resource-rich belt mined for iridium and osmium."),
+    ("Cryon", "Pentothia Prime", "Ice Giant", 0.5, 90, 2.0, 1.3, None,
+     "Frozen world mined for fusion-grade isotopes."),
+    ("Stellarion Trade Nexus", "Pentothia Prime", "Station", 189.98, 547900, None, None, None,
+     "A ~100 km orbital station in the far dark — sternfomotor docks and the Conglomerate's "
+     "great trade markets."),
+    # Protelan (61 UMa) — the moon Protelan itself already exists
+    ("Chaud", "Protelan", "Hot Rocky", 0.3, 33, 1.5, 1.2, None,
+     "Hot, Venus-like mining outpost for metals."),
+    ("Frais", "Protelan", "Rocky", 1.0, 347, 0.5, 0.8, None,
+     "Cool, Mars-like world worked for rare earths."),
+    ("Joi", "Protelan", "Gas Giant", 2.5, 1096, None, 12.0, None,
+     "Jupiter-like giant — the Protelan Republic's capital moon orbits it; its eclipses are "
+     "celebrated in the Joi Veil Festival."),
+    ("Froid", "Protelan", "Rocky", 4.0, 2191, 0.5, 0.8, None,
+     "Cold, barren outer world."),
+    ("Hiver", "Protelan", "Rocky", 73, 182620, 0.3, 0.7, None,
+     "Distant desert world mined for volatiles."),
+    ("Grandpere", "Protelan", "Ice Giant", 154, None, None, 10.0, None,
+     "Far Neptune-like giant with distant trade stations."),
+    # Tau Ceti — Asimov, Heinlein, Bester already present
+    ("Bradbury", "Tau Ceti", "Super-Earth", 0.133, 20.0, 3.1, None, None,
+     "Hot, rocky world of Directorate weapons-testing bunkers; 80–100 million."),
+    ("Clarke", "Tau Ceti", "Super-Earth", 0.195, 34.7, 3.6, None, None,
+     "Dense, iron-rich world under a thin CO₂ atmosphere; 50–70 million."),
+    ("Herbert", "Tau Ceti", "Super-Earth", 1.334, 636.13, 3.9, None, None,
+     "Cold world on the outer habitable edge — icy continents, 70–90 million."),
+    # Tiefe-Grenze Tor — Brandstadt already present
+    ("Felsbrand", "Tiefe-Grenze Tor", "Hot Rocky", 0.4, 55, 0.6, 0.9, None,
+     "Hot, Venus-like world mined for rare metals."),
+    ("Sturmholz", "Tiefe-Grenze Tor", "Gas Giant", 2.5, 1461, None, 10.0, None,
+     "Jupiter-like giant whose moons supply volatiles."),
+    ("Frostkern", "Tiefe-Grenze Tor", "Ice Giant", 8.0, 8401, 2.0, 1.5, None,
+     "Neptune-like iceworld of methane and water ices."),
+    # Sol
+    ("Titan", "Sol", "Rocky Moon", 9.58, None, 0.0225, 0.2495, "Saturn",
+     "Saturn's colonized moon — birthplace of Lena Kocher, mother of the Phoenix Exodus."),
+]
+
+
+def seed_missing_worlds(con):
+    n = 0
+    for name, host, ptype, orbit, period, mass, radius, parent, desc in MISSING_WORLDS:
+        exists = con.execute(
+            "SELECT 1 FROM fictional_exoplanets WHERE name=? AND host_star_name=?",
+            (name, host)).fetchone()
+        if exists:
+            continue
+        con.execute(
+            "INSERT INTO fictional_exoplanets (name, host_star_name, planet_type, "
+            "description, orbit, period, mass, radius, parent_planet) VALUES (?,?,?,?,?,?,?,?,?)",
+            (name, host, ptype, desc, orbit, period, mass, radius, parent))
+        n += 1
+    # The Protelan capital moon orbits Joi (61 UMa c I per the dossier)
+    con.execute("UPDATE fictional_exoplanets SET parent_planet='Joi' "
+                "WHERE name='Protelan' AND (parent_planet IS NULL OR parent_planet='')")
+    print(f"missing worlds: inserted {n} of {len(MISSING_WORLDS)}")
+
+
+# New star rows / namings (user rulings 2026-07-04):
+#   - Pathfinder Tor = HD 87883 (star 49558); Explorer Corps prize, settled
+#     post-2380 — discovery_year 2380 is an APPROXIMATION pending exact canon.
+#   - Shattensonne = 20 LMi B, M7V companion of Holstensonne (20 LMi A);
+#     placed 0.05 pc from Holsten Tor for visibility.
+#   - Argylle Tor = HD 99492 (star 55681, discovery #13, colonized 2356 —
+#     matches the dossier's 2356 survey/landing). NOTE: the wiki dossier says
+#     "15 ly from Holsten Tor" but the real separation is 33.8 ly — wiki-side
+#     correction pending. Argylle orbit AUs below are DISPLAY ESTIMATES (the
+#     dossier gives none); Heatherly sits in the computed K0V habitable zone.
+ARGYLLE_WORLDS = [
+    ("Argylle I", "Argylle Tor", "Hot Rocky", 0.08, 12, None, 1.2, None,
+     'Tidally locked super-Mercury nicknamed "Scorch" — dayside over 800 K, rich in '
+     "refractory metals. Surveyed but not colonized."),
+    ("Argylle II", "Argylle Tor", "Rocky", 0.35, 100, None, 0.6, None,
+     'Barren, airless world nicknamed "Cinder" — ancient lava flows, used as a low-gravity '
+     "training range for Assault drop operations."),
+    # Heatherly itself already exists in the exoplanets table (0.88 AU, 255 K)
+    ("Argylle IV", "Argylle Tor", "Ice Giant", 2.5, 1600, None, 2.0, None,
+     'Icy super-Earth nicknamed "Shield" — nitrogen-methane atmosphere, cryovolcanism, a '
+     "forward listening post over a subsurface ocean."),
+    ("Argylle V", "Argylle Tor", "Gas Giant", 6.0, 6000, None, 11.0, None,
+     'Ringed gas giant nicknamed "Guardian" — helium-3 and deuterium mining platforms shelter '
+     "in its magnetic field beside a naval refueling station."),
+]
+
+
+def seed_new_stars(con):
+    # Helvetia Tor = 15 LMi / HD 84737 (star 47977) — user ruled 2026-07-04.
+    # 17.3 ly from Holsten Tor (inside the 10-20 ly band the wiki requires),
+    # G2V solar twin, unclaimed until now. Neu Helvetica's 1.7 AU orbit is a
+    # display estimate placing it at the inner-temperate edge of the computed
+    # 1.58-2.27 AU habitable zone (L = 2.73 Lsun).
+    con.execute(
+        "UPDATE stars SET fictional_name='Helvetia Tor', discovery_year=2371, "
+        "fictional_description='G2V solar twin designated Helvetia Tor at the 2371 chartering "
+        "of Neu Helvetica — a Cultural Renaissance peace colony in the Leo Minor home cluster, "
+        "17.3 light-years from Holsten Tor.' WHERE hd=84737")
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (47977, 'felgenland_union', 2371, 3000)")
+    if not con.execute("SELECT 1 FROM fictional_exoplanets WHERE name='Neu Helvetica' "
+                       "AND host_star_name='Helvetia Tor'").fetchone():
+        con.execute(
+            "INSERT INTO fictional_exoplanets (name, host_star_name, planet_type, "
+            "description, orbit, period, mass, radius, parent_planet) VALUES (?,?,?,?,?,?,?,?,?)",
+            ("Neu Helvetica", "Helvetia Tor", "Earth-like",
+             "New Switzerland: a rugged, geologically young world of folded mountains, glacial "
+             "valleys and cold high lakes — 45% land, seeded with cold-tolerant Earth and "
+             "Stahlburgher stock. Capital Nielsenstadt anchors precision manufacturing and the "
+             "rim's financial-clearing sector; its cantons answer to no Dynast, only their ballots.",
+             1.7, 770, None, 1.0, None))
+
+    con.execute(
+        "UPDATE stars SET fictional_name='Argylle Tor', "
+        "fictional_description='K0V orange dwarf named in 2356 for Alasdair Campbell''s "
+        "province of Argyll-Inveraray-on-the-Greenwich — a frontier gateway star and home of "
+        "the Heatherly colony.' WHERE hd=99492")
+    # Union holding from the 2356 settlement (political color via ownership;
+    # deliberately NOT added to nation_territories so the frontier colony does
+    # not balloon the core Felgenland boundary hull)
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (55681, 'felgenland_union', 2356, 3000)")
+    # Real detected planets (HD 99492 b/c) stay in the catalog under the
+    # star's alias designation so the canon Argylle system view stays clean
+    con.execute(
+        "UPDATE exoplanets SET host_star_name='83 Leonis B' "
+        "WHERE is_fictional=0 AND host_star_name='HD 99492'")
+    # Remove the short-lived duplicate Heatherly (the richer exoplanets-table
+    # row from an earlier session is canonical)
+    con.execute(
+        "DELETE FROM fictional_exoplanets WHERE name='Heatherly' AND host_star_name='Argylle Tor'")
+    for row in ARGYLLE_WORLDS:
+        name, host = row[0], row[1]
+        if not con.execute("SELECT 1 FROM fictional_exoplanets WHERE name=? AND host_star_name=?",
+                           (name, host)).fetchone():
+            con.execute(
+                "INSERT INTO fictional_exoplanets (name, host_star_name, planet_type, "
+                "description, orbit, period, mass, radius, parent_planet) VALUES (?,?,?,?,?,?,?,?,?)",
+                (name, host, row[2], row[8], row[3], row[4], row[5], row[6], row[7]))
+    con.execute(
+        "UPDATE stars SET fictional_name='Pathfinder Tor', discovery_year=2380, "
+        "fictional_description='The Explorer Corps'' first great prize: a long-lived K0 dwarf "
+        "with a near-Earth world in its habitable zone, opened for settlement by the Pathfinder "
+        "Teams and named in their honor.' WHERE hd=87883")
+    con.execute(
+        "INSERT OR REPLACE INTO stars (id, proper_name, fictional_name, fictional_description, "
+        "x, y, z, dist, magnitude, spectral_class, is_fictional) "
+        "VALUES (999997, '20 LMi B', 'Shattensonne', "
+        "'The shadow-sun: 20 Leonis Minoris B, the M7V red dwarf companion of Holstensonne. "
+        "A symbol of companionship in Union lore.', "
+        "-11.038308, 6.336788, 7.956742, 14.93, 14.0, 'M7V', 1)")
+    print("new stars: Pathfinder Tor named (HD 87883), Shattensonne added (20 LMi B)")
 
 
 def seed_system_worlds(con):
@@ -302,6 +499,8 @@ def main():
         print(f"nation lore: updated {len(NATION_LORE)} nations")
         seed_lalande(con)
         seed_system_worlds(con)
+        seed_missing_worlds(con)
+        seed_new_stars(con)
         apply_author_corrections(con)
         con.commit()
 

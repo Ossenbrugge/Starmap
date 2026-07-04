@@ -174,10 +174,15 @@ def _dossier_planets(text):
 
 
 def check_star_dossiers(con):
-    stars_dir = BRAIN / "DokuWiki-export-ROOT-20260625-004312" / "stars"
+    # Prefer the live wiki mirror (_wiki-sync) over the dated export snapshot —
+    # new systems (e.g. Helvetia Tor) appear there first.
+    live = BRAIN / "_wiki-sync" / "data_backup_github" / "pages" / "stars"
+    export = BRAIN / "DokuWiki-export-ROOT-20260625-004312" / "stars"
+    stars_dir = live if live.is_dir() else export
     if not stars_dir.is_dir():
-        info.append("dossiers: DokuWiki export dir not found — skipping")
+        info.append("dossiers: no wiki stars directory found — skipping")
         return
+    info.append(f"dossiers: scanning {'live mirror (_wiki-sync)' if stars_dir == live else 'dated export'}")
 
     db_stars = con.execute(
         "SELECT id, proper_name, fictional_name, name FROM "
@@ -240,7 +245,16 @@ def check_star_dossiers(con):
             db_planets.update(r[0] for r in con.execute(
                 "SELECT name FROM fictional_exoplanets WHERE host_star_name=?", (h,)))
 
-        wiki_planets = _dossier_planets(text)
+        # Author-confirmed aliases: dossier label → starmap world name
+        world_aliases = {
+            "Fortress Echelon": "Foxtrot",      # the fortress ON planet f (Foxtrot)
+            "Protelan Prime": "Protelan",
+            "Hawking Prime": "Hawking",
+            "Scorch": "Outpost Scorch",         # dossier shorthand for L 98-59 b
+        }
+        # normalize curly apostrophes before alias/compare
+        wiki_planets = {world_aliases.get(p, p)
+                        for p in (q.replace("’", "'") for q in _dossier_planets(text))}
         missing = sorted(p for p in wiki_planets
                          if p not in db_planets and p not in all_db_worlds)
         if missing:

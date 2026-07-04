@@ -39,7 +39,18 @@ class Database:
         self._con.row_factory = _row_factory
         self._con.execute("PRAGMA journal_mode = WAL")
         self._con.execute("PRAGMA foreign_keys = ON")
+        self._ensure_schema()
         print(f"Database opened: {db_path}")
+
+    def _ensure_schema(self):
+        """Additive, idempotent migrations for columns introduced after the
+        initial scripts/migrate_to_sqlite.py migration."""
+        cols = {r["name"] for r in self._con.execute("PRAGMA table_info(trade_routes)")}
+        if "is_fictional" not in cols:
+            self._con.execute(
+                "ALTER TABLE trade_routes ADD COLUMN is_fictional INTEGER NOT NULL DEFAULT 0"
+            )
+            self._con.commit()
 
     def _q(self, sql: str, params: tuple = ()) -> List[Dict]:
         with self._lock:
@@ -51,7 +62,6 @@ class Database:
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    @staticmethod
     @staticmethod
     def _clean_star_name(raw: str) -> str:
         """Return empty string if name is nan/null garbage."""

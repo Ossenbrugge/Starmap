@@ -6,7 +6,7 @@ from flask import jsonify, Response
 from typing import Any, Dict, Optional
 
 def success_response(
-    data: Any,
+    data: Any = None,
     message: Optional[str] = None,
     count: Optional[int] = None,
     status_code: int = 200

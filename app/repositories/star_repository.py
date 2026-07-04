@@ -108,16 +108,88 @@ class StarRepository:
             return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def add_fictional_star(self, star_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Add a new fictional star (not yet implemented)"""
-        return {'success': False, 'error': 'Add fictional star not implemented'}
+        """Add a new fictional star (is_fictional is always forced on)"""
+        try:
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
+
+            data = dict(star_data)
+            data['is_fictional'] = True
+            if not data.get('fictional_name'):
+                data['fictional_name'] = data.get('name') or ''
+
+            star_id = data.get('id') or data.get('_id')
+            if star_id is not None:
+                existing = self.database.get_star_by_id(star_id)
+                if existing and not existing.get('is_fictional'):
+                    return {'success': False,
+                            'error': f'Star {star_id} already exists and is not fictional'}
+
+            new_id = self.database.add_star(data)
+            if new_id is None:
+                return {'success': False, 'error': 'Failed to add fictional star'}
+            return {'success': True, 'data': self.database.get_star_by_id(new_id)}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def delete_fictional_star(self, star_id: int) -> Dict[str, Any]:
-        """Delete a fictional star (not yet implemented)"""
-        return {'success': False, 'error': 'Delete fictional star not implemented'}
+        """Delete a fictional star (refuses to delete real catalog stars)"""
+        try:
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
+
+            star = self.database.get_star_by_id(star_id)
+            if not star:
+                return {'success': False, 'error': 'Star not found'}
+            if not star.get('is_fictional'):
+                return {'success': False,
+                        'error': f'Star {star_id} is not fictional and cannot be deleted'}
+
+            if self.database.delete_star(star_id):
+                return {'success': True,
+                        'message': f'Fictional star {star_id} deleted successfully'}
+            return {'success': False, 'error': 'Failed to delete fictional star'}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def add_fictional_exoplanet(self, exoplanet_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Add a new fictional exoplanet (not yet implemented)"""
-        return {'success': False, 'error': 'Add fictional exoplanet not implemented'}
+        """Add a new fictional exoplanet (is_fictional is always forced on)"""
+        try:
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
+
+            data = dict(exoplanet_data)
+            host_name = data.get('host_star_name') or data.get('star_name') or ''
+            payload = {
+                'name': data.get('name'),
+                'host_star_name': host_name,
+                'is_fictional': True,
+                # API shorthand: 'distance' = orbital distance (AU), 'period' = days
+                'semi_major_axis_au': data.get('semi_major_axis_au', data.get('distance')),
+                'orbital_period_days': data.get('orbital_period_days', data.get('period')),
+                'planet_type': data.get('planet_type') or '',
+                'planet_mass_earth': data.get('planet_mass_earth', data.get('mass')),
+                'planet_radius_earth': data.get('planet_radius_earth', data.get('radius')),
+                'equilibrium_temp_k': data.get('equilibrium_temp_k'),
+                'potentially_habitable': data.get('potentially_habitable'),
+                'discovery_method': data.get('discovery_method') or 'Fictional',
+                'star_id': data.get('star_id'),
+            }
+            # Link to the host star when it exists so the map can place the planet
+            if payload['star_id'] is None and host_name:
+                host_id = self.database.find_star_id_by_name(host_name)
+                if host_id is not None:
+                    payload['star_id'] = host_id
+                    host = self.database.get_star_by_id(host_id)
+                    payload['distance'] = (host or {}).get('dist')
+
+            new_id = self.database.add_exoplanet(payload)
+            if new_id is None:
+                return {'success': False, 'error': 'Failed to add fictional exoplanet'}
+            payload['id'] = new_id
+            return {'success': True, 'data': payload}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Cache stats not implemented"""

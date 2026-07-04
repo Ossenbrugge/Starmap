@@ -43,7 +43,7 @@ Thank you for your interest in contributing to Starmap - Felgenland Saga! This i
 
 5. **Run Tests**
    ```bash
-   python tests/run_tests.py --quick
+   python -m pytest tests/ -q
    ```
 
 6. **Start Development Server**
@@ -74,7 +74,7 @@ Thank you for your interest in contributing to Starmap - Felgenland Saga! This i
 
 3. **Run Tests**
    ```bash
-   python tests/run_tests.py all --report
+   python -m pytest tests/ -q
    ```
 
 4. **Commit Changes**
@@ -94,15 +94,15 @@ Thank you for your interest in contributing to Starmap - Felgenland Saga! This i
 
 ```bash
 # Full test suite
-python tests/run_tests.py all
+python -m pytest tests/ -q
 
 # Specific categories
-python tests/run_tests.py database
-python tests/run_tests.py api
-python tests/run_tests.py integration
+python -m pytest tests/test_database.py -q
+python -m pytest tests/test_stars_api.py tests/test_nations_api.py tests/test_timeline_api.py -q
+python -m pytest tests/test_auth_api.py -q
 
 # With coverage
-python tests/run_tests.py --coverage
+python -m pytest tests/ -q --cov=. --cov-report=term-missing
 ```
 
 ### Test Coverage Requirements

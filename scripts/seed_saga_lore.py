@@ -11,7 +11,10 @@ block). Two payloads:
      economy_summary, military_summary — added by migrate_nation_lore.py).
      Always overwritten: these mirror the Brain canon.
 
-Author rulings (2026-07-03):
+Author rulings (2026-07-03/04):
+  - Griefen Tor discovery_year 2333 was a typo → 2233 (settled during the
+    Terran Exodus; Lochiel ratified the 2267 Constitution). Ownership
+    interval starts at the Union founding, 2267.
   - War span is 2352-2357: armistice 2356, drawdown, treaty SIGNED 2357.
   - Felgenland capital city is Bundstadt, on Stahlburgh, in Holsten Tor.
   - Lalande 21185 was a Terran Directorate client state, liberated 2353;
@@ -174,6 +177,16 @@ LALANDE = dict(
 )
 
 
+def apply_author_corrections(con):
+    """Typo fixes ruled by the author — idempotent, safe on rebuilt DBs."""
+    con.execute("UPDATE stars SET discovery_year=2233 WHERE id=43464 AND discovery_year=2333")
+    con.execute("UPDATE historical_events SET year=2233, "
+                "description='Discovery system #12 is colonized during the Terran Exodus.' "
+                "WHERE title='Griefen Tor Colonized' AND year=2333")
+    con.execute("UPDATE star_ownership SET era_start=2267 "
+                "WHERE star_id=43464 AND nation_id='felgenland_union' AND era_start=2333")
+
+
 def seed_lalande(con):
     con.execute(
         "INSERT OR REPLACE INTO nations (id, name, full_name, description, color, "
@@ -196,6 +209,69 @@ def seed_lalande(con):
         "VALUES (53879, 'lalande_republic', 2353, 3000)",
     )
     print("lalande_republic: nation, territory and ownership flip seeded")
+
+
+# ── Planetary systems (DokuWiki: stars/brandenburg_tor.txt, stars/griefen_tor.txt) ──
+# host_star_name uses the fictional system name (matches the star's
+# fictional_name, which the frontend includes in its host-name lookup).
+# (name, host, planet_type, orbit_au, period_days, mass_earth, radius_earth, description)
+SYSTEM_WORLDS = [
+    # Brandenburg Tor (11 LMi) — 4 worlds
+    ("Hansaburgh", "Brandenburg Tor", "Earth-like", 0.85, 360, 1.1, 1.0,
+     "Temperate world of salt flats and farmland — capital of the Imperial Federation of "
+     "Hansaburgh and birthplace of Karl von Machthaber. Kaiserstadt hosts the Congressional "
+     "Building; Starveil Festivals mark Wogenstern's eclipses."),
+    ("Salzkern", "Brandenburg Tor", "Hot Rocky", 0.3, 80, 0.4, 0.8,
+     "Hot, Mercury-like world mined for metals and salts that feed Hansaburgh's economy."),
+    ("Wogenstern", "Brandenburg Tor", "Gas Giant", 2.0, 1022, None, 9.0,
+     "Jupiter-like giant whose icy moons host fuel depots for the Union trade lanes."),
+    ("Frostmeer", "Brandenburg Tor", "Ice Giant", 7.0, 6752, 2.0, 1.5,
+     "Neptune-like iceworld mined for water and methane volatiles."),
+    # Griefen Tor (55 Cancri / Copernicus) — 6 worlds; saga names for the real
+    # 55 Cnc planets, plus the fictional ocean world Lochiel
+    ("Eisfluss", "Griefen Tor", "Hot Rocky", 0.01544, 0.74, 8.0, 1.9,
+     "Super-Earth lava world (55 Cancri e) mined for rare minerals."),
+    ("Wolkenmeer", "Griefen Tor", "Gas Giant", 0.1134, 14.65, None, 13.0,
+     "Warm gas giant (55 Cancri b) harvested for atmospheric gases and metals."),
+    ("Kernfluss", "Griefen Tor", "Gas Giant", 0.2403, 44.4, None, 8.0,
+     "Warm gas dwarf (55 Cancri c) yielding volatiles and silicates."),
+    ("Frostmeer", "Griefen Tor", "Ice Giant", 0.781, 260, None, 7.0,
+     "Cool gas dwarf (55 Cancri f) with icy moons mined for volatiles."),
+    ("Lochiel", "Griefen Tor", "Earth-like", 0.9, 320, 1.2, 1.05,
+     "Habitable ocean world of archipelagos — the Union's petroleum and helium-3 hub. "
+     "Capital: Strasseburgh. Sturmmeer's rare eclipses are celebrated as Tideveil Festivals."),
+    ("Sturmmeer", "Griefen Tor", "Gas Giant", 5.74, 5218, None, 12.0,
+     "Jupiter-like giant (55 Cancri d) whose icy moons serve as Navy fuel depots."),
+]
+
+# Stale rows superseded by the wiki docs: cities were once entered as planets,
+# and Hansaburgh had two conflicting orbit entries (0.62 / 1.5 AU vs canon 0.85).
+STALE_PLANETS_SQL = [
+    "DELETE FROM exoplanets WHERE is_fictional=1 AND host_star_name='11 LMi' "
+    "AND name IN ('Hansaburgh','Kaiserstadt','Glückstadt Nexus','Havenknot Verge')",
+    "DELETE FROM fictional_exoplanets WHERE host_star_name='Brandenburg Tor' AND name='Hansaburgh'",
+    # Brandstadt relics from before its move to Tiefe-Grenze Tor (the correct
+    # row lives in fictional_exoplanets with host 'Tiefe-Grenze Tor')
+    "DELETE FROM exoplanets WHERE name='Brandstadt' AND host_star_name IN ('Copernicus','Star 999999')",
+]
+
+
+def seed_system_worlds(con):
+    for sql in STALE_PLANETS_SQL:
+        con.execute(sql)
+    n = 0
+    for name, host, ptype, orbit, period, mass, radius, desc in SYSTEM_WORLDS:
+        exists = con.execute(
+            "SELECT 1 FROM fictional_exoplanets WHERE name=? AND host_star_name=?",
+            (name, host)).fetchone()
+        if exists:
+            continue
+        con.execute(
+            "INSERT INTO fictional_exoplanets (name, host_star_name, planet_type, "
+            "description, orbit, period, mass, radius) VALUES (?,?,?,?,?,?,?,?)",
+            (name, host, ptype, desc, orbit, period, mass, radius))
+        n += 1
+    print(f"system worlds: inserted {n} of {len(SYSTEM_WORLDS)} (stale city-planets removed)")
 
 
 def main():
@@ -225,6 +301,8 @@ def main():
             )
         print(f"nation lore: updated {len(NATION_LORE)} nations")
         seed_lalande(con)
+        seed_system_worlds(con)
+        apply_author_corrections(con)
         con.commit()
 
         total = con.execute("SELECT COUNT(*) FROM historical_events").fetchone()[0]

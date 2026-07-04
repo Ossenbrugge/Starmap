@@ -22,12 +22,12 @@ BASE = os.path.join(os.path.dirname(__file__), "..")
 DB_PATH = os.path.join(BASE, "data", "starmap.sqlite")
 CSV_DIR = os.path.join(BASE, "data", "provinces")
 
-# world → (csv file, star_id) — Lochiel's host system is not yet in canon
+# world → (csv file, star_id)
 WORLDS = [
     ("Stahlburgh", "stahlburgh_provinces_with_ranks.csv", 48941),
     ("Eisenwald",  "Eisenwald_Provinces_Updated.csv",     48941),
     ("Hansaburgh", "hansaburgh_provinces_ranks_refactored.csv", 46945),
-    ("Lochiel",    "Lochiel_Provinces_Updated.csv",       None),
+    ("Lochiel",    "Lochiel_Provinces_Updated.csv",       43464),  # Griefen Tor (55 Cancri)
 ]
 
 # Brandstadt's 15 provinces (Union Provinces.md, "Brandstadt Provinces" table)

@@ -894,7 +894,7 @@ class ThreeJSStarmap {
         }
 
         // Province browser shortcuts for Union worlds hosted at this star
-        const PROVINCE_WORLDS = { 48941: ['Stahlburgh', 'Eisenwald'], 46945: ['Hansaburgh'], 999999: ['Brandstadt'] };
+        const PROVINCE_WORLDS = { 48941: ['Stahlburgh', 'Eisenwald'], 46945: ['Hansaburgh'], 999999: ['Brandstadt'], 43464: ['Lochiel'] };
         const hostedWorlds = PROVINCE_WORLDS[star.id];
         if (hostedWorlds && window.openProvinceBrowser) {
             html += `<div class="mt-2 d-flex gap-1 flex-wrap">` + hostedWorlds.map(w =>

@@ -38,6 +38,9 @@ SUPERSEDED_TITLES = [
     "Battles of Foxtrot",                # split: orbital 2353 / ground 2354
     "Stahlburgh Wheat Famine",           # subsumed by the Foundation Plague
     "Age of Exploration Begins",         # → Era of Exploration period event
+    # 2026-07-04 revision: AENEAS BURDEN was the UNION raid on Alpha Centauri;
+    # the Ashur/Asher fight was the home-front counterstroke — split in two
+    "Operation AENEAS BURDEN — Battle of Ashur",
 ]
 
 # title → (year, end_year, description)  [None year = keep existing]
@@ -63,6 +66,9 @@ EVENT_UPDATES = {
     "Lalande 21185 Colonized": (2170, None,
         "Libertad — the first colony outside Sol — is settled at Lalande 21185; Nakdong follows "
         "later in-system."),
+    "Liberation of Lalande 21185": (2353, None,
+        "Early 2353: Union Assault and Navy forces liberate Nakdong and the Lalande system, "
+        "ending the civil war the Directorate's color revolution ignited."),
     "Union–Directorate War": (2352, 2357,
         "Declared 24 November 2352, eleven days after Karl's death. Five years of rim-wide war "
         "end with the 2356 armistice and the Accord of Dual Spheres, signed 15 January 2357."),
@@ -72,6 +78,46 @@ EVENT_UPDATES = {
     "Peace Talks at Beijing Arcology": (2356, None,
         "With the Directorate collapsing into internal chaos and Allied fleets floating over "
         "Earth, Henry and Bonnie face Maxim-Ambassador Victoria at the Beijing Arcology."),
+    # ── 2026-07-04 timeline revision ──
+    "Operation Glorious Dead": (2353, None,
+        "By ~August 2353, the Lalande campaign's ender: Jurgen's suicide bunker assault "
+        "decapitates the enemy command, killing the tyrant Xiomar Zhan-Li Esperanza. Wounded, "
+        "he receives the Golden Segreant Griffin in hospital."),
+    "Liberation of Lalande 21185": (2353, None,
+        "With Esperanza dead, Nakdong and the Lalande system are liberated (~mid-August 2353), "
+        "ending the civil war. The War Chancellery trumpets a triumph; in truth a mediocre "
+        "success that the coming Foxtrot disaster will expose."),
+    "The Foundation Plague": (2354, 2356,
+        "Loosed on the rim by the Directorate after the truce collapse — a pandemic first "
+        "blamed on the Assault after an Asimov outbreak. It rots the Stahlburgh and Eisenwald "
+        "harvests into famine; core-world families flee to Hansaburgh."),
+    "Battle of Procyon": (2355, None,
+        "Early 2355, on the ground: the Fomalhaut Republic Mobile Infantry carry Procyon after "
+        "hard fighting — General Eachan's son Donal among the dead — with Lenart's 7th Fleet "
+        "in close support. The Protelani Space Marines fare badly; the Fomalhaut infantry "
+        "win it."),
+    "Battle of Eiswelt": (2355, None,
+        "The Pale Horse over Eiswelt: a 'small' Terran listening post on the capital system's "
+        "ice world proves a major fleet trap. Jurgen's 75th Grenadiers raid the post; the Navy "
+        "wins at terrible cost — O'Riordan's flagship Duchess Máire Gleann O'Cruadhlaoich is "
+        "rammed by cloaked Terrans. The ambush births a new doctrine: Directorate stars, not "
+        "client states."),
+    "Battle of Wolf 359": (2355, None,
+        "Weeks after Eiswelt, the new doctrine's first blow: Field Marshal von Eisenbach and "
+        "Fleet Admiral von Stahlgeist gut the Terran orbital industry — the Locking yards and "
+        "the Ramsen Orbital Forge — as the 7th and 8th Stahlburgh Rifles land. 'The Assault "
+        "had gutted Wolf 359's heart.'"),
+    "Battle of Protelan": (2355, None,
+        "Near-simultaneous with Wolf 359: a cloaked Terran First Fleet slips toward Protelan "
+        "while Henry is on-world sealing the alliance with Dictator Halvorsen. Rear Admiral "
+        "Sternfahrer's 33rd Strike Fleet (flagship Promachos) and Grand Admiral Sorensen's "
+        "Protelani Third hold the line; Lenart's 7th, arriving from Procyon, delivers the "
+        "coup de grâce."),
+    "Insurrection in Havskrun": (2355, None,
+        "The Terran-backed Svenson faction rises in Havskrun and seizes Dictator Halvorsen, "
+        "Terran regiments landing on the islands offshore; two battalions of the 73rd "
+        "'Glorious' Grenadiers dropped by Lenart retake the city. The Svensons are captured, "
+        "the Terrans surrender — the alliance holds."),
 }
 
 # Retitle after the update pass (title is the idempotency key)
@@ -174,6 +220,53 @@ NEW_EVENTS = [
     (2397, None, "Nuclear Bombardment of Earth",
      "Ilsabeth ends the Second War with the total nuclear bombardment of Earth.",
      "war", 500000, "felgenland_union"),
+    # ── War update 2026-07-04 (timeline doc revision + author rulings) ──
+    (2351, None, "Color Revolution on Nakdong",
+     "A Terran-backed coup topples Prime Minister Javier Suno; the tyrant Xiomar Zhan-Li "
+     "Esperanza seizes power and civil war erupts — pro-Union contras against Terran-proxy "
+     "Revolutionaries. The Directorate's way: undermine before you invade.",
+     "political", 53879, "terran_directorate"),
+    (2355, None, "Battle of Protelan",
+     "A cloaked Terran First Fleet slips toward Havskrun while Henry seals the Union–Protelan "
+     "alliance. Admiral Johanna Sternfahrer's 33rd Strike Fleet screens behind the gas giant, "
+     "the 21st Fleet as bait and Fleet Admiral Lunara von Stahlgeist's 5th for the kill — the "
+     "SOSTS net trips the stealth drives. (Late 2355; exact date TBC.)",
+     "battle", 56828, "felgenland_union"),
+    (2355, None, "Insurrection in Havskrun",
+     "Terran regiments land off Havskrun with robotic artillery, wreck the arcology and seize "
+     "Dictator Halvorsen; Rear Admiral Elaine Lenart drops two battalions of the 73rd "
+     "Stahlburgh 'Glorious' Grenadiers to retake the city. The Terrans surrender — the "
+     "alliance holds.", "battle", 56828, "felgenland_union"),
+    (2355, None, "Tau Ceti Liberated",
+     "Following the Second Battle of Asimov, the Tau Ceti client state is freed. The Union "
+     "takes no territory in this war — it liberates.", "political", 8087, None),
+    # ── The three attacks on the Union homeworlds:
+    #    Hansaburgh (Dec 2353) → Asher counterstroke (2354) → Eiswelt trap (2355)
+    (2354, None, "Operation AENEAS BURDEN",
+     "After the truce collapses, the Union hits back: the raid on Alpha Centauri aimed at "
+     "destabilizing the Directorate's grip on its clients. Fleet Admiral O'Riordan's 10th, "
+     "Sorensen's Protelani Third and Lenart's 7th break the system while General Bruce's 2nd "
+     "Division takes the ground — a costly, bloody-mess success.", "battle", 71456,
+     "felgenland_union"),
+    (2354, None, "Battle of Asher",
+     "The home-front counterstroke: a Terran fleet drives on Stahlburgh, and Commodore "
+     "Sternfahrer's 21st Fleet baits it behind the gas giant Asher onto von Stahlgeist's 5th, "
+     "killing the battleship Proletarian Titan. The second of three strikes at the Union's "
+     "heart — and the ambush that earns Johanna the 33rd.", "battle", 48941,
+     "terran_directorate"),
+    (2355, None, "Battle of Eiswelt",
+     "The Pale Horse over Eiswelt: a Terran listening post on the capital system's ice world "
+     "proves a fleet trap; a costly Union naval win.", "battle", 48941,
+     "terran_directorate"),
+    (2355, None, "Battle of Procyon",
+     "The Allies carry the fight to the Directorate's client state at Procyon.",
+     "battle", 37173, "dorsai_republic"),
+    (2355, 2356, "The Mars Campaign",
+     "PROJECT ARES infiltration → Operation SPEAR OF DESTINY → Operation DEAD ARES: Jurgen's "
+     "75th Grenadiers, inserted disguised as pirates to seize the Maxim of Mars, Timon Bauer, "
+     "blow their cover but hold as the 7th and 8th Stahlburgh Rifles storm the domes. Only "
+     "weeks separate Mars, the fall of Luna, and the armistice.", "battle", 500000,
+     "felgenland_union"),
     # ── Era structure (period markers) ──
     (2357, 2379, "Cultural Renaissance",
      "From the Accord to Raimond's death: reconstruction, prosperity, and the first peace "
@@ -195,16 +288,11 @@ NEW_EVENTS = [
 
 
 def apply_events(con):
+    # Order matters: deletes → inserts → updates → retitles, so that a FRESH
+    # rebuild (where NEW_EVENTS are inserted this run) still receives the
+    # EVENT_UPDATES corrections layered on top.
     for title in SUPERSEDED_TITLES:
         con.execute("DELETE FROM historical_events WHERE title = ?", (title,))
-
-    for title, (year, end_year, desc) in EVENT_UPDATES.items():
-        con.execute(
-            "UPDATE historical_events SET year = COALESCE(?, year), end_year = ?, description = ? "
-            "WHERE title = ?", (year, end_year, desc, title))
-
-    for old, new in RETITLES.items():
-        con.execute("UPDATE historical_events SET title = ? WHERE title = ?", (new, old))
 
     inserted = 0
     for year, end_year, title, desc, etype, star_id, nation_id in NEW_EVENTS:
@@ -215,6 +303,24 @@ def apply_events(con):
             "star_id, nation_id) VALUES (?,?,?,?,?,?,?)",
             (year, end_year, title, desc, etype, star_id, nation_id))
         inserted += 1
+
+    for title, (year, end_year, desc) in EVENT_UPDATES.items():
+        con.execute(
+            "UPDATE historical_events SET year = COALESCE(?, year), end_year = ?, description = ? "
+            "WHERE title = ?", (year, end_year, desc, title))
+
+    for old, new in RETITLES.items():
+        con.execute("UPDATE historical_events SET title = ? WHERE title = ?", (new, old))
+
+    # Nation attribution fixes (EVENT_UPDATES doesn't touch nation_id)
+    con.execute("UPDATE historical_events SET nation_id='dorsai_republic' "
+                "WHERE title='Battle of Procyon'")
+
+    # Safety net: retitle/re-seed interactions can duplicate a title — keep
+    # the oldest row of any exact-title duplicate
+    con.execute("DELETE FROM historical_events WHERE id NOT IN "
+                "(SELECT MIN(id) FROM historical_events GROUP BY title)")
+
     print(f"master timeline: {len(SUPERSEDED_TITLES)} superseded, "
           f"{len(EVENT_UPDATES)} updated, {inserted} new events")
 
@@ -250,14 +356,16 @@ def apply_territory_and_stars(con):
         "DELETE FROM star_ownership WHERE star_id=56828 AND nation_id='protelani_republic' "
         "AND era_start != 2184")
 
-    # Tau Ceti: Directorate stronghold 2192–2354 → Union from 2355 (system table)
+    # Tau Ceti: Directorate stronghold 2192–2354, then LIBERATED 2355.
+    # Author ruling 2026-07-04: "the Union didn't take territory in the war,
+    # just liberated client states" — overrides the system table's "→ Union
+    # (2355)". No successor interval: the freed system shows unaffiliated.
     con.execute(
         "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
         "VALUES (8087, 'terran_directorate', 2192, 2354)")
     con.execute(
-        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
-        "VALUES (8087, 'felgenland_union', 2355, 3000)")
-    print("master timeline: territory (Tau Ceti 2355, Protelan 2184/2390) + star dates applied")
+        "DELETE FROM star_ownership WHERE star_id=8087 AND nation_id='felgenland_union'")
+    print("master timeline: territory (Tau Ceti liberated 2355, Protelan 2184/2390) + star dates applied")
 
 
 def main():

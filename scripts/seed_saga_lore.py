@@ -84,8 +84,10 @@ EVENTS = [
     (2356, None, "Peace Talks at Beijing Arcology",
      "Henry and Bonnie face Maxim-Ambassador Victoria at the Beijing Arcology; the Union's allies hold firm for peace and trade.",
      "treaty", 500000, None),
-    (2357, None, "Treaty of the Dual Spheres",
-     "After the 2356 armistice and a year of drawdown, the treaty is signed, carving the Rim into Union and Directorate spheres of influence with gray-zone buffers like Tau Ceti.",
+    # Canonical title is 'Accord' (master timeline); seeding it under the old
+    # 'Treaty' name caused a retitle/re-insert duplicate loop.
+    (2357, None, "Accord of Dual Spheres",
+     "Signed 15 January 2357 after the weeks-long armistice over Earth, the Accord carves the Rim into Union and Directorate spheres with gray-zone buffers.",
      "treaty", None, None),
     (2353, None, "Liberation of Lalande 21185",
      "Union forces liberate the Directorate client state at Lalande 21185; the Lalande Republic is born.",
@@ -135,7 +137,8 @@ NATION_LORE = {
         "economy_summary": "Sammelvolk-derived technology, genetic engineering, AI and "
                            "heavy industry, fed by client-state tribute",
         "military_summary": "Zhan Li- and Yin Ching-class cruiser fleets with stealth and "
-                            "drone-swarm doctrine under Maxim command",
+                            "drone-swarm doctrine under Maxim command. Byzantine in method: "
+                            "subversion, sabotage and color revolutions before kinetic war",
     },
     "protelani_republic": {
         "population": "~36 million (2350 est.)",
@@ -159,8 +162,9 @@ NATION_LORE = {
         "capital_city": "Pentothia Prime",
         "currency": None,
         "economy_summary": "Interstellar commerce through the Mercantile Consortium; "
-                           "trade outposts across the neutral frontier",
-        "military_summary": None,
+                           "trade outposts across the neutral frontier. Sat out the "
+                           "Union–Directorate War and profited from watching it",
+        "military_summary": "None to speak of — the Pentothians are profiteers, not fighters",
     },
 }
 

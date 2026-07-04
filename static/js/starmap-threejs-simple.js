@@ -1176,10 +1176,11 @@ class ThreeJSStarmap {
         const intervals = this.ownershipByStar?.get(star.id ?? star._id);
         if (intervals && intervals.length) {
             if (year == null) {
-                // No era filter → present-day view: the interval reaching the
-                // end of the timeline, or the latest one.
-                const iv = intervals.find(v => v.era_end >= 3000) || intervals[intervals.length - 1];
-                return iv.nation_id;
+                // No era filter → present-day view: only an interval reaching
+                // the end of the timeline counts. A closed final interval
+                // means the holder left (e.g. a liberated client state).
+                const iv = intervals.find(v => v.era_end >= 3000);
+                return iv ? iv.nation_id : null;
             }
             const iv = intervals.find(v => year >= v.era_start && year <= v.era_end);
             return iv ? iv.nation_id : null;

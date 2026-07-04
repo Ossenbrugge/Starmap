@@ -263,6 +263,71 @@ def check_star_dossiers(con):
             ok.append(f"dossiers/{title}: {len(wiki_planets)} wiki worlds all present ({len(db_planets)} in DB)")
 
 
+_BATTLE_WORDS = re.compile(
+    r"Battle|RAID|STRIKE|Operation|Insurrection|Revolt|Revolution|Siege|Blockade|Bombardment",
+    re.I)
+
+
+def check_master_timeline(con):
+    """Compare the master timeline doc against historical_events:
+    - our event years vs the years in the doc bullet that mentions them
+    - doc battle-phrases with no matching seeded event (missed battles)"""
+    doc = BRAIN / "_wiki-sync" / "data_backup_github" / "pages" / "felgenland_master_timeline.txt"
+    if not doc.exists():
+        info.append("timeline: master timeline doc not found — skipping")
+        return
+    text = doc.read_text()
+    bullets = re.findall(r"^\s*\*\s+(.+)$", text, re.M)
+
+    events = con.execute(
+        "SELECT title, year, end_year FROM historical_events "
+        "WHERE event_type IN ('battle','war','treaty','political','disaster') ORDER BY year"
+    ).fetchall()
+
+    def norm(s):
+        s = re.sub(r"[^a-z0-9 ]", "", s.lower())
+        return re.sub(r"\bthe\b", "", s).replace("  ", " ").strip()
+
+    matched_titles = set()
+    for title, year, end_year in events:
+        # find a bullet that names this event (loose containment)
+        key = norm(title).replace(" the ", " ")
+        hits = [b for b in bullets if key[:28] in norm(b)]
+        if not hits:
+            continue
+        matched_titles.add(norm(title))
+        years = {int(y) for b in hits for y in re.findall(r"\b(2[0-5]\d\d)\b", b)}
+        ok_years = {year} | ({end_year} if end_year else set())
+        if years and not (years & ok_years):
+            drift.append(f"timeline: '{title}' is {year}"
+                         f"{'–' + str(end_year) if end_year else ''} in the DB but the doc "
+                         f"bullet says {sorted(years)}")
+        else:
+            ok.append(f"timeline: '{title}' year matches doc")
+
+    # Phrases folded into a broader seeded event (campaign umbrellas)
+    covered_by = {
+        "operation spear of destiny": "The Mars Campaign",
+        "operation dead ares": "The Mars Campaign",
+        "project ares": "The Mars Campaign",
+    }
+    titles_norm = [norm(e[0]) for e in events]
+
+    # Battle-like bold phrases in the doc with no seeded event
+    for b in bullets:
+        for phrase in re.findall(r"\*\*([^*]+)\*\*", b):
+            if not _BATTLE_WORDS.search(phrase) or len(phrase) > 60:
+                continue
+            p = norm(phrase)
+            umbrella = covered_by.get(p)
+            if umbrella and norm(umbrella) in titles_norm:
+                continue
+            if not any(p[:24] in t or t[:24] in p for t in titles_norm):
+                yrs = re.findall(r"\b(2[0-5]\d\d)\b", b)
+                info.append(f"timeline: possible unseeded battle/event: "
+                            f"'{phrase.strip()}' ({', '.join(yrs) or 'undated'})")
+
+
 def main():
     if not BRAIN.is_dir():
         print(f"Brain directory not found: {BRAIN}")
@@ -273,6 +338,7 @@ def main():
         check_brandstadt(con)
         check_populations(con)
         check_star_dossiers(con)
+        check_master_timeline(con)
     finally:
         con.close()
 

@@ -1,6 +1,0 @@
-Flask==3.0.0
-Werkzeug==3.0.1
-montydb==2.5.3
-Flask-Login==0.6.3
-PyJWT==2.10.1
-pandas>=2.0.0

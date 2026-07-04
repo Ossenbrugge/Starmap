@@ -250,7 +250,9 @@
                                     <button id="eraPlayBtn" class="btn btn-outline-warning btn-sm py-0 px-2"
                                             onclick="toggleEraPlayback()" title="Play the timeline (auto-enables era filter)">▶</button>
                                     <button id="eraTourBtn" class="btn btn-outline-info btn-sm py-0 px-2"
-                                            onclick="toggleEraTour()" title="Guided tour: fly through galactic history event by event">🎬</button>
+                                            onclick="toggleEraTour('full')" title="Guided tour: fly through galactic history event by event">🎬</button>
+                                    <button id="eraWarTourBtn" class="btn btn-outline-danger btn-sm py-0 px-2"
+                                            onclick="toggleEraTour('war')" title="War Tour: the Union–Directorate War, 2350–2357 — longer dwell at the battles">⚔</button>
                                     <select id="eraPlaySpeed" class="form-select form-select-sm py-0"
                                             style="width:auto;font-size:0.7rem;" title="Playback speed">
                                         <option value="5">5 yr/s</option>
@@ -591,7 +593,8 @@
             <hr style="border-color:#334;margin:12px 0;">
             <div style="font-size:0.78rem;color:#888;">
                 <b style="color:#a0c4ff;">Era slider:</b> drag to travel through history, press ▶ to watch it unfold,
-                or 🎬 for a guided tour that flies to each event (Esc stops it).
+                🎬 for a guided tour of every event, or ⚔ for the War Tour (2350–2357,
+                lingering at the battles). Esc stops a tour.
                 Markers below the slider are historical events — click one for details.
                 The <span style="color:#cc6666;">red band</span> marks the Union–Directorate War (2352–2357).<br>
                 <b style="color:#a0c4ff;">★ Capital</b> button flies to a nation's capital star.<br>
@@ -1121,17 +1124,28 @@
         }
 
         // ── Cinematic tour: step through history, flying to each event ──────
-        let eraTour = null;   // {stops, idx, timer, saved}
+        const WAR_TOUR = { from: 2350, to: 2357 };   // First Asimov → the Accord
+        let eraTour = null;   // {mode, stops, idx, timer, saved}
 
-        function toggleEraTour() {
-            if (eraTour) { stopEraTour(); return; }
+        function toggleEraTour(mode = 'full') {
+            if (eraTour) {
+                const sameMode = eraTour.mode === mode;
+                stopEraTour();
+                if (sameMode) return;   // clicking the other button switches tours
+            }
             if (!allEvents.length) return;
             stopEraPlayback();
+
+            const years = [...new Set(allEvents
+                .filter(e => mode !== 'war' || (e.year >= WAR_TOUR.from && e.year <= WAR_TOUR.to))
+                .map(e => e.year))].sort((a, b) => a - b);
+            if (!years.length) return;
 
             const politicalEl = document.getElementById('politicalViewToggle');
             const tradeEl = document.getElementById('tradeRoutesOverlay');
             eraTour = {
-                stops: [...new Set(allEvents.map(e => e.year))].sort((a, b) => a - b),
+                mode,
+                stops: years,
                 idx: 0, timer: null,
                 saved: {   // view state to restore when the tour ends
                     political: politicalEl?.checked ?? false,
@@ -1146,8 +1160,8 @@
             const slider = document.getElementById('eraSlider');
             tog.checked = true; slider.disabled = false;
 
-            const btn = document.getElementById('eraTourBtn');
-            btn.textContent = '⏹'; btn.title = 'Stop the tour';
+            const btn = document.getElementById(mode === 'war' ? 'eraWarTourBtn' : 'eraTourBtn');
+            if (btn) { btn.textContent = '⏹'; btn.title = 'Stop the tour'; }
             _tourStep();
         }
 
@@ -1155,6 +1169,7 @@
             if (!eraTour) return;
             if (eraTour.idx >= eraTour.stops.length) { stopEraTour(); return; }
             const year = eraTour.stops[eraTour.idx];
+            const isWar = eraTour.mode === 'war';
 
             showEventsAt(year);   // moves slider, applies era, opens the event card
 
@@ -1162,19 +1177,27 @@
             const t = document.getElementById('eraEventTicker');
             if (t) {
                 t.style.display = 'block';
-                t.innerHTML = `🎬 Tour ${eraTour.idx + 1}/${eraTour.stops.length} — Year ${year}`;
+                t.innerHTML = `${isWar ? '⚔ War Tour' : '🎬 Tour'} ` +
+                              `${eraTour.idx + 1}/${eraTour.stops.length} — Year ${year}`;
             }
 
             // Fly to the first event of the year that has a system attached
-            const ev = allEvents.find(e => e.year === year && e.star_id != null);
+            // (in war mode, prefer the year's battle)
+            const atYear = allEvents.filter(e => e.year === year && e.star_id != null);
+            const ev = (isWar && atYear.find(e => e.event_type === 'battle')) || atYear[0];
             const star = ev && threejsStarmap?.currentStars.find(s => s.id === ev.star_id);
             if (star) {
                 threejsStarmap.highlightStar(star);
                 threejsStarmap.flyToStar(star, 60);
             }
 
+            // Battles get a longer look in war mode
+            const hasBattle = allEvents.some(e => e.year === year &&
+                (e.event_type === 'battle' || e.event_type === 'war'));
+            const dwell = isWar ? (hasBattle ? 9000 : 5500) : 6000;
+
             eraTour.idx++;
-            eraTour.timer = setTimeout(_tourStep, 6000);
+            eraTour.timer = setTimeout(_tourStep, dwell);
         }
 
         function stopEraTour() {
@@ -1184,6 +1207,8 @@
             eraTour = null;
             const btn = document.getElementById('eraTourBtn');
             if (btn) { btn.textContent = '🎬'; btn.title = 'Guided tour: fly through galactic history event by event'; }
+            const wbtn = document.getElementById('eraWarTourBtn');
+            if (wbtn) { wbtn.textContent = '⚔'; wbtn.title = 'War Tour: the Union–Directorate War, 2350–2357 — longer dwell at the battles'; }
             hideEventCard();
             // Restore the pre-tour view state (era stays at the last stop)
             const politicalEl = document.getElementById('politicalViewToggle');

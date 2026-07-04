@@ -169,3 +169,6 @@ _attic/
 # SQLite sidecar files
 *.sqlite-shm
 *.sqlite-wal
+
+# Wiki stub staging output (regenerable; copied into the wiki by the author)
+wiki_stubs/

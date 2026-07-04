@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+"""
+Master Timeline canon layer — from the CANON-CERTIFIED source of truth:
+_wiki-sync/.../pages/felgenland_master_timeline.txt ("Manuscripts win").
+Applied 2026-07-04; supersedes several earlier-seeded events and dates.
+
+Chain position: LAST canon step (after seed_saga_lore.py). Idempotent:
+deletes superseded titles, updates by title, inserts if absent.
+
+Key rulings encoded:
+  - War chronology per the locked timeline (First Asimov 2350 pre-declaration,
+    declaration 24 Nov 2352, Foxtrot Oct 2353 / Mar 2354, Second Asimov June
+    2354, truce Jun–Oct 2354, Bester Dec 2354, Foundation Plague 2354–2356,
+    fighting ends 2356, ACCORD of Dual Spheres signed 15 Jan 2357).
+  - Tau Ceti: Directorate stronghold → Union 1055 er... 2355 (system table).
+  - Protelan: Republic founded 1 Aug 2184 (older than the Union!); accedes to
+    the Union ~2390 → nation era 2184–2390 + ownership flip.
+  - Settlement dates reconciled: Hansaburgh founded 2200 by Hadrian von Saltz
+    (Rolf discovered ~2185, installed figurehead Kaiser); Stahlburgh/Eisenwald
+    2215; Brandstadt ~2220 (named 2225); Lochiel 2230 (supersedes the earlier
+    2233 typo-fix ruling); L 98-59 Terran frontier 2225.
+  - Era structure through 2510+ (Cultural Renaissance … Splintering ⚠ TBD).
+  - Toliman keeps its proper name (the system-wide settler name 'Hawking'
+    stays on the primary only) — fixes the doubled entry in nation panels.
+"""
+
+import os
+import sqlite3
+
+DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "starmap.sqlite")
+
+SUPERSEDED_TITLES = [
+    "Sammelvolk First Contact",          # → Sammelvolk Arrive on Earth (2093)
+    "Sammelvolk Landing at Beijing",     # folded into arrival; MWI is 2097
+    "First Felgenland Settlement",       # 2200 was Hansaburgh, not Stahlburgh
+    "Brandenburg Tor Colonized",         # merged into Hansaburgh Founded
+    "Protelan Colonized",                # superseded by 2184 Republic founding
+    "Battles of Foxtrot",                # split: orbital 2353 / ground 2354
+    "Stahlburgh Wheat Famine",           # subsumed by the Foundation Plague
+    "Age of Exploration Begins",         # → Era of Exploration period event
+]
+
+# title → (year, end_year, description)  [None year = keep existing]
+EVENT_UPDATES = {
+    "Hansaburgh Founded": (2200, None,
+        "Kapitän Hadrian von Saltz founds Hansaburgh on Brandenburg Tor (~12,000 colonists; "
+        "the Congress of Hansaburgh; salt-mining). Rolf the Navigator — who first reached the "
+        "system ~2185 — returns and is installed first Kaiser, a figurehead for the oligarchy."),
+    "Holsten Tor Colonized": (2215, None,
+        "Stahlburgh is settled under H. Malcolm MacLeod — discovery system #9, the Union's "
+        "future capital world."),
+    "Eisenwald Settled": (2215, None,
+        "The jungle moon of Stahlburgh is settled under Liam MacCarthy — the Union's future "
+        "industrial heart."),
+    "Brandstadt Settlement Begins": (2220, None,
+        "American frontier settlers begin colonizing Brandstadt; Tiefe-Grenze Tor is named in "
+        "2225. Brandstadt becomes a full Union province in 2355."),
+    "Griefen Tor Colonized": (2230, None,
+        "Lochiel is settled under Captain Jonas Strass — petroleum and helium-3 for the rim."),
+    "Protelan Republic Established": (2184, None,
+        "The Republic of Protelan is founded on 1 August 2184 at 61 Ursae Majoris — "
+        "ultra-capitalist, independent, and older than the Union itself. Capital: Havskrun."),
+    "Lalande 21185 Colonized": (2170, None,
+        "Libertad — the first colony outside Sol — is settled at Lalande 21185; Nakdong follows "
+        "later in-system."),
+    "Union–Directorate War": (2352, 2357,
+        "Declared 24 November 2352, eleven days after Karl's death. Five years of rim-wide war "
+        "end with the 2356 armistice and the Accord of Dual Spheres, signed 15 January 2357."),
+    "Treaty of the Dual Spheres": (2357, None,
+        "Signed 15 January 2357 after the weeks-long armistice over Earth, the Accord carves "
+        "the Rim into Union and Directorate spheres with gray-zone buffers."),
+    "Peace Talks at Beijing Arcology": (2356, None,
+        "With the Directorate collapsing into internal chaos and Allied fleets floating over "
+        "Earth, Henry and Bonnie face Maxim-Ambassador Victoria at the Beijing Arcology."),
+}
+
+# Retitle after the update pass (title is the idempotency key)
+RETITLES = {
+    "Treaty of the Dual Spheres": "Accord of Dual Spheres",
+    # auto-titled before the star carried its saga name
+    "HD 99492 Colonized": "Argylle Tor Colonized",
+}
+
+# (year, end_year, title, description, event_type, star_id, nation_id)
+NEW_EVENTS = [
+    # ── Pre-Settlement (2093–2170) ──
+    (2093, None, "Sammelvolk Arrive on Earth",
+     "The Sammelvolk arrive; their Beijing base is established by 2094–96 and humanity is "
+     "reduced to 'fancy pets'.", "contact", 500000, None),
+    (2097, None, "McWilliams Institute Founded",
+     "The MWI rises in Pennsylvania — alien-tech 'cargo cults' in service of the new order.",
+     "political", 500000, None),
+    (2106, 2109, "Texas Secession & U.S. Civil War",
+     "Secession and civil war on Earth; survivors like Raymond Neu-Branfels are sent to the "
+     "Mars gulags by 2111.", "war", 500000, None),
+    # ── Settlement era ──
+    (2235, None, "Sea Revolt on Lochiel",
+     "Five years after settlement, Lochiel's seas rise in revolt.", "political", 43464,
+     None),
+    # ── Union–Directorate War (locked chronology) ──
+    (2350, None, "First Battle of Asimov",
+     "11–12 September: the Assault's catastrophic, unready defeat under General Meagher at "
+     "Tau Ceti — two years before war is even declared.", "battle", 8087, "terran_directorate"),
+    (2352, None, "VIKINGRAID at Nakdong",
+     "25 November, the war's second day: Max earns 'Maximum Carnage' at Nakdong and Hannah "
+     "DeBeck becomes the war's first ace.", "battle", 53879, "felgenland_union"),
+    (2352, None, "Operation Glorious Dead",
+     "Jurgen Wulfjaeger's suicide bunker assault kills the tyrant Xiomar Zhan-Li Esperanza; "
+     "he receives the Golden Segreant Griffin from a hospital bed.", "battle", None,
+     "felgenland_union"),
+    (2353, None, "Orbital Battle of Foxtrot",
+     "5–6 October: the Bismarck and T. Roosevelt go down over L 98-59 f, the Fourth Fleet is "
+     "annihilated, and Henry is stranded on Foxtrot — the Navy's brutal wake-up.",
+     "battle", 999998, "terran_directorate"),
+    (2353, None, "Terran Attack on Hansaburgh",
+     "27 December: the Directorate strikes the Union's industrial heartland.",
+     "battle", 46945, "terran_directorate"),
+    (2354, None, "Ground Battle of Foxtrot",
+     "5–7 March, Project Ithaca: after five months of guerrilla war, Geordie Stewart's 73rd "
+     "fights through to rescue Henry.", "battle", 999998, "felgenland_union"),
+    (2354, None, "SOLAR STRIKE",
+     "13 May: the Union strikes into the Sol system itself.", "battle", 500000,
+     "felgenland_union"),
+    (2354, None, "Second Battle of Asimov",
+     "9–11 June: Klaus von Eisenbach's decisive victory secures Tau Ceti and redeems the "
+     "Assault for 2350; he is made Field Marshal.", "battle", 8087, "felgenland_union"),
+    (2354, None, "Truce of 2354",
+     "25 June – 5 October: a three-and-a-half-month truce for Accord negotiations — broken by "
+     "the Directorate.", "treaty", None, None),
+    (2354, None, "Henry Crowned Emperor of Hansaburgh",
+     "Surviving a July assassination attempt at the Congressional Building, Henry wins the "
+     "general election and is crowned 16–20 September.", "political", 46945,
+     "felgenland_union"),
+    (2354, None, "Battle of Bester",
+     "26 December, on Asimov's moon: Jurgen's team extracts the defecting General Musa — who "
+     "dares defect only because Klaus's June victory has already decided the war.",
+     "battle", 8087, "felgenland_union"),
+    (2354, 2356, "The Foundation Plague",
+     "A pandemic — first blamed on the Assault after an Asimov outbreak — spreads through the "
+     "rim and rots the Stahlburgh and Eisenwald harvests into famine; core-world families "
+     "flee to Hansaburgh.", "disaster", 48941, None),
+    (2355, 2356, "Sol Blockade",
+     "The war grinds on across the blockade of Sol and other fronts as the Terran Directorate "
+     "fractures from within; the fighting ends in 2356.", "war", 500000, None),
+    # ── Cultural Renaissance ──
+    (2357, None, "Ashur Kriegswerks Founded",
+     "The Campbell–MacCarthy joint venture rises on Ashur under CEO Emma Holden.",
+     "political", 48941, "felgenland_union"),
+    (2366, None, "Eisenbach Reforms",
+     "On the Assault's centennial, Field Marshal Klaus rebuilds it into six standing "
+     "divisions; the SturmRitter Mk VI 'Centennial' follows in 2367.", "political", None,
+     "felgenland_union"),
+    # ── Era of Exploration and after ──
+    (2380, None, "Explorer Corps Founded",
+     "Henry founds the Erforschungskorps with Jurgen as founding Supreme Expedition Lead.",
+     "political", None, "felgenland_union"),
+    (2380, 2381, "Chalawan First Contact",
+     "The Corps meets the sentient natives of Chalawan at 47 Ursae Majoris.",
+     "contact", 53565, "felgenland_union"),
+    (2389, None, "Henry Disappears",
+     "The Protector vanishes into a space-time anomaly, leaving no elected successor; the "
+     "Cognatii cannot agree and the Union drifts leaderless.", "political", None,
+     "felgenland_union"),
+    (2390, None, "Protelan Accedes to the Union",
+     "Amid the Interregnum, Protelan joins the Union — the combined bloc now holds the lion's "
+     "share of Rim trade, goading the Maxims toward war.", "political", 56828,
+     "felgenland_union"),
+    (2391, 2397, "Second Union–Directorate War",
+     "A Terran attack on the colonies forces the electors' hand; the war ends in 2397 with "
+     "Ilsabeth's total nuclear bombardment of Earth.", "war", None, None),
+    (2391, None, "Ilsabeth Elected Protector",
+     "The Terran attack ends the Interregnum: Ilsabeth von Machthaber is elected Protector.",
+     "political", None, "felgenland_union"),
+    (2397, None, "Nuclear Bombardment of Earth",
+     "Ilsabeth ends the Second War with the total nuclear bombardment of Earth.",
+     "war", 500000, "felgenland_union"),
+    # ── Era structure (period markers) ──
+    (2357, 2379, "Cultural Renaissance",
+     "From the Accord to Raimond's death: reconstruction, prosperity, and the first peace "
+     "colonies.", "era", None, None),
+    (2379, 2389, "Era of Exploration",
+     "Henry's tenure begins at midnight, 21 July 2379; the Explorer Corps opens the far rim "
+     "until his disappearance.", "era", None, None),
+    (2389, 2391, "The Interregnum",
+     "No Protector; political chaos.", "era", None, None),
+    (2397, 2473, "Era of Openness",
+     "A multipolar peace: the Union (now including Protelan), the Fomalhaut Republic, and "
+     "other powers hold a balance in which no one state can threaten the rest.",
+     "era", None, None),
+    (2473, 2510, "Die Blütezeit — The Golden Age",
+     "The Flowering: the Union's heyday of arts, wealth, and reach.", "era", None, None),
+    (2510, None, "The Splintering of the Union",
+     "The long decline begins. (Canon TBD.)", "era", None, None),
+]
+
+
+def apply_events(con):
+    for title in SUPERSEDED_TITLES:
+        con.execute("DELETE FROM historical_events WHERE title = ?", (title,))
+
+    for title, (year, end_year, desc) in EVENT_UPDATES.items():
+        con.execute(
+            "UPDATE historical_events SET year = COALESCE(?, year), end_year = ?, description = ? "
+            "WHERE title = ?", (year, end_year, desc, title))
+
+    for old, new in RETITLES.items():
+        con.execute("UPDATE historical_events SET title = ? WHERE title = ?", (new, old))
+
+    inserted = 0
+    for year, end_year, title, desc, etype, star_id, nation_id in NEW_EVENTS:
+        if con.execute("SELECT 1 FROM historical_events WHERE title = ?", (title,)).fetchone():
+            continue
+        con.execute(
+            "INSERT INTO historical_events (year, end_year, title, description, event_type, "
+            "star_id, nation_id) VALUES (?,?,?,?,?,?,?)",
+            (year, end_year, title, desc, etype, star_id, nation_id))
+        inserted += 1
+    print(f"master timeline: {len(SUPERSEDED_TITLES)} superseded, "
+          f"{len(EVENT_UPDATES)} updated, {inserted} new events")
+
+
+def apply_legacy_deletions(con):
+    """Canon retired by the author (2026-07-04): Lübeck Tor (star 115218) was
+    old data — removed from stars, territories and ownership. Kept here so
+    pre-existing databases running the chain also drop it."""
+    con.execute("DELETE FROM stars WHERE id=115218")
+    con.execute("DELETE FROM nation_territories WHERE star_id=115218")
+    con.execute("DELETE FROM star_ownership WHERE star_id=115218")
+
+
+def apply_territory_and_stars(con):
+    # Settlement-date reconciliation (drives era gating and labels)
+    con.execute("UPDATE stars SET discovery_year=2200 WHERE id=46945")   # Hansaburgh founded
+    con.execute("UPDATE stars SET discovery_year=2230 WHERE id=43464")   # Lochiel settled
+    con.execute("UPDATE stars SET discovery_year=2184 WHERE id=56828")   # Protelan Republic
+    con.execute("UPDATE stars SET discovery_year=2220 WHERE id=999999")  # Brandstadt settled
+    # The system-wide settler name 'Hawking' stays on the primary only
+    con.execute("UPDATE stars SET fictional_name='' WHERE id=71453")     # Toliman
+
+    # Protelan: independent 2184–2389, Union member from 2390
+    con.execute("UPDATE nations SET era_start=2184, era_end=2390 WHERE id='protelani_republic'")
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (56828, 'protelani_republic', 2184, 2389)")
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (56828, 'felgenland_union', 2390, 3000)")
+    # Remove any older protelani interval with a different start (idempotent cleanup)
+    con.execute(
+        "DELETE FROM star_ownership WHERE star_id=56828 AND nation_id='protelani_republic' "
+        "AND era_start != 2184")
+
+    # Tau Ceti: Directorate stronghold 2192–2354 → Union from 2355 (system table)
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (8087, 'terran_directorate', 2192, 2354)")
+    con.execute(
+        "INSERT OR REPLACE INTO star_ownership (star_id, nation_id, era_start, era_end) "
+        "VALUES (8087, 'felgenland_union', 2355, 3000)")
+    print("master timeline: territory (Tau Ceti 2355, Protelan 2184/2390) + star dates applied")
+
+
+def main():
+    con = sqlite3.connect(DB_PATH)
+    try:
+        apply_events(con)
+        apply_territory_and_stars(con)
+        apply_legacy_deletions(con)
+        con.commit()
+        n = con.execute("SELECT COUNT(*) FROM historical_events").fetchone()[0]
+        print(f"historical_events total: {n}")
+    finally:
+        con.close()
+
+
+if __name__ == "__main__":
+    main()

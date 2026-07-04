@@ -11,6 +11,7 @@ if [ ! -f /app/data/starmap.sqlite ]; then
     python scripts/migrate_timeline_events.py
     python scripts/migrate_nation_lore.py
     python scripts/seed_saga_lore.py
+    python scripts/seed_master_timeline.py
     python scripts/import_provinces.py
     echo "Database build complete."
 fi

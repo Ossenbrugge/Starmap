@@ -14,6 +14,7 @@ RUN python scripts/migrate_to_sqlite.py && \
     python scripts/migrate_timeline_events.py && \
     python scripts/migrate_nation_lore.py && \
     python scripts/seed_saga_lore.py && \
+    python scripts/seed_master_timeline.py && \
     python scripts/import_provinces.py
 
 ENV FLASK_APP=app_refactored.py

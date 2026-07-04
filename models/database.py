@@ -408,6 +408,38 @@ class Database:
             ]
         return rows
 
+    # ── Historical events / era ownership ────────────────────────────────────
+    # Tables created by scripts/migrate_timeline_events.py; return [] when the
+    # migration has not been run so the API degrades gracefully.
+
+    def get_historical_events(self, start: Optional[int] = None,
+                              end: Optional[int] = None) -> List[Dict]:
+        sql = "SELECT * FROM historical_events"
+        clauses: List[str] = []
+        params: List[Any] = []
+        if start is not None:
+            clauses.append("COALESCE(end_year, year) >= ?")
+            params.append(start)
+        if end is not None:
+            clauses.append("year <= ?")
+            params.append(end)
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY year, id"
+        try:
+            return self._q(sql, tuple(params))
+        except sqlite3.OperationalError:
+            return []
+
+    def get_star_ownership(self) -> List[Dict]:
+        try:
+            return self._q(
+                "SELECT star_id, nation_id, era_start, era_end "
+                "FROM star_ownership ORDER BY star_id, era_start"
+            )
+        except sqlite3.OperationalError:
+            return []
+
     # ── Statistics ────────────────────────────────────────────────────────────
 
     def get_stats(self) -> Dict[str, Any]:

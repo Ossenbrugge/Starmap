@@ -294,6 +294,14 @@ class StarService:
             'has_planets': False,
             'is_fictional': star.get('is_fictional', False),
             'nation_id': star.get('nation_id', ''),
+            # Era/lore fields — the frontend gates names, labels and nation
+            # colors on these; luminosity drives the system-map habitable zone.
+            'proper_name': star.get('proper_name', ''),
+            'discovery_number': star.get('discovery_number'),
+            'discovery_year': star.get('discovery_year'),
+            'era_start': star.get('era_start'),
+            'era_end': star.get('era_end'),
+            'luminosity': star.get('luminosity'),
         }
 
     def _get_best_star_name(self, star: Dict[str, Any]) -> str:

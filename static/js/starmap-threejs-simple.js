@@ -16,7 +16,10 @@ class ThreeJSStarmap {
         this.nations = [];
         this.nationFilter = null;      // Set of star IDs for nation filter (nation 1)
         this.nationFilter2 = null;     // Set of star IDs for nation 2 (compare mode)
+        this.nationFilterId = null;    // nation id behind nationFilter (for era ownership checks)
+        this.nationFilterId2 = null;
         this.eraYear = null;           // Current era year (null = no era filter)
+        this.ownershipByStar = null;   // Map star_id → [{nation_id, era_start, era_end}] (era territory)
         this.politicalView = false;
         this.flyAnimation = null;
         this.points = null;
@@ -83,6 +86,10 @@ class ThreeJSStarmap {
 
         this.habitableZoneGroup = new THREE.Group();
         this.scene.add(this.habitableZoneGroup);
+
+        // Name labels for notable systems (discovery systems + fictional stars)
+        this.labelsGroup = new THREE.Group();
+        this.scene.add(this.labelsGroup);
 
         // Create galactic axes and star interaction
         this.createGalacticAxes();
@@ -164,6 +171,7 @@ class ThreeJSStarmap {
             if (allStars.length > 0) {
                 console.log(`✅ Total stars loaded: ${allStars.length}`);
                 this.createStars(allStars);
+                this.createStarLabels();
             } else {
                 console.error('❌ No stars loaded from any source');
             }
@@ -359,6 +367,7 @@ class ThreeJSStarmap {
     setupStarInteraction() {
         this.raycaster = new THREE.Raycaster();
         this.raycaster.params.Points.threshold = 0.5;
+        this.raycaster.params.Line.threshold = 1.5;   // world units — makes thin route lines clickable
         this.mouse = new THREE.Vector2();
         this.intersects = [];
         this.highlightedStar = null;
@@ -566,9 +575,71 @@ class ThreeJSStarmap {
                     console.log('⭐ Star clicked:', clickedStar);
                     this.displayStarDetails(clickedStar);
                     this.highlightStar(clickedStar);
+                    return;
                 }
             }
         }
+
+        // No star hit — try trade route lines (only when the overlay is shown)
+        if (this.tradeRoutesGroup?.visible && this.tradeRoutesGroup.children.length) {
+            const hits = this.raycaster.intersectObjects(
+                this.tradeRoutesGroup.children.filter(c => c.visible), false);
+            if (hits.length > 0) {
+                const route = hits[0].object.userData;
+                if (route?.type === 'trade_route') this.displayRouteDetails(route);
+            }
+        }
+    }
+
+    /** Show a trade route's lore in the details panel. */
+    displayRouteDetails({ data: route, fromStar, toStar }) {
+        const detailsPanel = document.getElementById('starDetails');
+        const detailsContent = document.getElementById('starDetailsContent');
+        if (!detailsPanel || !detailsContent) return;
+
+        const esc = (s) => { const d = document.createElement('div');
+            d.appendChild(document.createTextNode(String(s ?? ''))); return d.innerHTML; };
+        const nation = this.nations.find(n => (n._id || n.id) === route.nation_id);
+        const color = nation ? ((nation.appearance && nation.appearance.color) || nation.color || '#888888') : '#888888';
+        const safeColor = /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#888888';
+        const starName = (s) => {
+            if (!s) return 'Unknown';
+            const colonized = (this.eraYear == null) || (s.discovery_year == null) || (this.eraYear >= s.discovery_year);
+            return (colonized && s.fictional_name) || s.name || `Star ${s.id}`;
+        };
+        const dx = (fromStar && toStar)
+            ? Math.hypot(fromStar.x - toStar.x, fromStar.y - toStar.y, fromStar.z - toStar.z)
+            : null;
+
+        const rows = [
+            ['Type', route.route_type], ['Category', (route.category || '').replace(/_/g, ' ')],
+            ['Frequency', route.frequency],
+            ['Active', route.era_start != null ? `${route.era_start} – ${route.era_end ?? 'present'}` : null],
+            ['Length', dx != null ? `${dx.toFixed(2)} pc (${(dx * 3.262).toFixed(1)} ly)` : null],
+        ].filter(([, v]) => v);
+
+        detailsContent.innerHTML = `
+            <h6 class="mb-1" style="color:${safeColor}">🚢 ${esc(route.name || route.id || 'Trade Route')}</h6>
+            <div class="small text-muted mb-2">
+                ${esc(starName(fromStar))} ⟶ ${esc(starName(toStar))}
+            </div>
+            ${nation ? `
+            <div class="mb-2 px-2 py-1 rounded d-flex align-items-center gap-2"
+                 style="border-left:3px solid ${safeColor}; background:rgba(0,0,0,0.4)">
+                <span style="width:8px;height:8px;border-radius:50%;background:${safeColor};display:inline-block;"></span>
+                <span class="small fw-bold">${esc(nation.name)}</span>
+            </div>` : ''}
+            ${rows.map(([k, v]) => `
+            <div class="d-flex justify-content-between py-1" style="border-bottom:1px solid rgba(255,255,255,0.06)">
+                <small class="text-muted">${k}</small><small>${esc(v)}</small>
+            </div>`).join('')}
+            <div class="mt-2 d-flex gap-2">
+                ${fromStar ? `<button class="btn btn-sm btn-outline-info py-0" style="font-size:0.7rem"
+                    onclick='window.threejsFlyToStarId(${Number(fromStar.id)})'>📍 ${esc(starName(fromStar))}</button>` : ''}
+                ${toStar ? `<button class="btn btn-sm btn-outline-info py-0" style="font-size:0.7rem"
+                    onclick='window.threejsFlyToStarId(${Number(toStar.id)})'>📍 ${esc(starName(toStar))}</button>` : ''}
+            </div>`;
+        detailsPanel.style.display = 'block';
     }
 
     onMouseMove(event) {
@@ -601,6 +672,14 @@ class ThreeJSStarmap {
             } else {
                 this.clearStarHighlights();
                 this.highlightedStar = null;
+                // Pointer cursor over clickable route lines
+                if (this.tradeRoutesGroup?.visible && this.tradeRoutesGroup.children.length) {
+                    const hits = this.raycaster.intersectObjects(
+                        this.tradeRoutesGroup.children.filter(c => c.visible), false);
+                    this.container.style.cursor = hits.length ? 'pointer' : '';
+                } else if (this.container.style.cursor) {
+                    this.container.style.cursor = '';
+                }
             }
         }
     }
@@ -634,9 +713,10 @@ class ThreeJSStarmap {
         const primaryName = star.name || (colonized ? star.fictional_name : null) || 'Unknown Star';
         const dist = star.distance ?? star.dist;
 
-        // Look up nation — only if colonized
-        const nation = colonized
-            ? this.nations.find(n => (n._id || n.id) === star.nation_id)
+        // Look up nation — era-aware (ownership intervals or discovery_year gate)
+        const holderId = this._nationIdAt(star);
+        const nation = holderId
+            ? this.nations.find(n => (n._id || n.id) === holderId)
             : null;
         const nationColor = nation ? ((nation.appearance && nation.appearance.color) || nation.color || '#888888') : null;
 
@@ -702,9 +782,9 @@ class ThreeJSStarmap {
             <div class="mb-2">
                 <small class="text-muted">Galactic coords (pc)</small><br>
                 <small class="text-secondary font-monospace">
-                    X ${star.x ? star.x.toFixed(2) : '?'} &nbsp;
-                    Y ${star.y ? star.y.toFixed(2) : '?'} &nbsp;
-                    Z ${star.z ? star.z.toFixed(2) : '?'}
+                    X ${star.x != null ? star.x.toFixed(2) : '?'} &nbsp;
+                    Y ${star.y != null ? star.y.toFixed(2) : '?'} &nbsp;
+                    Z ${star.z != null ? star.z.toFixed(2) : '?'}
                 </small>
             </div>
         `;
@@ -893,12 +973,13 @@ class ThreeJSStarmap {
             || (star.discovery_year == null)
             || (this.eraYear >= star.discovery_year);
         const starName = (colonized && star.fictional_name) || star.name || 'Unknown Star';
-        const magnitude = star.magnitude ? star.magnitude.toFixed(2) : '—';
+        const magnitude = star.magnitude != null ? star.magnitude.toFixed(2) : '—';
         const spectral = star.spectral_class || '—';
 
-        // Look up nation for tooltip — only if colonized
-        const nation = colonized
-            ? this.nations.find(n => (n._id || n.id) === star.nation_id)
+        // Look up nation for tooltip — era-aware
+        const tooltipHolderId = this._nationIdAt(star);
+        const nation = tooltipHolderId
+            ? this.nations.find(n => (n._id || n.id) === tooltipHolderId)
             : null;
         const nationName = nation ? nation.name : '';
         const nationColor = nation ? ((nation.appearance && nation.appearance.color) || '#888') : '';
@@ -956,6 +1037,145 @@ class ThreeJSStarmap {
             this.axisLabels.push(sprite);
             this.scene.add(sprite);
         });
+    }
+
+    // ── Star name labels ─────────────────────────────────────────────────────
+    // Persistent labels for notable systems: the 14 discovery systems and
+    // fictional stars. Era-aware — before a system's colonization year the
+    // label falls back to the astronomical name (or hides if there is none).
+
+    _makeLabelTexture(text, color = '#d5e5ff') {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512; canvas.height = 96;
+        const ctx = canvas.getContext('2d');
+        ctx.font = '600 40px "Segoe UI", Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0,0,0,0.95)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = color;
+        ctx.fillText(text, 256, 50);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    createStarLabels() {
+        while (this.labelsGroup.children.length > 0) {
+            const c = this.labelsGroup.children[0];
+            this.labelsGroup.remove(c);
+            c.material?.map?.dispose();
+            c.material?.dispose();
+        }
+
+        const notable = this.currentStars.filter(s =>
+            s.fictional_name || s.discovery_number != null);
+
+        const placed = new Set();   // avoid stacked duplicates (e.g. binary companions sharing a name)
+        for (const star of notable) {
+            const postName = star.fictional_name || star.name;
+            const key = `${postName}@${Math.round(star.x)},${Math.round(star.y)},${Math.round(star.z)}`;
+            if (placed.has(key)) continue;
+            placed.add(key);
+            const preName = star.proper_name || (star.is_fictional ? null : star.name);
+            if (!postName) continue;
+
+            const texPost = this._makeLabelTexture(postName, star.is_fictional ? '#8fffd0' : '#d5e5ff');
+            // Only build a second texture when the pre-colonization name differs
+            const texPre = (preName && preName !== postName)
+                ? this._makeLabelTexture(preName, '#9aa8c0')
+                : (star.discovery_year != null ? null : texPost);
+
+            const material = new THREE.SpriteMaterial({
+                map: texPost, transparent: true, depthWrite: false, opacity: 0.92,
+            });
+            const sprite = new THREE.Sprite(material);
+            sprite.position.set(star.x * 10, star.y * 10 + 2.2, star.z * 10);
+            sprite.scale.set(14, 2.6, 1);
+            sprite.userData = { star, texPre, texPost, passesFilter: true };
+            this.labelsGroup.add(sprite);
+        }
+        this.updateStarLabels();
+        console.log(`🏷 Created ${this.labelsGroup.children.length} star labels`);
+    }
+
+    /** Mirror of _recomputeFilter's per-star logic for label visibility. */
+    _starPassesFilter(star) {
+        if (this.nationFilter || this.nationFilter2) {
+            const holder = this._nationIdAt(star);
+            const matches = (set, id) => {
+                if (!set) return false;
+                if (this.ownershipByStar?.has(star.id)) return holder === id;
+                return holder != null && set.has(star.id);
+            };
+            if (!matches(this.nationFilter, this.nationFilterId) &&
+                !matches(this.nationFilter2, this.nationFilterId2)) return false;
+        }
+        if (this.eraYear != null && (star.era_start != null || star.era_end != null)) {
+            if ((star.era_start != null && this.eraYear < star.era_start) ||
+                (star.era_end != null && this.eraYear > star.era_end)) return false;
+        }
+        return true;
+    }
+
+    /** Re-evaluate label text (pre/post colonization) + filter state. */
+    updateStarLabels() {
+        this.labelsGroup.children.forEach(sp => {
+            const { star, texPre, texPost } = sp.userData;
+            const colonized = (this.eraYear == null)
+                || (star.discovery_year == null)
+                || (this.eraYear >= star.discovery_year);
+            const tex = colonized ? texPost : texPre;
+            sp.userData.eraVisible = !!tex && this._starPassesFilter(star);
+            if (tex && sp.material.map !== tex) {
+                sp.material.map = tex;
+                sp.material.needsUpdate = true;
+            }
+        });
+    }
+
+    // Era-dependent territory: ownership intervals loaded from /api/v1/star-ownership.
+    async loadOwnership() {
+        try {
+            const response = await fetch('/api/v1/star-ownership');
+            const data = await response.json();
+            if (data.success && Array.isArray(data.data) && data.data.length) {
+                this.ownershipByStar = new Map();
+                for (const row of data.data) {
+                    if (!this.ownershipByStar.has(row.star_id)) this.ownershipByStar.set(row.star_id, []);
+                    this.ownershipByStar.get(row.star_id).push(row);
+                }
+                // Keep intervals sorted so "latest" lookups are cheap
+                for (const list of this.ownershipByStar.values()) {
+                    list.sort((a, b) => a.era_start - b.era_start);
+                }
+                if (this.politicalView) this._refreshNationColors();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.warn('🗺 loadOwnership failed:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Which nation holds this star at the given year (default: current eraYear)?
+     * Prefers ownership intervals when the star has them; otherwise falls back
+     * to the static star.nation_id gated by discovery_year.
+     */
+    _nationIdAt(star, year = this.eraYear) {
+        const intervals = this.ownershipByStar?.get(star.id ?? star._id);
+        if (intervals && intervals.length) {
+            if (year == null) {
+                // No era filter → present-day view: the interval reaching the
+                // end of the timeline, or the latest one.
+                const iv = intervals.find(v => v.era_end >= 3000) || intervals[intervals.length - 1];
+                return iv.nation_id;
+            }
+            const iv = intervals.find(v => year >= v.era_start && year <= v.era_end);
+            return iv ? iv.nation_id : null;
+        }
+        if (year != null && star.discovery_year != null && year < star.discovery_year) return null;
+        return star.nation_id || null;
     }
 
     // Overlay Loading Methods
@@ -1178,7 +1398,14 @@ class ThreeJSStarmap {
                     const line = new THREE.Line(geometry, material);
                     // computeLineDistances() is required for LineDashedMaterial
                     line.computeLineDistances();
-                    line.userData = { type: 'trade_route', data: route, isPrimary };
+                    // Keep the pristine distances: the flow animation shifts the
+                    // lineDistance attribute against these each frame.
+                    const distAttr = line.geometry.attributes.lineDistance;
+                    line.userData = {
+                        type: 'trade_route', data: route, isPrimary,
+                        fromStar, toStar,
+                        baseLineDistances: Array.from(distAttr.array),
+                    };
 
                     this.tradeRoutesGroup.add(line);
                 }
@@ -1382,15 +1609,37 @@ class ThreeJSStarmap {
                 this.camera.position.distanceTo(target);
         }
 
-        // Animate trade route dashes (flowing pulses)
+        // Animate trade route dashes (flowing pulses). Core LineDashedMaterial
+        // has no dashOffset uniform, so flow is done by sliding the lineDistance
+        // attribute: mod(vLineDistance, totalSize) shifts → dashes march along.
         const delta = this.clock.getDelta();
+        this._dashFlowOffset = (this._dashFlowOffset || 0) + delta;
         this.tradeRoutesGroup.children.forEach(child => {
-            if (child.material && child.material.isLineDashedMaterial) {
-                // Primary routes flow faster + reverse direction for visual distinction
-                const speed = child.userData.isPrimary ? -4.0 : -1.5;
-                child.material.dashOffset += speed * delta;
-            }
+            const base = child.userData?.baseLineDistances;
+            if (!base || !child.material?.isLineDashedMaterial) return;
+            // Primary routes flow faster for visual distinction
+            const speed = child.userData.isPrimary ? 8.0 : 3.0;
+            const attr = child.geometry.attributes.lineDistance;
+            const cycle = child.material.dashSize + child.material.gapSize;
+            const off = (this._dashFlowOffset * speed) % cycle;
+            // Subtract so dashes travel from the origin star toward the destination
+            for (let i = 0; i < base.length; i++) attr.array[i] = base[i] - off;
+            attr.needsUpdate = true;
         });
+
+        // Star labels: only show near the camera, scaled with distance so they
+        // keep a roughly constant (and modest) on-screen size
+        if (this.labelsGroup.visible && this.labelsGroup.children.length) {
+            const camPos = this.camera.position;
+            this.labelsGroup.children.forEach(sp => {
+                const d = camPos.distanceTo(sp.position);
+                sp.visible = (sp.userData.eraVisible !== false) && d < 420;
+                if (sp.visible) {
+                    const w = Math.max(3, Math.min(16, d * 0.05));
+                    sp.scale.set(w, w * 0.19, 1);
+                }
+            });
+        }
 
         this.render();
     }
@@ -1414,13 +1663,17 @@ class ThreeJSStarmap {
             // Nation filter(s): 1.0 if matches nation1 OR nation2 (or no filter)
             let nf = 1.0;
             if (this.nationFilter || this.nationFilter2) {
-                // Uncolonized stars don't belong to any nation yet
-                const colonized = (this.eraYear == null)
-                    || (star.discovery_year == null)
-                    || (this.eraYear >= star.discovery_year);
-                const inN1 = colonized && this.nationFilter  ? this.nationFilter.has(star.id)  : false;
-                const inN2 = colonized && this.nationFilter2 ? this.nationFilter2.has(star.id) : false;
-                nf = (inN1 || inN2) ? 1.0 : 0.0;
+                const holder = this._nationIdAt(star);   // null = unheld at this era
+                const matches = (set, id) => {
+                    if (!set) return false;
+                    // Stars with ownership intervals match by current holder, so
+                    // territory that changes hands follows the era. Others use
+                    // the static membership set.
+                    if (this.ownershipByStar?.has(star.id)) return holder === id;
+                    return holder != null && set.has(star.id);
+                };
+                nf = (matches(this.nationFilter, this.nationFilterId) ||
+                      matches(this.nationFilter2, this.nationFilterId2)) ? 1.0 : 0.0;
             }
 
             // Era filter: 1.0 if the star exists in the current era, 0.0 otherwise
@@ -1438,18 +1691,22 @@ class ThreeJSStarmap {
             filterAttr.array[i] = Math.min(nf, ef);
         }
         filterAttr.needsUpdate = true;
+        this.updateStarLabels();
     }
 
     filterByNation(nationId) {
         this.nationFilter2 = null;  // clear compare-mode second filter
+        this.nationFilterId2 = null;
         if (!nationId) {
             this.nationFilter = null;
+            this.nationFilterId = null;
         } else {
             const nation = this.nations.find(n => (n._id || n.id) === nationId);
             const memberIds = new Set(
                 (nation?.territories || []).map(t => t.star_id ?? t)
             );
             this.nationFilter = memberIds;
+            this.nationFilterId = nationId;
         }
         this._recomputeFilter();
     }
@@ -1525,10 +1782,8 @@ class ThreeJSStarmap {
         const sc   = this.points.geometry.attributes.starColor;
         for (let i = 0; i < this.currentStars.length; i++) {
             const star = this.currentStars[i];
-            const colonized = (this.eraYear == null)
-                || (star.discovery_year == null)
-                || (this.eraYear >= star.discovery_year);
-            const c = colonized ? (colorMap[star.nation_id] || null) : null;
+            const nid = this._nationIdAt(star);
+            const c = nid ? (colorMap[nid] || null) : null;
             if (c) {
                 attr.setXYZ(i, c[0], c[1], c[2]);
             } else {
@@ -1713,6 +1968,8 @@ class ThreeJSStarmap {
         if (!nationId1 && !nationId2) {
             this.nationFilter  = null;
             this.nationFilter2 = null;
+            this.nationFilterId  = null;
+            this.nationFilterId2 = null;
         } else {
             const resolve = (id) => {
                 if (!id) return null;
@@ -1722,6 +1979,8 @@ class ThreeJSStarmap {
             };
             this.nationFilter  = resolve(nationId1);
             this.nationFilter2 = resolve(nationId2);
+            this.nationFilterId  = this.nationFilter  ? nationId1 : null;
+            this.nationFilterId2 = this.nationFilter2 ? nationId2 : null;
         }
         this._recomputeFilter();
     }

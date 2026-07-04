@@ -22,10 +22,11 @@ class StatsService:
                 'authenticated': authenticated
             }
 
-            if authenticated:
-                db_stats = self._get_database_stats()
-                if db_stats['success']:
-                    stats['database'] = db_stats['data']
+            # Entity counts are public data (the underlying endpoints are
+            # unauthenticated), so always include them for the stats panel.
+            db_stats = self._get_database_stats()
+            if db_stats['success']:
+                stats.update(db_stats['data'])
 
             return {'success': True, 'data': stats}
 

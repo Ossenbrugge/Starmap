@@ -13,10 +13,31 @@ class TradeRouteRepository(AbstractBaseRepository):
     def __init__(self, trade_route_model=None):
         super().__init__()
         self.trade_route_model = trade_route_model
+        self.database = None
+        self._init_database()
+
+    def _init_database(self):
+        """Attach to the application-wide Database singleton"""
+        try:
+            from app_refactored import get_database
+            self.database = get_database()
+        except Exception:
+            try:
+                from models.database import Database
+                self.database = Database()
+            except Exception as e:
+                print(f"Warning: Could not initialize database: {e}")
+                self.database = None
 
     def get_trade_routes(self) -> Dict[str, Any]:
         """Get all trade routes"""
-        return {'success': True, 'data': []}
+        try:
+            if not self.database:
+                return {'success': False, 'error': 'Database not available'}
+            routes = self.database.get_trade_routes()
+            return {'success': True, 'data': routes}
+        except Exception as e:
+            return {'success': False, 'error': f'Database error: {str(e)}'}
 
     def get_trade_network_analysis(self) -> Dict[str, Any]:
         """Get trade network analysis data"""

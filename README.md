@@ -11,10 +11,10 @@ The **Felgenland Saga** is set within 30 parsecs of Sol, where human civilisatio
 | Nation | Capital system | Notes |
 |---|---|---|
 | Terran Directorate | Sol | Earth-centred authoritarian republic |
-| Felgenland Union | Holsten Tor (20 LMi) | Trade federation; capital world Stahlburgh |
-| Protelani Republic | Protelan (61 UMa) | Ultra-capitalist republic |
+| Felgenland Union | Holsten Tor (20 LMi) | Federated Persona Union; capital world Stahlburgh |
+| Protelani Republic | Protelan (61 UMa) | Ultra-capitalist Mercantile republic |
 | Dorsai Republic | Fomalhaut | Elite military specialists |
-| Pentothian Trade Conglomerate | Pentothia Prime (Groombridge 1618) | Neutral reptilian traders |
+| Pentothian Trade Conglomerate | Pentothia Prime (Groombridge 1618) | Neutral reptilian trader confederacy |
 
 Key frontier systems include **Tiefe-Grenze Tor** (HD 86729), **Brandenburg Tor** (11 LMi), and **Greifen Tor** (55 Cancri / Copernicus).
 

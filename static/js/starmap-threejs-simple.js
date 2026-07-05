@@ -331,6 +331,7 @@ class ThreeJSStarmap {
             attribute float aNotable;
             uniform float   uMagLimit;
             uniform float   uCameraDistance;
+            uniform float   uViewRange;    // pc — cull beyond, depth-fade the outer part
             uniform bool    uPoliticalView;
             varying vec3    vColor;
             varying float   vAlpha;
@@ -342,20 +343,27 @@ class ThreeJSStarmap {
                 vFilter      = aFilter;
                 vNationColor = aNationColor;
 
-                // Hide stars dimmer than the current magnitude limit — but
-                // canon stars (aNotable) always stay visible.
-                float visible = max(step(magnitude, uMagLimit), aNotable);
+                // Distance from Sol (origin) in pc — positions are pc*10.
+                // Depth cue + range cull: full brightness within 55% of the
+                // view range, fading to nothing at the edge. Canon stars are
+                // exempt (always full, never culled).
+                float distPc = length(position) / 10.0;
+                float rangeFade = 1.0 - smoothstep(uViewRange * 0.55, uViewRange, distPc);
+                rangeFade = max(rangeFade, aNotable);
+
+                // Hide stars dimmer than the magnitude limit — canon stars always show.
+                float visible = max(step(magnitude, uMagLimit), aNotable) * step(0.02, rangeFade);
 
                 // LOD: brighter stars are larger; point size scales with camera
-                // proximity. Notable stars get a size/brightness floor so a
-                // faint canon star is never a sub-pixel dot.
+                // proximity. Notable stars get a size floor so a faint canon
+                // star is never a sub-pixel dot.
                 float brightness = max(aNotable * 2.0, max(0.0, uMagLimit - magnitude));
                 float sz = (2.0 + brightness * 3.0) * (50.0 / max(uCameraDistance, 1.0));
                 sz = clamp(sz, 0.5, 14.0);
 
                 gl_PointSize = sz * visible;
                 gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                vAlpha = visible * max(aNotable * 0.85, 0.4 + brightness * 0.6);
+                vAlpha = visible * max(aNotable * 0.85, (0.4 + brightness * 0.6) * rangeFade);
             }
         `;
 
@@ -378,6 +386,7 @@ class ThreeJSStarmap {
         `;
 
         const initialMag = parseFloat(document.getElementById('magLimit')?.value ?? '8');
+        const initialRange = parseFloat(document.getElementById('viewRange')?.value ?? '100');
 
         this.starMaterial = new THREE.ShaderMaterial({
             vertexShader,
@@ -385,6 +394,7 @@ class ThreeJSStarmap {
             uniforms: {
                 uMagLimit:       { value: initialMag },
                 uCameraDistance: { value: 10.0 },
+                uViewRange:      { value: initialRange },
                 uPoliticalView:  { value: false },
             },
             transparent: true,

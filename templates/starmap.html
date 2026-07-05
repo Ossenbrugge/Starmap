@@ -276,13 +276,14 @@
 
                             <!-- Star limit -->
                             <div class="mb-2">
-                                <label class="form-label small">Star Limit</label>
-                                <select id="starLimit" class="form-select form-select-sm">
-                                    <option value="500">500 stars</option>
-                                    <option value="1000" selected>1000 stars</option>
-                                    <option value="2000">2000 stars</option>
-                                    <option value="5000">5000 stars</option>
+                                <label class="form-label small">View Range</label>
+                                <select id="viewRange" class="form-select form-select-sm" onchange="onViewRangeChange(this.value)">
+                                    <option value="25">25 pc — inner</option>
+                                    <option value="50">50 pc</option>
+                                    <option value="75">75 pc</option>
+                                    <option value="100" selected>100 pc — all</option>
                                 </select>
+                                <div class="form-text small">Culls beyond range; distant stars fade for depth.</div>
                             </div>
 
                             <!-- Spectral type -->
@@ -1249,6 +1250,13 @@
         function onMagChange(value) {
             document.getElementById('magValue').textContent = parseFloat(value).toFixed(1);
             updateUrl();
+        }
+
+        // View range (pc): cull stars beyond it, depth-fade the outer part.
+        // Updates the shader uniform live — the render loop picks it up next frame.
+        function onViewRangeChange(value) {
+            if (threejsStarmap && threejsStarmap.starMaterial)
+                threejsStarmap.starMaterial.uniforms.uViewRange.value = parseFloat(value);
         }
 
         // ── Deep-linkable views ─────────────────────────────────────────────

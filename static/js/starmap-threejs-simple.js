@@ -202,6 +202,20 @@ class ThreeJSStarmap {
                 era_start: star.era_start || null,
                 era_end: star.era_end || null,
                 is_fictional: true,
+                // Astrogation fields — same shape as the real-star payload so
+                // the details panel treats ghost stars as first-class citizens
+                proper_name: star.proper_name || '',
+                absolute_magnitude: star.absolute_magnitude,
+                color_index: star.color_index,
+                luminosity: star.luminosity,
+                ra: star.ra,
+                dec: star.dec,
+                hip: star.hip,
+                hd: star.hd,
+                bayer: star.bayer,
+                flamsteed: star.flamsteed,
+                discovery_number: star.discovery_number,
+                discovery_year: star.discovery_year,
             };
         });
     }
@@ -795,6 +809,16 @@ class ThreeJSStarmap {
             star.hd ? `HD ${Math.round(star.hd)}` : null,
         ].filter(Boolean).join(' · ');
 
+        // Visibility from Sol — the HardSF-lite hook: several settled systems
+        // were only charted by deep survey because they're too faint for
+        // naked-eye astronomy (Tiefe-Grenze Tor's whole discovery story).
+        let visibility = null;
+        if (star.id !== 500000 && mag != null) {
+            visibility = mag <= 6.5 ? 'Naked eye'
+                : mag <= 12 ? `Telescope only <span class="text-muted">(mag ${mag.toFixed(1)})</span>`
+                : `Deep survey only <span class="text-muted">(mag ${mag.toFixed(1)})</span>`;
+        }
+
         const raDec = (star.ra != null && star.dec != null && !(star.ra === 0 && star.dec === 0 && star.id === 500000))
             ? (() => {
                 const h = Math.floor(star.ra), m = (star.ra - h) * 60;
@@ -817,7 +841,7 @@ class ThreeJSStarmap {
                 ${cell('Color (B−V)', ci != null ? ci.toFixed(2) : null, 'text-warning')}
                 ${cell('Luminosity', lum != null ? `${fmtLum(lum)} L☉` : null, 'text-warning')}
                 ${cell('Mass (est.)', mass != null ? `~${mass.toFixed(2)} M☉` : null, 'text-warning')}
-                ${cell('Distance', distPc != null ? `${distLy.toFixed(1)} ly <span class="text-muted">(${distPc.toFixed(1)} pc)</span>` : null, 'text-success')}
+                ${cell('Distance from Sol', distPc != null ? `${distLy.toFixed(1)} ly <span class="text-muted">(${distPc.toFixed(1)} pc)</span>` : null, 'text-success')}
                 ${cell('Constellation', con || null, 'text-success')}
             </div>
             ${designations ? `
@@ -849,6 +873,11 @@ class ThreeJSStarmap {
                     <div class="d-flex justify-content-between">
                         <span class="text-muted">Periphery crawl · 2350 torch</span>
                         <span>${fmtDays(crawlDays(periph, 0.00668))}</span>
+                    </div>` : ''}
+                    ${visibility ? `
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Visibility from Sol</span>
+                        <span>${visibility}</span>
                     </div>` : ''}
                     ${hz ? `
                     <div class="d-flex justify-content-between">

@@ -486,13 +486,18 @@ def seed_new_stars(con):
         "fictional_description='The Explorer Corps'' first great prize: a long-lived K0 dwarf "
         "with a near-Earth world in its habitable zone, opened for settlement by the Pathfinder "
         "Teams and named in their honor.' WHERE hd=87883")
+    # INSERT OR IGNORE (not REPLACE): on fresh builds seed_star_canon's
+    # FULL_STARS has already created this row WITH photometry (abs mag,
+    # luminosity, color index, ra/dec) — a REPLACE here wiped those columns.
     con.execute(
-        "INSERT OR REPLACE INTO stars (id, proper_name, fictional_name, fictional_description, "
-        "x, y, z, dist, magnitude, spectral_class, is_fictional) "
+        "INSERT OR IGNORE INTO stars (id, proper_name, fictional_name, fictional_description, "
+        "x, y, z, dist, magnitude, absolute_magnitude, luminosity, color_index, ra, dec, "
+        "spectral_class, is_fictional) "
         "VALUES (999997, '20 LMi B', 'Shattensonne', "
         "'The shadow-sun: 20 Leonis Minoris B, the M7V red dwarf companion of Holstensonne. "
         "A symbol of companionship in Union lore.', "
-        "-11.038308, 6.336788, 7.956742, 14.93, 14.0, 'M7V', 1)")
+        "-11.038308, 6.336788, 7.956742, 14.93, 14.0, 13.1, 0.0005, 2.0, 10.031, 31.966, "
+        "'M7V', 1)")
     print("new stars: Pathfinder Tor named (HD 87883), Shattensonne added (20 LMi B)")
 
 

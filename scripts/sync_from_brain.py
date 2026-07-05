@@ -249,7 +249,7 @@ def check_star_dossiers(con):
         world_aliases = {
             "Fortress Echelon": "Foxtrot",      # the fortress ON planet f (Foxtrot)
             "Protelan Prime": "Protelan",
-            "Hawking Prime": "Hawking",
+            "Hawking": "Hawking Prime",         # world = Hawking Prime; Hawking is the SYSTEM
             "Scorch": "Outpost Scorch",         # dossier shorthand for L 98-59 b
         }
         # normalize curly apostrophes before alias/compare

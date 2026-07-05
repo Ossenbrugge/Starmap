@@ -414,6 +414,36 @@ def apply_world_corrections(con):
         "Site of the December 2355 battle where General Musa defected. Named for Alfred "
         "Bester.' WHERE name='Bester' AND host_star_name='Tau Ceti'")
     con.execute("DELETE FROM exoplanets WHERE name='Bester' AND host_star_name='tau Cet'")
+    # Tau Ceti designations + real-catalog orbits (tau_ceti.txt authoritative;
+    # seeds-README feedback item 2). Heinlein=b, Bradbury=c, Clarke=d,
+    # Asimov=e, Bester=e I, Herbert=f. Poul: designation/orbit UNRECONCILED
+    # (collides with Herbert; open question for the author) — left as-is.
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=0.105, period=13.665, planet_type='Super-Earth', "
+        "mass=2.0, description='Sweltering jungle world — Tau Ceti b — a chaotic frontier of "
+        "100–120 million.' WHERE name='Heinlein' AND host_star_name='Tau Ceti'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=0.552, period=168.12 "
+        "WHERE name='Asimov' AND host_star_name='Tau Ceti'")
+    # Poul reconciled 2026-07-04: Tau Ceti g, added to tau_ceti.txt by the
+    # prose side (was colliding with Herbert at 1.35 AU)
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=1.7, period=915, mass=1.5, planet_type='Rocky', "
+        "description='Cold rocky world just beyond Herbert — Tau Ceti g — past the habitable "
+        "zone''s outer edge, its modest population sheltered in domed and valley settlements. "
+        "A quiet frontier that saw little of the war; post-2361, a Cetan Confederacy enclave. "
+        "Named for Poul Anderson.' WHERE name='Poul' AND host_star_name='Tau Ceti'")
+    # Hawking = the SYSTEM; Hawking Prime = the capital WORLD (α Cen A c,
+    # settler name New Eden). The separate 'Hawking' world row was a duplicate
+    # of the capital (seeds-README feedback item 3).
+    con.execute(
+        "DELETE FROM fictional_exoplanets WHERE name='Hawking' AND host_star_name='Hawking'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=1.1, planet_type='Earth-like', "
+        "description='Primary habitable world of Alpha Centauri A (α Cen A c) — settler name "
+        "New Eden, Directorate designation Hawking Prime. Temperate capital of the Centauran "
+        "Assembly, a Directorate client state of 700–900 million.' "
+        "WHERE name='Hawking Prime' AND host_star_name='Hawking'")
     con.execute(
         "UPDATE fictional_exoplanets SET description='Jupiter-like giant whose eclipses are "
         "celebrated in the Joi Veil Festival.' WHERE name='Joi' AND host_star_name='Protelan'")

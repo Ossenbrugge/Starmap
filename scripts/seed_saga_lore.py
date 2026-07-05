@@ -279,9 +279,11 @@ STALE_PLANETS_SQL = [
 # Echelon' is the installation on it), the Protelan moon (already present).
 MISSING_WORLDS = [
     # Hawking system (Alpha Centauri): A = Hawking, B = Toliman, plus Proxima
-    ("Hawking", "Hawking", "Earth-like", 1.1, 438, 1.1, 1.1, None,
-     "Temperate capital world of the Centauran Assembly, a Directorate client state of "
-     "700–900 million. Called Hawking Prime by the Directorate."),
+    # Hawking = system; the capital WORLD is Hawking Prime (settler name New Eden)
+    ("Hawking Prime", "Hawking", "Earth-like", 1.1, 438, 1.1, 1.1, None,
+     "Primary habitable world of Alpha Centauri A (α Cen A c) — settler name New Eden. "
+     "Temperate capital of the Centauran Assembly, a Directorate client state of "
+     "700–900 million."),
     ("Galileo", "Hawking", "Gas Giant", 5.2, 4383, None, 11.0, None,
      "Jupiter-like giant whose moons host mining outposts of 5–10 million."),
     ("Kepler", "Toliman", "Rocky", 0.7, 219, 0.8, 0.9, None,

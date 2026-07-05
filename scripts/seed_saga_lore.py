@@ -335,6 +335,34 @@ MISSING_WORLDS = [
      "Distant desert world mined for volatiles."),
     ("Grandpere", "Protelan", "Ice Giant", 154, None, None, 10.0, None,
      "Far Neptune-like giant with distant trade stations."),
+    # Lalande 21185 — Libertad, Nakdong already present; rest of the
+    # lalande_21185.txt roster (user catch 2026-07-05)
+    ("Gaso", "Lalande 21185", "Gas Giant", 2.94, 2946, 13.6, 4.0, None,
+     "Neptune-like giant (Lalande 21185 c) whose icy moons are worked for volatiles; "
+     "orbital platforms serve as refueling stations for 10–20 million."),
+    ("Lumirima", "Lalande 21185", "Earth-like", 0.20, 80, 1.5, 1.0, None,
+     "Serene aurora-lit world (Lalande 21185 e) of archipelagos and boreal forests — "
+     "the system's cultural hub post-2357; 30–50 million."),
+    ("Verdkampo", "Lalande 21185", "Earth-like", 0.25, 110, 2.0, 1.1, None,
+     "Warm savanna-and-desert world (Lalande 21185 f) of agricultural colonies, a "
+     "trade outpost post-2357; 50–70 million."),
+    ("Marhavo", "Lalande 21185", "Earth-like", 0.30, 150, 1.8, 1.0, None,
+     "Storm-swept ocean world (Lalande 21185 g), 80% sea with island continents — "
+     "maritime trade ports vital post-2357; 20–30 million."),
+    # Fomalhaut — Valorgraemo lives in the real-exoplanets table; these are the
+    # rest of the fomalhaut.txt roster. Batalklendo/Marrikoviro AUs are display
+    # placements keeping the dossier's relative spacing (+0.3/+0.7 AU from
+    # Valorgraemo) inside the A3V star's physical HZ (~4.0–5.8 AU) — the
+    # dossier's own 1.9–3.5 AU HZ figure is a wiki-side fix.
+    ("Fomalhaut b", "Fomalhaut", "Gas Giant", 177, 620500, None, 11.0, None,
+     "Distant super-Jupiter (α PsA b) whose icy moons feed resource extraction — and "
+     "whose orbital defense platforms are the Republic's rimward bulwark."),
+    ("Batalklendo", "Fomalhaut", "Earth-like", 4.4, 2433, 1.5, 1.1, None,
+     "Rugged cool-temperate world (α PsA d) of rolling plains and coniferous forests — "
+     "training ground of the Fomalhaut shock troops, and an agricultural exporter."),
+    ("Marrikoviro", "Fomalhaut", "Earth-like", 4.8, 2772, 1.3, 1.0, None,
+     "Storm-wracked ocean world (α PsA e), 70% sea — naval bases and trade ports "
+     "vital to the Republic's maritime defense and rimward commerce."),
     # Tau Ceti — Asimov, Heinlein, Bester already present
     ("Bradbury", "Tau Ceti", "Super-Earth", 0.133, 20.0, 3.1, None, None,
      "Hot, rocky world of Directorate weapons-testing bunkers; 80–100 million."),

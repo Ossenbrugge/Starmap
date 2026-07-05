@@ -447,11 +447,45 @@ def apply_world_corrections(con):
     con.execute(
         "UPDATE fictional_exoplanets SET description='Jupiter-like giant whose eclipses are "
         "celebrated in the Joi Veil Festival.' WHERE name='Joi' AND host_star_name='Protelan'")
+    # Grandpere orbit: a stale pre-existing row at 2.5 AU (the OLD dossier
+    # layout, before the author swapped Grandpere/Joi) blocked the 154 AU
+    # insert-if-absent, leaving two giants stacked at 2.5 (user catch
+    # 2026-07-05). 154 AU is the ruling — the jump-geometry wealth lore
+    # depends on it. Period = Kepler for ~0.93 M☉ (~1935 yr), not the
+    # dossier's "~4.25 million years" typo.
     con.execute(
-        "UPDATE fictional_exoplanets SET description='Far Neptune-like giant whose 154 AU "
+        "UPDATE fictional_exoplanets SET orbit=154, period=706000, "
+        "description='Far Neptune-like giant whose 154 AU "
         "orbit lies well beyond the star''s safe sternfomotor jump radius — ships jump in "
         "and out at Grandpere itself, no in-system crawl. Its capital moon Protelan grew "
         "rich on that geometry.' WHERE name='Grandpere' AND host_star_name='Protelan'")
+    # Lalande 21185 orbits per lalande_21185.txt dossier (user catch
+    # 2026-07-05): Libertad = b at 0.08 AU / 12.95 d; Nakdong = d at
+    # 0.51 AU / 215.6 d (CH4-greenhouse jungle world beyond the classic HZ).
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=0.08, period=12.95 "
+        "WHERE name='Libertad' AND host_star_name='Lalande 21185'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=0.51, period=215.6 "
+        "WHERE name='Nakdong' AND host_star_name='Lalande 21185'")
+    # Ghost fictional rows in the REAL exoplanets table (user catch
+    # 2026-07-05: system maps showed doubled/mispositioned worlds).
+    # Two classes: (a) pre-swap 61 UMa junk — Joi/Protelan at 0.93 AU,
+    # 'Havskrun' (that's the capital CITY, not a planet), retired
+    # 'Halvorsenbard'; (b) renamed real-catalog rows that duplicate
+    # authoritative fictional_exoplanets worlds at stale orbits (same
+    # class as the Bester/'tau Cet' junk above). Valorgraemo (Fomalhaut)
+    # and Heatherly (HD 99492) are canonical originals with no fictional
+    # counterpart — they stay.
+    for name, host in [
+        ("Joi (gas giant)", "61 UMa"), ("Protelan (Joi I)", "61 UMa"),
+        ("Havskrun", "61 UMa"), ("Halvorsenbard", "61 UMa"),
+        ("Libertad", "Lalande 21185"), ("Nakdong", "Lalande 21185"),
+        ("Asimov", "tau Cet"), ("Heinlein", "tau Cet"), ("Poul", "tau Cet"),
+        ("Hawking Prime", "Rigil Kentaurus"), ("Foxtrot", "L 98-59"),
+    ]:
+        con.execute("DELETE FROM exoplanets WHERE name=? AND host_star_name=? "
+                    "AND is_fictional=1", (name, host))
     con.execute(
         "UPDATE fictional_exoplanets SET description='A ~100 km orbital station in the far "
         "dark — sternfomotor docks and the Conglomerate''s great trade markets, parked out "

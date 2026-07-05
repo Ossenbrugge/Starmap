@@ -174,6 +174,49 @@ def migrate_exoplanets(cur):
             ),
         )
     print(f"  Done: {len(data)} exoplanets migrated")
+    _enrich_exoplanets_from_catalog(cur)
+
+
+def _enrich_exoplanets_from_catalog(cur):
+    """Orbital/physical enrichment from the NASA-archive catalog export.
+    exoplanets.json only carries ra/dec/distance — without this step fresh
+    builds have NULL semi-major axes and the system orbital views collapse
+    (found 2026-07-05 via fresh-vs-live parity diff)."""
+    path = os.path.join(DATA_DIR, "exoplanet_catalog_20250715_114843_with_fictional.csv")
+    if not os.path.exists(path):
+        print("  [skip] exoplanet catalog CSV not found — orbits not enriched")
+        return
+    n = 0
+    with open(path, encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            fields, vals = [], []
+            for col, src in (
+                ("semi_major_axis_au", "pl_orbsmax"),
+                ("orbital_period_days", "pl_orbper"),
+                ("planet_radius_earth", "pl_rade"),
+                ("planet_mass_earth", "pl_bmasse"),
+                ("equilibrium_temp_k", "pl_eqt"),
+            ):
+                v = _float(row.get(src))
+                if v is not None:
+                    fields.append(f"{col}=?")
+                    vals.append(v)
+            if row.get("planet_type"):
+                fields.append("planet_type=?")
+                vals.append(row["planet_type"])
+            if row.get("potentially_habitable"):
+                fields.append("potentially_habitable=?")
+                vals.append(1 if row["potentially_habitable"] == "True" else 0)
+            sid = _int(row.get("star_id"))
+            if sid is not None:
+                fields.append("star_id=?")
+                vals.append(sid)
+            if not fields:
+                continue
+            n += cur.execute(
+                f"UPDATE exoplanets SET {', '.join(fields)} WHERE name=?",
+                (*vals, row["pl_name"])).rowcount
+    print(f"  Done: {n} exoplanets enriched with orbital data")
 
 
 def migrate_fictional_exoplanets(cur):

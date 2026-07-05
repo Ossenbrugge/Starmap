@@ -1909,7 +1909,16 @@ class ThreeJSStarmap {
         this.clearHabitableZoneRings();
         if (!star || star.x == null) return;
 
-        const L = star.luminosity || ThreeJSStarmap._spectralLuminosity(star.spectral_class);
+        // Catalog luminosities are visual-band and understate cool stars
+        // (M ~4x, K ~2x); apply the same rough bolometric correction the
+        // system map uses. The spectral fallback is already bolometric-ish.
+        const spec = (star.spectral_class || 'G').trim().toUpperCase();
+        const subRaw = parseFloat(spec.slice(1));
+        const sub = Number.isFinite(subRaw) ? Math.min(subRaw, 9) : 5;
+        const BOL = ({ M: 3.0 + 0.7 * sub, K: 1.1 + 0.13 * sub, G: 1.1 })[spec.charAt(0)] ?? 1.0;
+        const L = star.luminosity
+            ? star.luminosity * BOL
+            : ThreeJSStarmap._spectralLuminosity(star.spectral_class);
         // Habitable zone radii in AU, then convert to parsecs (1 AU = 1/206265 pc)
         // At galaxy scale (1 pc = 10 Three.js units) these are microscopic, so we show
         // a stylized scaled ring that signals "this star has a habitable zone."

@@ -2582,11 +2582,19 @@
             const planets = found.filter(p => !p.parent_planet)
                 .sort((a, b) => (a.semi_major_axis_au || a.orbit || 99) - (b.semi_major_axis_au || b.orbit || 99));
 
-            // Habitable zone from luminosity (conservative estimates)
-            const sp = (star.spectral_class || 'G').charAt(0).toUpperCase();
+            // Habitable zone from luminosity. Catalog luminosities are
+            // visual-band, which understates cool stars (M ~4x, K ~2x) —
+            // apply a rough bolometric correction by spectral class so the
+            // HZ band lands where the wiki dossiers put it. The SYS_SPEC_LUM
+            // fallbacks are already bolometric-ish, so no correction there.
+            const spec = (star.spectral_class || 'G').trim().toUpperCase();
+            const sp = spec.charAt(0);
+            const subRaw = parseFloat(spec.slice(1));
+            const sub = Number.isFinite(subRaw) ? Math.min(subRaw, 9) : 5;
+            const BOL = ({ M: 3.0 + 0.7 * sub, K: 1.1 + 0.13 * sub, G: 1.1 })[sp] ?? 1.0;
             const L = (star.luminosity != null && star.luminosity > 0)
-                ? parseFloat(star.luminosity) : (SYS_SPEC_LUM[sp] ?? 1.0);
-            const hzIn = Math.sqrt(L / 1.1), hzOut = Math.sqrt(L / 0.53);
+                ? parseFloat(star.luminosity) * BOL : (SYS_SPEC_LUM[sp] ?? 1.0);
+            const hzIn = Math.sqrt(L / 1.1), hzOut = Math.sqrt(L / 0.28);
 
             // Log-scale layout covering all orbits + the HZ
             const smas = planets.map(p => p.semi_major_axis_au || p.orbit).filter(v => v > 0);

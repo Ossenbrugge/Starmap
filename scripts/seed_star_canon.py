@@ -1159,9 +1159,12 @@ FICTIONAL_WORLDS = [{'name': 'Argylle I',
  {'name': 'Poul',
   'host_star_name': 'Tau Ceti',
   'planet_type': 'Rocky',
-  'description': 'Cold outer rocky world. Named for Poul Anderson, SF author.',
-  'orbit': 1.35,
-  'period': 636.1,
+  'description': "Cold rocky world just beyond Herbert — Tau Ceti g — past the habitable zone's "
+                 'outer edge, its modest population sheltered in domed and valley settlements. A '
+                 'quiet frontier that saw little of the war; post-2361, a Cetan Confederacy '
+                 'enclave. Named for Poul Anderson.',
+  'orbit': 1.7,
+  'period': 915.0,
   'mass': 1.5,
   'radius': 0.9,
   'parent_planet': None,

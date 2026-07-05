@@ -117,6 +117,8 @@ class Database:
             "con": row.get("constellation") or "",
             "hip": row.get("hip"),
             "hd": row.get("hd"),
+            "bayer": row.get("bayer"),
+            "flamsteed": row.get("flamsteed"),
             "nation_id": row.get("nation_id") or "",
             "is_fictional": bool(row.get("is_fictional")),
             "era_start": row.get("era_start"),

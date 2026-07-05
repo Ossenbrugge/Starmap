@@ -294,6 +294,16 @@ class StarService:
             'has_planets': False,
             'is_fictional': star.get('is_fictional', False),
             'nation_id': star.get('nation_id', ''),
+            # Astrogation fields — the details panel surfaces everything the
+            # catalog knows: designations, photometry and sky position.
+            'absolute_magnitude': star.get('absolute_magnitude'),
+            'color_index': star.get('color_index'),
+            'ra': star.get('ra'),
+            'dec': star.get('dec'),
+            'hip': star.get('hip'),
+            'hd': star.get('hd'),
+            'bayer': star.get('bayer'),
+            'flamsteed': star.get('flamsteed'),
             # Era/lore fields — the frontend gates names, labels and nation
             # colors on these; luminosity drives the system-map habitable zone.
             'proper_name': star.get('proper_name', ''),

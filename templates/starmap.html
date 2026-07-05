@@ -2380,9 +2380,13 @@
 
         function flyToNamedStar(star) {
             if (!threejsStarmap || !star) return;
-            threejsStarmap.flyToStar(star, 100);
-            threejsStarmap.highlightStar(star);
-            threejsStarmap.displayStarDetails(star);
+            // The onclick payload is a slim {id,x,y,z,name} — resolve the
+            // fully-loaded star so the details panel gets magnitude, spectral
+            // class, distance and constellation too.
+            const full = threejsStarmap.currentStars?.find(s => s.id === star.id) || star;
+            threejsStarmap.flyToStar(full, 100);
+            threejsStarmap.highlightStar(full);
+            threejsStarmap.displayStarDetails(full);
         }
 
         // ── Sidebar collapse ─────────────────────────────────────────────────

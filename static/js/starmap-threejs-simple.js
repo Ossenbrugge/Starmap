@@ -759,26 +759,72 @@ class ThreeJSStarmap {
             `;
         }
 
+        // ── Astrogation data ──────────────────────────────────────────────
+        const num = (v) => (v == null || v === '' || isNaN(v)) ? null : parseFloat(v);
+        const mag = num(star.magnitude), absMag = num(star.absolute_magnitude);
+        const ci = num(star.color_index), lum = num(star.luminosity);
+        const distPc = num(dist), distLy = distPc != null ? distPc * 3.26156 : null;
+        const fmtLum = (L) => L >= 100 ? L.toFixed(0) : L >= 1 ? L.toFixed(2) : L.toPrecision(2);
+
+        const mass = ThreeJSStarmap._specMass(star.spectral_class);
+        const periphCanon = ThreeJSStarmap.JUMP_PERIPHERY_CANON[star.id];
+        const periph = periphCanon ?? (mass ? 50 * Math.sqrt(mass) : null);
+        // Torch crawl from the jump periphery to the inner system:
+        // 1 AU = 499.005 light-seconds → days = AU·499.005/(c-frac·86400)
+        const crawlDays = (auDist, cFrac) => auDist * 499.005 / (cFrac * 86400);
+        const fmtDays = (d) => d < 1 ? `${(d * 24).toFixed(1)} h` : d < 10 ? `${d.toFixed(1)} d` : `${d.toFixed(0)} d`;
+
+        let hz = null;
+        if (lum > 0) {
+            const Lb = lum * ThreeJSStarmap._bolFactor(star.spectral_class);
+            hz = [Math.sqrt(Lb / 1.1), Math.sqrt(Lb / 0.53)];
+        }
+        let worlds = [], habCount = 0;
+        try {
+            if (typeof window._sysGatherPlanets === 'function') {
+                worlds = window._sysGatherPlanets(star) || [];
+                habCount = worlds.filter(p => p.potentially_habitable === 1 || p.is_habitable || p.habitable).length;
+            }
+        } catch (e) { /* system-map gatherer not available on this page */ }
+
+        const con = star.constellation || '';
+        const designations = [
+            star.bayer ? `${star.bayer} ${con}`.trim() : null,
+            star.flamsteed ? `${Math.round(star.flamsteed)} ${con}`.trim() : null,
+            star.hip ? `HIP ${Math.round(star.hip)}` : null,
+            star.hd ? `HD ${Math.round(star.hd)}` : null,
+        ].filter(Boolean).join(' · ');
+
+        const raDec = (star.ra != null && star.dec != null && !(star.ra === 0 && star.dec === 0 && star.id === 500000))
+            ? (() => {
+                const h = Math.floor(star.ra), m = (star.ra - h) * 60;
+                const sgn = star.dec < 0 ? '−' : '+', dAbs = Math.abs(star.dec);
+                const dd = Math.floor(dAbs), dm = (dAbs - dd) * 60;
+                return `RA ${h}h ${m.toFixed(1)}m · Dec ${sgn}${dd}° ${dm.toFixed(0)}′`;
+            })() : null;
+
+        const cell = (label, value, cls = 'text-info') => `
+                <div class="col-6">
+                    <small class="text-muted">${label}</small><br>
+                    <span class="${cls}" style="font-size:0.85rem">${value != null ? value : '—'}</span>
+                </div>`;
+
         html += `
             <div class="row g-1 mb-2">
-                <div class="col-6">
-                    <small class="text-muted">Magnitude</small><br>
-                    <span class="text-info">${star.magnitude != null ? star.magnitude.toFixed(2) : '—'}</span>
-                </div>
-                <div class="col-6">
-                    <small class="text-muted">Type</small><br>
-                    <span class="text-warning">${star.spectral_class || '—'}</span>
-                </div>
-                <div class="col-6">
-                    <small class="text-muted">Distance</small><br>
-                    <span class="text-success">${dist != null ? parseFloat(dist).toFixed(1) + ' pc' : '—'}</span>
-                </div>
-                <div class="col-6">
-                    <small class="text-muted">Constellation</small><br>
-                    <span class="text-success" style="font-size:0.8rem">${star.constellation || '—'}</span>
-                </div>
+                ${cell('Magnitude', mag != null ? mag.toFixed(2) : null)}
+                ${cell('Abs. magnitude', absMag != null ? absMag.toFixed(2) : null)}
+                ${cell('Type', star.spectral_class || null, 'text-warning')}
+                ${cell('Color (B−V)', ci != null ? ci.toFixed(2) : null, 'text-warning')}
+                ${cell('Luminosity', lum != null ? `${fmtLum(lum)} L☉` : null, 'text-warning')}
+                ${cell('Mass (est.)', mass != null ? `~${mass.toFixed(2)} M☉` : null, 'text-warning')}
+                ${cell('Distance', distPc != null ? `${distLy.toFixed(1)} ly <span class="text-muted">(${distPc.toFixed(1)} pc)</span>` : null, 'text-success')}
+                ${cell('Constellation', con || null, 'text-success')}
             </div>
-
+            ${designations ? `
+            <div class="mb-1">
+                <small class="text-muted">Designations</small><br>
+                <small class="text-secondary">${designations}</small>
+            </div>` : ''}
             <div class="mb-2">
                 <small class="text-muted">Galactic coords (pc)</small><br>
                 <small class="text-secondary font-monospace">
@@ -786,6 +832,35 @@ class ThreeJSStarmap {
                     Y ${star.y != null ? star.y.toFixed(2) : '?'} &nbsp;
                     Z ${star.z != null ? star.z.toFixed(2) : '?'}
                 </small>
+                ${raDec ? `<br><small class="text-secondary font-monospace">${raDec}</small>` : ''}
+            </div>
+            <div class="mb-2 px-2 py-1 rounded" style="background:rgba(30,60,90,0.35);border-left:3px solid #58a6ff">
+                <small class="fw-bold" style="color:#58a6ff">🧭 Astrogation</small>
+                <div class="mt-1" style="font-size:0.74rem">
+                    ${periph != null ? `
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Jump periphery${periphCanon != null ? '' : ' (est.)'}</span>
+                        <span>${periph.toFixed(periph < 10 ? 1 : 0)} AU</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Periphery crawl · 2380 torch</span>
+                        <span>${fmtDays(crawlDays(periph, 0.1975))}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Periphery crawl · 2350 torch</span>
+                        <span>${fmtDays(crawlDays(periph, 0.00668))}</span>
+                    </div>` : ''}
+                    ${hz ? `
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Habitable zone</span>
+                        <span>${hz[0].toFixed(2)}–${hz[1].toFixed(2)} AU</span>
+                    </div>` : ''}
+                    ${worlds.length ? `
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Charted worlds</span>
+                        <span>${worlds.length}${habCount ? ` · ${habCount} 🌱` : ''}</span>
+                    </div>` : ''}
+                </div>
             </div>
         `;
 
@@ -1896,6 +1971,39 @@ class ThreeJSStarmap {
         return { O: 50000, B: 800, A: 8, F: 1.8, G: 1, K: 0.35, M: 0.04 }[cls] ?? 1;
     }
 
+    /**
+     * Bolometric correction factor: catalog luminosities are visual-band and
+     * understate cool stars (M ~4x, K ~2x). Multiply catalog L by this.
+     */
+    static _bolFactor(spec) {
+        const s = (spec || 'G').trim().toUpperCase();
+        const subRaw = parseFloat(s.slice(1));
+        const sub = Number.isFinite(subRaw) ? Math.min(subRaw, 9) : 5;
+        return ({ M: 3.0 + 0.7 * sub, K: 1.1 + 0.13 * sub, G: 1.1 })[s.charAt(0)] ?? 1.0;
+    }
+
+    /**
+     * Main-sequence mass estimate (M☉) from spectral class. Powers the
+     * Safe Jump Point periphery estimate: d_safe = 50·√(M/M☉) AU at solar B.
+     */
+    static _specMass(spec) {
+        const s = (spec || '').trim().toUpperCase();
+        const r = { O: [50, 20], B: [16, 2.5], A: [2.1, 1.5], F: [1.4, 1.05],
+                    G: [1.05, 0.85], K: [0.85, 0.5], M: [0.5, 0.1] }[s.charAt(0)];
+        if (!r) return null;
+        const subRaw = parseFloat(s.slice(1));
+        const sub = Number.isFinite(subRaw) ? Math.min(subRaw, 9) : 5;
+        return r[0] + (r[1] - r[0]) * (sub / 9);
+    }
+
+    // Dossier-stated jump peripheries (AU) — magnetic fields push some far
+    // beyond the mass formula (Pentothia's 100 G field → 189.98 AU).
+    static JUMP_PERIPHERY_CANON = {
+        49767: 189.98,   // Pentothia Prime (GJ 380)
+        53879: 35,       // Lalande 21185
+        113008: 120,     // Fomalhaut
+    };
+
     clearHabitableZoneRings() {
         while (this.habitableZoneGroup.children.length > 0) {
             const child = this.habitableZoneGroup.children[0];
@@ -1909,15 +2017,10 @@ class ThreeJSStarmap {
         this.clearHabitableZoneRings();
         if (!star || star.x == null) return;
 
-        // Catalog luminosities are visual-band and understate cool stars
-        // (M ~4x, K ~2x); apply the same rough bolometric correction the
-        // system map uses. The spectral fallback is already bolometric-ish.
-        const spec = (star.spectral_class || 'G').trim().toUpperCase();
-        const subRaw = parseFloat(spec.slice(1));
-        const sub = Number.isFinite(subRaw) ? Math.min(subRaw, 9) : 5;
-        const BOL = ({ M: 3.0 + 0.7 * sub, K: 1.1 + 0.13 * sub, G: 1.1 })[spec.charAt(0)] ?? 1.0;
+        // Catalog luminosities are visual-band — apply the shared bolometric
+        // correction. The spectral fallback is already bolometric-ish.
         const L = star.luminosity
-            ? star.luminosity * BOL
+            ? star.luminosity * ThreeJSStarmap._bolFactor(star.spectral_class)
             : ThreeJSStarmap._spectralLuminosity(star.spectral_class);
         // Habitable zone radii in AU, then convert to parsecs (1 AU = 1/206265 pc)
         // At galaxy scale (1 pc = 10 Three.js units) these are microscopic, so we show

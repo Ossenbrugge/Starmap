@@ -37,7 +37,6 @@ api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
 
 @api_bp.route('/star/<int:star_id>')
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_star_details(star_id):
     """Get detailed information for a specific star - protected"""
@@ -53,7 +52,6 @@ def get_star_details(star_id):
 
 
 @api_bp.route('/stars/nation/<nation_id>')
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_stars_by_nation(nation_id):
     """Get all stars controlled by a nation - protected"""
@@ -67,7 +65,6 @@ def get_stars_by_nation(nation_id):
 
 
 @api_bp.route('/network-analysis')
-@api_auth_required
 @rate_limit('analysis_requests_per_minute')
 def get_network_analysis():
     """Get trade network analysis - protected"""
@@ -83,7 +80,6 @@ def get_network_analysis():
 # ── Fictional entity CRUD (protected) ──────────────────────────────────────
 
 @api_bp.route('/fictional/stars', methods=['GET'])
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_fictional_stars_protected():
     """Get all fictional stars - protected"""
@@ -128,7 +124,6 @@ def delete_fictional_star(star_id):
 
 
 @api_bp.route('/fictional/exoplanets', methods=['GET'])
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_fictional_exoplanets_protected():
     """Get all fictional exoplanets - protected"""
@@ -157,7 +152,6 @@ def add_fictional_exoplanet():
 
 
 @api_bp.route('/fictional/nations', methods=['GET'])
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_fictional_nations():
     """Get all fictional nations - protected"""
@@ -202,7 +196,6 @@ def delete_fictional_nation(nation_id):
 
 
 @api_bp.route('/fictional/trade-routes', methods=['GET'])
-@api_auth_required
 @rate_limit('api_requests_per_minute')
 def get_fictional_trade_routes():
     """Get all fictional trade routes - protected"""

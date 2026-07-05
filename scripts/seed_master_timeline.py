@@ -459,15 +459,39 @@ def apply_world_corrections(con):
         "orbit lies well beyond the star''s safe sternfomotor jump radius — ships jump in "
         "and out at Grandpere itself, no in-system crawl. Its capital moon Protelan grew "
         "rich on that geometry.' WHERE name='Grandpere' AND host_star_name='Protelan'")
-    # Lalande 21185 orbits per lalande_21185.txt dossier (user catch
-    # 2026-07-05): Libertad = b at 0.08 AU / 12.95 d; Nakdong = d at
-    # 0.51 AU / 215.6 d (CH4-greenhouse jungle world beyond the classic HZ).
+    # Dossier physics revision 2026-07-05 (author moved worlds into each
+    # star's TRUE habitable zone): Lalande L=0.022 → HZ 0.14–0.20, so
+    # Libertad = b at 0.16 AU / ~37 d (temperate capital) and Nakdong = d
+    # at 0.13 AU / ~27 d (warm inner edge, jungle world).
     con.execute(
-        "UPDATE fictional_exoplanets SET orbit=0.08, period=12.95 "
+        "UPDATE fictional_exoplanets SET orbit=0.16, period=37 "
         "WHERE name='Libertad' AND host_star_name='Lalande 21185'")
     con.execute(
-        "UPDATE fictional_exoplanets SET orbit=0.51, period=215.6 "
+        "UPDATE fictional_exoplanets SET orbit=0.13, period=27 "
         "WHERE name='Nakdong' AND host_star_name='Lalande 21185'")
+    # Pentothia Prime same revision: Auricore now 0.40 AU (~113 d, in the
+    # HZ ~0.36–0.68), Cryon pushed to 1.0 AU (~446 d, genuinely frozen).
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=0.40, period=113 "
+        "WHERE name='Auricore' AND host_star_name='Pentothia Prime'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=1.0, period=446 "
+        "WHERE name='Cryon' AND host_star_name='Pentothia Prime'")
+    # Fomalhaut same revision (HZ ~3.9–5.6 for the A3V primary): Valorgraemo
+    # c 4.3 AU / ~6.4 yr, Batalklendo d 4.7 / ~7.4 yr, Marrikoviro e 5.2 / ~8.6 yr.
+    con.execute(
+        "UPDATE exoplanets SET semi_major_axis_au=4.3, orbital_period_days=2337 "
+        "WHERE name='Valorgraemo' AND host_star_name='Fomalhaut'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=4.7, period=2702 "
+        "WHERE name='Batalklendo' AND host_star_name='Fomalhaut'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET orbit=5.2, period=3141 "
+        "WHERE name='Marrikoviro' AND host_star_name='Fomalhaut'")
+    # Pentothian capital is the WORLD Auricore (Auricore City), not the
+    # star name (user ruling 2026-07-05).
+    con.execute(
+        "UPDATE nations SET capital_city='Auricore City, Auricore' WHERE id='neutral_zone'")
     # Ghost fictional rows in the REAL exoplanets table (user catch
     # 2026-07-05: system maps showed doubled/mispositioned worlds).
     # Two classes: (a) pre-swap 61 UMa junk — Joi/Protelan at 0.93 AU,

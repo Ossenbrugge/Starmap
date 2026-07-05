@@ -60,7 +60,6 @@ def get_stars() -> Dict[str, Any]:
 
 
 @stars_bp.route('/stars/<int:star_id>')
-@api_auth_required
 def get_star_by_id(star_id: int) -> Dict[str, Any]:
     """Get detailed information for a specific star by ID"""
     try:
@@ -77,7 +76,6 @@ def get_star_by_id(star_id: int) -> Dict[str, Any]:
 
 
 @stars_bp.route('/stars/search')
-@api_auth_required
 def search_stars() -> Dict[str, Any]:
     """Search stars by name or properties"""
     try:
@@ -95,7 +93,6 @@ def search_stars() -> Dict[str, Any]:
 
 
 @stars_bp.route('/stars/nearby')
-@api_auth_required
 def get_nearby_stars() -> Dict[str, Any]:
     """Get stars within specified radius of coordinates"""
     try:

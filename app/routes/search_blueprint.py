@@ -19,7 +19,6 @@ search_bp = Blueprint('search', __name__, url_prefix='/api/v1')
 search_service = SearchService()
 
 @search_bp.route('/search')
-@api_auth_required
 def search() -> Dict[str, Any]:
     """Search across all data types"""
     try:

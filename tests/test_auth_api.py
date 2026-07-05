@@ -49,8 +49,9 @@ class TestJwtToken:
 
 class TestApiAuthMiddleware:
     def test_garbage_bearer_token_is_rejected(self, client):
-        response = client.get(
-            "/api/v1/stars/0", headers={"Authorization": "Bearer not-a-jwt"}
+        response = client.post(
+            "/api/v1/fictional/stars", json={},
+            headers={"Authorization": "Bearer not-a-jwt"},
         )
         assert response.status_code == 401
         payload = response.get_json()
@@ -63,8 +64,9 @@ class TestApiAuthMiddleware:
             "wrong-secret",
             algorithm="HS256",
         )
-        response = client.get(
-            "/api/v1/stars/0", headers={"Authorization": f"Bearer {forged}"}
+        response = client.post(
+            "/api/v1/fictional/stars", json={},
+            headers={"Authorization": f"Bearer {forged}"},
         )
         assert response.status_code == 401
 

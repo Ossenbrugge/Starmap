@@ -2594,7 +2594,7 @@
             const BOL = ({ M: 3.0 + 0.7 * sub, K: 1.1 + 0.13 * sub, G: 1.1 })[sp] ?? 1.0;
             const L = (star.luminosity != null && star.luminosity > 0)
                 ? parseFloat(star.luminosity) * BOL : (SYS_SPEC_LUM[sp] ?? 1.0);
-            const hzIn = Math.sqrt(L / 1.1), hzOut = Math.sqrt(L / 0.28);
+            const hzIn = Math.sqrt(L / 1.1), hzOut = Math.sqrt(L / 0.53);
 
             // Log-scale layout covering all orbits + the HZ
             const smas = planets.map(p => p.semi_major_axis_au || p.orbit).filter(v => v > 0);

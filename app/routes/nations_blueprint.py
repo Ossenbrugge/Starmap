@@ -48,7 +48,6 @@ def get_provinces() -> Dict[str, Any]:
 
 
 @nations_bp.route('/nations/<nation_id>')
-@api_auth_required
 def get_nation_by_id(nation_id: str) -> Dict[str, Any]:
     """Get detailed information for a specific nation"""
     try:
@@ -60,7 +59,6 @@ def get_nation_by_id(nation_id: str) -> Dict[str, Any]:
         return error_response("Nation not found", 404)
 
 @nations_bp.route('/nations/<nation_id>/stars')
-@api_auth_required
 def get_nation_stars(nation_id: str) -> Dict[str, Any]:
     """Get all stars controlled by a specific nation"""
     try:
@@ -72,7 +70,6 @@ def get_nation_stars(nation_id: str) -> Dict[str, Any]:
         return error_response("Failed to retrieve nation stars", 500)
 
 @nations_bp.route('/nations/<nation_id>/territories')
-@api_auth_required
 def get_nation_territories(nation_id: str) -> Dict[str, Any]:
     """Get territory boundaries for a specific nation"""
     try:

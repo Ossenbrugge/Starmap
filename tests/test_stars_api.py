@@ -69,12 +69,12 @@ class TestGetStars:
 
 
 class TestGetStarById:
-    """GET /api/v1/stars/<id> — requires auth."""
+    """GET /api/v1/stars/<id> — public read."""
 
-    def test_requires_auth(self, client):
+    def test_public_read(self, client):
         response = client.get("/api/v1/stars/0")
-        assert response.status_code == 401
-        assert response.get_json()["success"] is False
+        assert response.status_code == 200
+        assert response.get_json()["success"] is True
 
     def test_returns_star_details_with_jwt(self, client, jwt_headers):
         response = client.get("/api/v1/stars/0", headers=jwt_headers)
@@ -97,10 +97,10 @@ class TestGetStarById:
 
 
 class TestStarSearch:
-    """GET /api/v1/stars/search — requires auth."""
+    """GET /api/v1/stars/search — public read."""
 
-    def test_requires_auth(self, client):
-        assert client.get("/api/v1/stars/search?q=Sol").status_code == 401
+    def test_public_read(self, client):
+        assert client.get("/api/v1/stars/search?q=Sol").status_code == 200
 
     def test_search_by_proper_name(self, client, jwt_headers):
         payload = client.get(
@@ -117,10 +117,10 @@ class TestStarSearch:
 
 
 class TestNearbyStars:
-    """GET /api/v1/stars/nearby — requires auth."""
+    """GET /api/v1/stars/nearby — public read."""
 
-    def test_requires_auth(self, client):
-        assert client.get("/api/v1/stars/nearby").status_code == 401
+    def test_public_read(self, client):
+        assert client.get("/api/v1/stars/nearby").status_code == 200
 
     def test_radius_search_around_sol(self, client, jwt_headers):
         payload = client.get(

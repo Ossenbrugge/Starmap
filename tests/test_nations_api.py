@@ -32,10 +32,10 @@ class TestGetNations:
 
 
 class TestGetNationById:
-    """GET /api/v1/nations/<id> — requires auth."""
+    """GET /api/v1/nations/<id> — public read."""
 
-    def test_requires_auth(self, client):
-        assert client.get("/api/v1/nations/terran_directorate").status_code == 401
+    def test_public_read(self, client):
+        assert client.get("/api/v1/nations/terran_directorate").status_code == 200
 
     def test_returns_nation(self, client, jwt_headers):
         response = client.get(
@@ -54,10 +54,10 @@ class TestGetNationById:
 
 
 class TestNationStars:
-    """GET /api/v1/nations/<id>/stars — requires auth."""
+    """GET /api/v1/nations/<id>/stars — public read."""
 
-    def test_requires_auth(self, client):
-        assert client.get("/api/v1/nations/terran_directorate/stars").status_code == 401
+    def test_public_read(self, client):
+        assert client.get("/api/v1/nations/terran_directorate/stars").status_code == 200
 
     def test_returns_stars_controlled_by_nation(self, client, jwt_headers):
         payload = client.get(
@@ -69,12 +69,12 @@ class TestNationStars:
 
 
 class TestNationTerritories:
-    """GET /api/v1/nations/<id>/territories — requires auth."""
+    """GET /api/v1/nations/<id>/territories — public read."""
 
-    def test_requires_auth(self, client):
+    def test_public_read(self, client):
         assert (
             client.get("/api/v1/nations/felgenland_union/territories").status_code
-            == 401
+            == 200
         )
 
     def test_returns_territory_summary(self, client, jwt_headers):

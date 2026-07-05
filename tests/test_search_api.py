@@ -2,10 +2,10 @@
 
 
 class TestSearch:
-    """GET /api/v1/search — requires auth."""
+    """GET /api/v1/search — public read."""
 
-    def test_requires_auth(self, client):
-        assert client.get("/api/v1/search?q=Sol").status_code == 401
+    def test_public_read(self, client):
+        assert client.get("/api/v1/search?q=Sol").status_code == 200
 
     def test_empty_query_returns_empty_result(self, client, jwt_headers):
         payload = client.get("/api/v1/search?q=", headers=jwt_headers).get_json()

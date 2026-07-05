@@ -162,7 +162,7 @@ NATION_LORE = {
     },
     "neutral_zone": {
         "population": None,
-        "capital_city": "Pentothia Prime",
+        "capital_city": "Auricore City, Auricore",
         "currency": None,
         "economy_summary": "Interstellar commerce through the Mercantile Consortium; "
                            "trade outposts across the neutral frontier. Unable to match "
@@ -306,12 +306,12 @@ MISSING_WORLDS = [
     # Pentothia Prime (GJ 380)
     ("Vulcara", "Pentothia Prime", "Hot Rocky", 0.05, 4.5, 0.8, 0.9, None,
      "Scorched, mineral-rich Pentothian mining outpost."),
-    ("Auricore", "Pentothia Prime", "Super-Earth", 0.1, 10, 1.5, 1.2, None,
+    ("Auricore", "Pentothia Prime", "Super-Earth", 0.40, 113, 1.5, 1.2, None,
      "Warm-temperate capital of the Pentothian Trade Conglomerate — Auricore City and its "
      "orbital trade stations."),
     ("Ferrum Belt", "Pentothia Prime", "Asteroid Belt", 0.3, 45, None, None, None,
      "Resource-rich belt mined for iridium and osmium."),
-    ("Cryon", "Pentothia Prime", "Ice Giant", 0.5, 90, 2.0, 1.3, None,
+    ("Cryon", "Pentothia Prime", "Ice Giant", 1.0, 446, 2.0, 1.3, None,
      "Frozen world mined for fusion-grade isotopes."),
     ("Stellarion Trade Nexus", "Pentothia Prime", "Station", 189.98, 547900, None, None, None,
      "A ~100 km orbital station in the far dark — sternfomotor docks and the Conglomerate's "
@@ -350,17 +350,15 @@ MISSING_WORLDS = [
      "Storm-swept ocean world (Lalande 21185 g), 80% sea with island continents — "
      "maritime trade ports vital post-2357; 20–30 million."),
     # Fomalhaut — Valorgraemo lives in the real-exoplanets table; these are the
-    # rest of the fomalhaut.txt roster. Batalklendo/Marrikoviro AUs are display
-    # placements keeping the dossier's relative spacing (+0.3/+0.7 AU from
-    # Valorgraemo) inside the A3V star's physical HZ (~4.0–5.8 AU) — the
-    # dossier's own 1.9–3.5 AU HZ figure is a wiki-side fix.
+    # rest of the fomalhaut.txt roster (dossier physics-corrected 2026-07-05:
+    # HZ ~3.9–5.6 AU for the A3V primary, worlds at 4.3/4.7/5.2).
     ("Fomalhaut b", "Fomalhaut", "Gas Giant", 177, 620500, None, 11.0, None,
      "Distant super-Jupiter (α PsA b) whose icy moons feed resource extraction — and "
      "whose orbital defense platforms are the Republic's rimward bulwark."),
-    ("Batalklendo", "Fomalhaut", "Earth-like", 4.4, 2433, 1.5, 1.1, None,
+    ("Batalklendo", "Fomalhaut", "Earth-like", 4.7, 2702, 1.5, 1.1, None,
      "Rugged cool-temperate world (α PsA d) of rolling plains and coniferous forests — "
      "training ground of the Fomalhaut shock troops, and an agricultural exporter."),
-    ("Marrikoviro", "Fomalhaut", "Earth-like", 4.8, 2772, 1.3, 1.0, None,
+    ("Marrikoviro", "Fomalhaut", "Earth-like", 5.2, 3141, 1.3, 1.0, None,
      "Storm-wracked ocean world (α PsA e), 70% sea — naval bases and trade ports "
      "vital to the Republic's maritime defense and rimward commerce."),
     # Tau Ceti — Asimov, Heinlein, Bester already present

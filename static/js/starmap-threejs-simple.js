@@ -1763,23 +1763,28 @@ class ThreeJSStarmap {
     }
 
     createPlanetsForStar(hostStar, planets) {
+        // At galaxy scale a real orbit (~AU) is microscopic next to the star,
+        // so these markers are just a "charted worlds here" indicator that
+        // HUGS the host — not a to-scale system (that lives in the system map).
+        // The old code offset them by orbitRadius*10 world units = 1–3 pc,
+        // leaving green dots floating parsecs from their star (user catch).
+        const cx = hostStar.x * 10, cy = hostStar.y * 10, cz = hostStar.z * 10;
         planets.forEach((planet, index) => {
-            const orbitRadius = 1 + (index * 0.5);
+            const r = 0.45 + index * 0.14;   // world units — a tight halo on the star
             const angle = (index / planets.length) * Math.PI * 2;
+            const px = cx + Math.cos(angle) * r;
+            const py = cy + Math.sin(angle) * 0.35 * r;
+            const pz = cz + Math.sin(angle) * r;
 
-            const planetX = hostStar.x * 10 + Math.cos(angle) * orbitRadius * 10;
-            const planetY = hostStar.y * 10 + Math.sin(angle) * 0.1 * orbitRadius * 10;
-            const planetZ = hostStar.z * 10 + Math.sin(angle) * orbitRadius * 10;
-
-            const geometry = new THREE.SphereGeometry(0.3, 8, 8);
+            const geometry = new THREE.SphereGeometry(0.16, 8, 8);
             const material = new THREE.MeshBasicMaterial({
                 color: 0x4CAF50,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.85
             });
 
             const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(planetX, planetY, planetZ);
+            sphere.position.set(px, py, pz);
             sphere.userData = { type: 'exoplanet', data: { ...planet, hostStar } };
 
             this.exoplanetGroup.add(sphere);

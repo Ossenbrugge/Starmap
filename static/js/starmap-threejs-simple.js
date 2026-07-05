@@ -389,7 +389,10 @@ class ThreeJSStarmap {
 
     setupStarInteraction() {
         this.raycaster = new THREE.Raycaster();
-        this.raycaster.params.Points.threshold = 0.5;
+        // Pick radius in world units. 0.5 (≈0.05 pc) made faint isolated stars
+        // like HIP 69922 a near-impossible click target; 1.2 gives a forgiving
+        // target while still resolving to the nearest star in dense fields.
+        this.raycaster.params.Points.threshold = 1.2;
         this.raycaster.params.Line.threshold = 1.5;   // world units — makes thin route lines clickable
         this.mouse = new THREE.Vector2();
         this.intersects = [];
@@ -603,7 +606,19 @@ class ThreeJSStarmap {
             }
         }
 
-        // No star hit — try trade route lines (only when the overlay is shown)
+        // No star point hit — try the green exoplanet markers, which sit 1–3.5
+        // world units OUT from their host star (beyond the point threshold).
+        // Clicking one selects its host star, so planet-bearing stars like
+        // Tiefe-Grenze Tor and HIP 69922 aren't rendered unselectable by their
+        // own orbiting markers.
+        const host = this._pickExoplanetHost();
+        if (host) {
+            this.displayStarDetails(host);
+            this.highlightStar(host);
+            return;
+        }
+
+        // Still nothing — try trade route lines (only when the overlay is shown)
         if (this.tradeRoutesGroup?.visible && this.tradeRoutesGroup.children.length) {
             const hits = this.raycaster.intersectObjects(
                 this.tradeRoutesGroup.children.filter(c => c.visible), false);
@@ -612,6 +627,18 @@ class ThreeJSStarmap {
                 if (route?.type === 'trade_route') this.displayRouteDetails(route);
             }
         }
+    }
+
+    /** Raycast the exoplanet-marker group; return the host star of the nearest
+     *  marker hit (or null). Markers carry their host in userData.data.hostStar. */
+    _pickExoplanetHost() {
+        if (!this.exoplanetGroup?.visible || !this.exoplanetGroup.children.length) return null;
+        const hits = this.raycaster.intersectObjects(this.exoplanetGroup.children, false);
+        for (const h of hits) {
+            const host = h.object.userData?.data?.hostStar;
+            if (host) return host;
+        }
+        return null;
     }
 
     /** Show a trade route's lore in the details panel. */
@@ -693,6 +720,17 @@ class ThreeJSStarmap {
                     }
                 }
             } else {
+                // No star point — a green exoplanet marker counts as its host.
+                const host = this._pickExoplanetHost();
+                if (host) {
+                    if (this.highlightedStar !== host) {
+                        this.clearStarHighlights();
+                        this.highlightedStar = host;
+                        this.showStarTooltip(host, event);
+                    }
+                    this.container.style.cursor = 'pointer';
+                    return;
+                }
                 this.clearStarHighlights();
                 this.highlightedStar = null;
                 // Pointer cursor over clickable route lines

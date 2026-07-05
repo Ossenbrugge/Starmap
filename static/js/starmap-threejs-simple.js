@@ -75,11 +75,9 @@ class ThreeJSStarmap {
         this.nationsGroup = new THREE.Group();
         this.tradeRoutesGroup = new THREE.Group();
         this.stellarRegionsGroup = new THREE.Group();
-        this.exoplanetGroup = new THREE.Group();
         this.scene.add(this.nationsGroup);
         this.scene.add(this.tradeRoutesGroup);
         this.scene.add(this.stellarRegionsGroup);
-        this.scene.add(this.exoplanetGroup);
 
         this.constellationsGroup = new THREE.Group();
         this.scene.add(this.constellationsGroup);
@@ -290,6 +288,7 @@ class ThreeJSStarmap {
         const colors       = new Float32Array(validStars.length * 3);
         const filterValues = new Float32Array(validStars.length);
         const nationColors = new Float32Array(validStars.length * 3);
+        const notableFlags = new Float32Array(validStars.length);
         filterValues.fill(1.0);
 
         validStars.forEach((star, i) => {
@@ -299,6 +298,11 @@ class ThreeJSStarmap {
 
             magnitudes[i] = (star.magnitude != null && !isNaN(star.magnitude))
                 ? star.magnitude : 8.0;
+
+            // Canon stars (named or discovery-numbered) stay visible below the
+            // magnitude limit — Tiefe-Grenze Tor is mag 9.5, the "too faint to
+            // see" star, and must not vanish when the slider sits at 8.
+            notableFlags[i] = (star.fictional_name || star.discovery_number != null) ? 1.0 : 0.0;
 
             const [r, g, b] = ThreeJSStarmap._spectralColor(star.spectral_class);
             colors[i * 3]     = r;
@@ -316,6 +320,7 @@ class ThreeJSStarmap {
         geometry.setAttribute('starColor',   new THREE.Float32BufferAttribute(colors, 3));
         geometry.setAttribute('aFilter',     new THREE.Float32BufferAttribute(filterValues, 1));
         geometry.setAttribute('aNationColor',new THREE.Float32BufferAttribute(nationColors, 3));
+        geometry.setAttribute('aNotable',    new THREE.Float32BufferAttribute(notableFlags, 1));
 
         // ── GPU Shader (LOD + spectral colours, no texture uploads on filter) ──
         const vertexShader = `
@@ -323,6 +328,7 @@ class ThreeJSStarmap {
             attribute vec3  starColor;
             attribute float aFilter;
             attribute vec3  aNationColor;
+            attribute float aNotable;
             uniform float   uMagLimit;
             uniform float   uCameraDistance;
             uniform bool    uPoliticalView;
@@ -336,17 +342,20 @@ class ThreeJSStarmap {
                 vFilter      = aFilter;
                 vNationColor = aNationColor;
 
-                // Hide stars dimmer than the current magnitude limit
-                float visible = step(magnitude, uMagLimit);
+                // Hide stars dimmer than the current magnitude limit — but
+                // canon stars (aNotable) always stay visible.
+                float visible = max(step(magnitude, uMagLimit), aNotable);
 
-                // LOD: brighter stars are larger; point size scales with camera proximity
-                float brightness = max(0.0, uMagLimit - magnitude);
+                // LOD: brighter stars are larger; point size scales with camera
+                // proximity. Notable stars get a size/brightness floor so a
+                // faint canon star is never a sub-pixel dot.
+                float brightness = max(aNotable * 2.0, max(0.0, uMagLimit - magnitude));
                 float sz = (2.0 + brightness * 3.0) * (50.0 / max(uCameraDistance, 1.0));
                 sz = clamp(sz, 0.5, 14.0);
 
                 gl_PointSize = sz * visible;
                 gl_Position  = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                vAlpha = visible * (0.4 + brightness * 0.6);
+                vAlpha = visible * max(aNotable * 0.85, 0.4 + brightness * 0.6);
             }
         `;
 
@@ -593,12 +602,12 @@ class ThreeJSStarmap {
 
                 if (pointIndex >= 0 && pointIndex < this.currentStars.length) {
                     const clickedStar = this.currentStars[pointIndex];
-                    // Ignore stars filtered out by the magnitude shader
+                    // Ignore stars the shader hides — but canon stars are
+                    // always shown, so always clickable, regardless of the limit.
                     const magLimit = this.starMaterial
                         ? this.starMaterial.uniforms.uMagLimit.value
                         : 15;
-                    if (clickedStar.magnitude > magLimit) return;
-                    console.log('⭐ Star clicked:', clickedStar);
+                    if (clickedStar.magnitude > magLimit && !this._isNotable(clickedStar)) return;
                     this.displayStarDetails(clickedStar);
                     this.highlightStar(clickedStar);
                     return;
@@ -606,19 +615,7 @@ class ThreeJSStarmap {
             }
         }
 
-        // No star point hit — try the green exoplanet markers, which sit 1–3.5
-        // world units OUT from their host star (beyond the point threshold).
-        // Clicking one selects its host star, so planet-bearing stars like
-        // Tiefe-Grenze Tor and HIP 69922 aren't rendered unselectable by their
-        // own orbiting markers.
-        const host = this._pickExoplanetHost();
-        if (host) {
-            this.displayStarDetails(host);
-            this.highlightStar(host);
-            return;
-        }
-
-        // Still nothing — try trade route lines (only when the overlay is shown)
+        // No star point hit — try trade route lines (only when shown)
         if (this.tradeRoutesGroup?.visible && this.tradeRoutesGroup.children.length) {
             const hits = this.raycaster.intersectObjects(
                 this.tradeRoutesGroup.children.filter(c => c.visible), false);
@@ -629,16 +626,10 @@ class ThreeJSStarmap {
         }
     }
 
-    /** Raycast the exoplanet-marker group; return the host star of the nearest
-     *  marker hit (or null). Markers carry their host in userData.data.hostStar. */
-    _pickExoplanetHost() {
-        if (!this.exoplanetGroup?.visible || !this.exoplanetGroup.children.length) return null;
-        const hits = this.raycaster.intersectObjects(this.exoplanetGroup.children, false);
-        for (const h of hits) {
-            const host = h.object.userData?.data?.hostStar;
-            if (host) return host;
-        }
-        return null;
+    /** Canon stars (named or discovery-numbered) are always rendered, so they
+     *  stay hoverable/clickable regardless of the magnitude limit. */
+    _isNotable(star) {
+        return !!(star && (star.fictional_name || star.discovery_number != null));
     }
 
     /** Show a trade route's lore in the details panel. */
@@ -711,7 +702,7 @@ class ThreeJSStarmap {
                     const magLimit = this.starMaterial
                         ? this.starMaterial.uniforms.uMagLimit.value
                         : 15;
-                    if (hoveredStar.magnitude > magLimit) return;
+                    if (hoveredStar.magnitude > magLimit && !this._isNotable(hoveredStar)) return;
 
                     if (this.highlightedStar !== hoveredStar) {
                         this.clearStarHighlights();
@@ -720,17 +711,6 @@ class ThreeJSStarmap {
                     }
                 }
             } else {
-                // No star point — a green exoplanet marker counts as its host.
-                const host = this._pickExoplanetHost();
-                if (host) {
-                    if (this.highlightedStar !== host) {
-                        this.clearStarHighlights();
-                        this.highlightedStar = host;
-                        this.showStarTooltip(host, event);
-                    }
-                    this.container.style.cursor = 'pointer';
-                    return;
-                }
                 this.clearStarHighlights();
                 this.highlightedStar = null;
                 // Pointer cursor over clickable route lines
@@ -1697,98 +1677,21 @@ class ThreeJSStarmap {
             const realData      = await realRes.json();
             const fictionalData = await fictionalRes.json();
 
-            const allPlanets = [];
+            // Planet DATA is kept — the system map and the astrogator panel's
+            // "Charted worlds" count read realExoplanets/fictionalExoplanets —
+            // but planets are NOT drawn on the galaxy map. They live in the
+            // per-star system view, not floating as markers between the stars.
+            const norm = (p) => ({ ...p, host_star: p.host_star_name || p.host_star });
+            if (realData.success && realData.data)
+                this.realExoplanets = realData.data.map(norm);
+            if (fictionalData.success && fictionalData.data)
+                this.fictionalExoplanets = fictionalData.data.map(norm);
 
-            if (realData.success && realData.data) {
-                // Normalise host_star field for overlay lookup
-                const normalised = realData.data.map(p => ({
-                    ...p,
-                    host_star: p.host_star_name || p.host_star,
-                }));
-                this.realExoplanets = normalised;   // ← stored for system map lookup
-                allPlanets.push(...normalised);
-            }
-
-            if (fictionalData.success && fictionalData.data) {
-                // Normalise: createExoplanetsOverlay reads planet.host_star
-                const normalised = fictionalData.data.map(p => ({
-                    ...p,
-                    host_star: p.host_star_name || p.host_star,
-                }));
-                this.fictionalExoplanets = normalised;
-                allPlanets.push(...normalised);
-            }
-
-            if (allPlanets.length > 0) {
-                console.log(`🎯 Creating exoplanets overlay for ${allPlanets.length} planets`);
-                this.createExoplanetsOverlay(allPlanets);
-            }
             return true;
         } catch (error) {
             console.warn('🪐 loadExoplanets failed:', error);
             return false;
         }
-    }
-
-    createExoplanetsOverlay(exoplanets) {
-        // Clear existing exoplanet objects
-        while (this.exoplanetGroup.children.length > 0) {
-            const child = this.exoplanetGroup.children[0];
-            this.exoplanetGroup.remove(child);
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
-        }
-
-        const planetStars = exoplanets.reduce((acc, planet) => {
-            const starKey = planet.host_star || planet.star_id;
-            if (!acc[starKey]) acc[starKey] = [];
-            acc[starKey].push(planet);
-            return acc;
-        }, {});
-
-        Object.keys(planetStars).forEach(hostStarName => {
-            const hostStar = this.currentStars.find(star =>
-                star.name === hostStarName ||
-                star.fictional_name === hostStarName ||
-                star.id === parseInt(hostStarName) ||
-                (star.catalog_ids && star.catalog_ids.includes(hostStarName))
-            );
-
-            if (hostStar) {
-                this.createPlanetsForStar(hostStar, planetStars[hostStarName]);
-            }
-        });
-
-        console.log(`✅ Created exoplanets overlay with ${this.exoplanetGroup.children.length} planets`);
-    }
-
-    createPlanetsForStar(hostStar, planets) {
-        // At galaxy scale a real orbit (~AU) is microscopic next to the star,
-        // so these markers are just a "charted worlds here" indicator that
-        // HUGS the host — not a to-scale system (that lives in the system map).
-        // The old code offset them by orbitRadius*10 world units = 1–3 pc,
-        // leaving green dots floating parsecs from their star (user catch).
-        const cx = hostStar.x * 10, cy = hostStar.y * 10, cz = hostStar.z * 10;
-        planets.forEach((planet, index) => {
-            const r = 0.45 + index * 0.14;   // world units — a tight halo on the star
-            const angle = (index / planets.length) * Math.PI * 2;
-            const px = cx + Math.cos(angle) * r;
-            const py = cy + Math.sin(angle) * 0.35 * r;
-            const pz = cz + Math.sin(angle) * r;
-
-            const geometry = new THREE.SphereGeometry(0.16, 8, 8);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x4CAF50,
-                transparent: true,
-                opacity: 0.85
-            });
-
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.position.set(px, py, pz);
-            sphere.userData = { type: 'exoplanet', data: { ...planet, hostStar } };
-
-            this.exoplanetGroup.add(sphere);
-        });
     }
 
 

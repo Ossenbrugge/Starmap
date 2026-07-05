@@ -432,12 +432,6 @@
                                 </div>
                                 <div class="col-6">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="exoplanetsOverlay" checked>
-                                        <label class="form-check-label small" for="exoplanetsOverlay">Planets</label>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="constellationsOverlay">
                                         <label class="form-check-label small" for="constellationsOverlay">Constellations</label>
                                     </div>
@@ -1548,7 +1542,6 @@
             if (!threejsStarmap) return;
             if (threejsStarmap.nationsGroup)        threejsStarmap.nationsGroup.visible        = document.getElementById('nationsOverlay').checked;
             if (threejsStarmap.stellarRegionsGroup) threejsStarmap.stellarRegionsGroup.visible = document.getElementById('stellarRegionsOverlay').checked;
-            if (threejsStarmap.exoplanetGroup)      threejsStarmap.exoplanetGroup.visible      = document.getElementById('exoplanetsOverlay').checked;
             if (threejsStarmap.labelsGroup)         threejsStarmap.labelsGroup.visible         = document.getElementById('starLabelsOverlay').checked;
 
             // Trade routes: set group + force material refresh on each line
@@ -2991,7 +2984,7 @@
         // ── DOMContentLoaded ─────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             ['nationsOverlay','tradeRoutesOverlay','stellarRegionsOverlay','galacticDirectionsOverlay',
-             'exoplanetsOverlay','constellationsOverlay','habitableZoneOverlay','starLabelsOverlay']
+             'constellationsOverlay','habitableZoneOverlay','starLabelsOverlay']
                 .forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.addEventListener('change', updateOverlays);

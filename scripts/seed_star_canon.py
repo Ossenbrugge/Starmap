@@ -909,9 +909,11 @@ FICTIONAL_WORLDS = [{'description': 'Tidally locked super-Mercury nicknamed "Sco
   'period': 2191.0,
   'planet_type': 'Rocky',
   'radius': 0.8},
- {'description': "Far Neptune-like giant whose 154 AU orbit lies well beyond the star's safe "
-                 'sternfomotor jump radius — ships jump in and out at Grandpere itself, no '
-                 'in-system crawl. Its capital moon Protelan grew rich on that geometry.',
+ {'description': 'The vast, grandfatherly Neptune-like giant (French grand-père) at 154 AU — '
+                 'beyond the ~56 AU sternfomotor jump periphery, so ships jump directly to its '
+                 'orbit, a prized shortcut to the Protelani capital. It fills the sky of its '
+                 'capital moon Protelan, its reflective phases driving the Starveil Festival. That '
+                 'jump geometry made the moon rich.',
   'host_star_name': 'Protelan',
   'map_url': None,
   'mass': 120.0,
@@ -931,7 +933,8 @@ FICTIONAL_WORLDS = [{'description': 'Tidally locked super-Mercury nicknamed "Sco
   'period': 182620.0,
   'planet_type': 'Rocky',
   'radius': 0.7},
- {'description': 'Jupiter-like giant whose eclipses are celebrated in the Joi Veil Festival.',
+ {'description': 'Jupiter-like inner giant (Joi, "joy") at 2.5 AU — its icy moons anchor part of '
+                 "the Protelani system's mining and logistics.",
   'host_star_name': 'Protelan',
   'map_url': None,
   'mass': None,
@@ -941,11 +944,13 @@ FICTIONAL_WORLDS = [{'description': 'Tidally locked super-Mercury nicknamed "Sco
   'period': 1096.0,
   'planet_type': 'Gas Giant',
   'radius': 12.0},
- {'description': 'Capital moon of the Protelan Republic, orbiting the gas giant Grandpere beyond '
-                 "the star's jump radius — even in the slow torch-drive decades, ships could jump "
-                 "straight in and straight out here. That geometry made Protelan the Rim's "
-                 'mercantile crossroads, and the Republic rich. Seat of the ultra-capitalist '
-                 'government at Havskrun.',
+ {'description': 'Capital moon of the Protelan Republic, orbiting the gas giant Grandpere at 154 '
+                 'AU — beyond the jump periphery, so ships jump straight in and out, which made it '
+                 "the Rim's mercantile crossroads and the Republic rich. A sunless world so far "
+                 'from its star: kept temperate (15–25°C) purely by tidal heating from Grandpere, '
+                 'under a thick greenhouse atmosphere. Its low-light ecology is exotic — fungal, '
+                 'mushroom-forest and bioluminescent rather than sun-driven. Seat of the '
+                 'ultra-capitalist government at Havskrun.',
   'host_star_name': 'Protelan',
   'map_url': None,
   'mass': 0.85,

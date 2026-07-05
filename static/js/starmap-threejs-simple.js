@@ -163,9 +163,18 @@ class ThreeJSStarmap {
             }
 
             if (fictionalData.success && fictionalData.data) {
+                // Ghost stars (Shattensonne, Tiefe-Grenze Tor, L 98-59) are
+                // is_fictional=1 rows in the stars table AND come back from
+                // /fictional-stars — so they arrive in BOTH payloads. Dedup by
+                // id, letting the fictional payload win (it carries the lore),
+                // else they double-render as points, labels and companions.
+                const seen = new Set(allStars.map(s => s.id));
                 const fictionalStars = this.processFictionalStars(fictionalData.data);
-                allStars = [...allStars, ...fictionalStars];
-                console.log(`✅ Loaded ${fictionalStars.length} fictional stars`);
+                allStars = [
+                    ...allStars.filter(s => !fictionalStars.some(f => f.id === s.id)),
+                    ...fictionalStars,
+                ];
+                console.log(`✅ Loaded ${fictionalStars.length} fictional stars (${seen.size + fictionalStars.length - allStars.length} de-duplicated)`);
             }
 
             if (allStars.length > 0) {
@@ -801,6 +810,23 @@ class ThreeJSStarmap {
             }
         } catch (e) { /* system-map gatherer not available on this page */ }
 
+        // Binary/multiple companions: any other star bound within ~0.6 pc
+        // (nearest neighbour to Sol is 1.3 pc, so this only catches true
+        // companions — e.g. Shattensonne, the M7V dwarf 0.05 pc off Holsten Tor).
+        const AU_PER_PC = 206265;
+        const companions = (this.currentStars || [])
+            .filter(o => o.id !== star.id && o.x != null && star.x != null)
+            .map(o => ({ o, pc: Math.hypot(o.x - star.x, o.y - star.y, o.z - star.z) }))
+            .filter(c => c.pc < 0.6)
+            .sort((a, b) => a.pc - b.pc)
+            .slice(0, 3)
+            .map(c => {
+                const nm = c.o.fictional_name || c.o.proper_name || c.o.name || `Star #${c.o.id}`;
+                const sep = c.pc * AU_PER_PC;
+                const sepStr = sep >= 10000 ? `${(sep / 1000).toFixed(0)}k AU` : `${sep.toFixed(0)} AU`;
+                return `${nm}${c.o.spectral_class ? ` <span class="text-muted">(${c.o.spectral_class})</span>` : ''} · ${sepStr}`;
+            });
+
         const con = star.constellation || '';
         const designations = [
             star.bayer ? `${star.bayer} ${con}`.trim() : null,
@@ -848,6 +874,11 @@ class ThreeJSStarmap {
             <div class="mb-1">
                 <small class="text-muted">Designations</small><br>
                 <small class="text-secondary">${designations}</small>
+            </div>` : ''}
+            ${companions.length ? `
+            <div class="mb-1">
+                <small class="text-muted">${companions.length > 1 ? 'Companion stars' : 'Companion star'}</small><br>
+                ${companions.map(c => `<small class="text-info">✦ ${c}</small>`).join('<br>')}
             </div>` : ''}
             <div class="mb-2">
                 <small class="text-muted">Galactic coords (pc)</small><br>

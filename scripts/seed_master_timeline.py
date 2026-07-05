@@ -444,9 +444,15 @@ def apply_world_corrections(con):
         "New Eden, Directorate designation Hawking Prime. Temperate capital of the Centauran "
         "Assembly, a Directorate client state of 700–900 million.' "
         "WHERE name='Hawking Prime' AND host_star_name='Hawking'")
+    # Protelan lore revision (protelan.txt updated by prose Claude 2026-07-05):
+    # Joi is the JUPITER-LIKE INNER GIANT at 2.5 AU — its icy moons anchor the
+    # system's mining and logistics. The festival is GRANDPERE's (Starveil),
+    # not Joi's — Protelan orbits Grandpere, so it's Grandpere's phases that
+    # fill its sky.
     con.execute(
-        "UPDATE fictional_exoplanets SET description='Jupiter-like giant whose eclipses are "
-        "celebrated in the Joi Veil Festival.' WHERE name='Joi' AND host_star_name='Protelan'")
+        "UPDATE fictional_exoplanets SET description='Jupiter-like inner giant (Joi, "
+        "\"joy\") at 2.5 AU — its icy moons anchor part of the Protelani system''s mining "
+        "and logistics.' WHERE name='Joi' AND host_star_name='Protelan'")
     # Grandpere orbit: a stale pre-existing row at 2.5 AU (the OLD dossier
     # layout, before the author swapped Grandpere/Joi) blocked the 154 AU
     # insert-if-absent, leaving two giants stacked at 2.5 (user catch
@@ -455,10 +461,11 @@ def apply_world_corrections(con):
     # dossier's "~4.25 million years" typo.
     con.execute(
         "UPDATE fictional_exoplanets SET orbit=154, period=706000, "
-        "description='Far Neptune-like giant whose 154 AU "
-        "orbit lies well beyond the star''s safe sternfomotor jump radius — ships jump in "
-        "and out at Grandpere itself, no in-system crawl. Its capital moon Protelan grew "
-        "rich on that geometry.' WHERE name='Grandpere' AND host_star_name='Protelan'")
+        "description='The vast, grandfatherly Neptune-like giant (French grand-père) at "
+        "154 AU — beyond the ~56 AU sternfomotor jump periphery, so ships jump directly to "
+        "its orbit, a prized shortcut to the Protelani capital. It fills the sky of its "
+        "capital moon Protelan, its reflective phases driving the Starveil Festival. That "
+        "jump geometry made the moon rich.' WHERE name='Grandpere' AND host_star_name='Protelan'")
     # Dossier physics revision 2026-07-05 (author moved worlds into each
     # star's TRUE habitable zone): Lalande L=0.022 → HZ 0.14–0.20, so
     # Libertad = b at 0.16 AU / ~37 d (temperate capital) and Nakdong = d
@@ -517,11 +524,13 @@ def apply_world_corrections(con):
         "WHERE name='Stellarion Trade Nexus' AND host_star_name='Pentothia Prime'")
     con.execute(
         "UPDATE fictional_exoplanets SET description='Capital moon of the Protelan Republic, "
-        "orbiting the gas giant Grandpere beyond the star''s jump radius — even in the slow "
-        "torch-drive decades, ships could jump straight in and straight out here. That "
-        "geometry made Protelan the Rim''s mercantile crossroads, and the Republic rich. "
-        "Seat of the ultra-capitalist government at Havskrun.' WHERE name='Protelan' "
-        "AND parent_planet='Grandpere'")
+        "orbiting the gas giant Grandpere at 154 AU — beyond the jump periphery, so ships "
+        "jump straight in and out, which made it the Rim''s mercantile crossroads and the "
+        "Republic rich. A sunless world so far from its star: kept temperate (15–25°C) "
+        "purely by tidal heating from Grandpere, under a thick greenhouse atmosphere. Its "
+        "low-light ecology is exotic — fungal, mushroom-forest and bioluminescent rather "
+        "than sun-driven. Seat of the ultra-capitalist government at Havskrun.' "
+        "WHERE name='Protelan' AND parent_planet='Grandpere'")
 
 
 def apply_legacy_deletions(con):

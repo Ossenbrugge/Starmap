@@ -113,11 +113,71 @@ EVENT_UPDATES = {
         "Sternfahrer's 33rd Strike Fleet (flagship Promachos) and Grand Admiral Sorensen's "
         "Protelani Third hold the line; Lenart's 7th, arriving from Procyon, delivers the "
         "coup de grâce."),
-    "Insurrection in Havskrun": (2355, None,
-        "The Terran-backed Svenson faction rises in Havskrun and seizes Dictator Halvorsen, "
-        "Terran regiments landing on the islands offshore; two battalions of the 73rd "
-        "'Glorious' Grenadiers dropped by Lenart retake the city. The Svensons are captured, "
-        "the Terrans surrender — the alliance holds."),
+    "Insurrection in Havskrun": (2356, None,
+        "Early March 2356: the Terran-backed Svenson faction rises in Havskrun and seizes "
+        "Dictator Halvorsen, Terran regiments landing on the islands offshore; the 73rd "
+        "'Glorious' Grenadiers dropped by Lenart retake the city — then the pacification "
+        "grinds for months. A mimic-mask gas trap kills Eachan Grahame; only by October is "
+        "the Dictator rescued and the Svensons captured. The alliance holds."),
+    # ── Late-war re-dating (prose Claude, 2026-07-04: torch-drive-coherent) ──
+    "Truce of 2354": (2354, 2355,
+        "From late June 2354 the guns fall silent for Accord negotiations — until the "
+        "Foundation Plague is confirmed as a Terran bioweapon (~April 2355), the casus "
+        "belli: Raimond expels Ambassador Victoria and the war resumes."),
+    "The Foundation Plague": (2354, 2356,
+        "Seeded across the rim during the truce and first blamed on the Assault after an "
+        "Asimov outbreak, the plague rots the Stahlburgh and Eisenwald harvests into famine "
+        "— Stahlburgh under worldwide quarantine by late 2355. Its confirmation as a Terran "
+        "bioweapon in 2355 is the casus belli that reignites the war."),
+    "Operation AENEAS BURDEN": (2355, None,
+        "May–June 2355: the Union answers the bioweapon with the raid on Alpha Centauri — "
+        "Signe's secret super-fleet, pre-positioned during the truce. O'Riordan's 10th, "
+        "Sorensen's Protelani Third and Lenart's 7th break the system while Bruce's 2nd "
+        "Division takes the ground; a costly, bloody-mess success. The Eighth is cut off "
+        "and written off — its odyssey home runs all summer."),
+    "Battle of Asher": (2355, None,
+        "The home-front counterstroke: a Terran fleet drives on Stahlburgh, and Commodore "
+        "Sternfahrer's 21st Fleet baits it behind the gas giant Asher onto von Stahlgeist's "
+        "5th, killing the battleship Proletarian Titan — the ambush that earns Johanna "
+        "the 33rd."),
+    "Henry Crowned Emperor of Hansaburgh": (2355, None,
+        "Surviving an April sniper's bullet — dead almost two minutes, revived by Lukas von "
+        "Saltz — Henry wins the June general election and is crowned Kaiser of Hansaburgh "
+        "at Saint Christopher's."),
+    "Battle of Bester": (2355, None,
+        "26 December 2355, on Asimov's moon: Jurgen's team extracts the defecting General "
+        "Musa — who dares defect only because Klaus's 2354 Asimov victory has already "
+        "decided the war. Two Union divisions roll three leaderless Terran ones; the 33rd "
+        "and 11th carrier fleets crush the Terran 8th and 9th."),
+    "Battle of Procyon": (2356, None,
+        "February–March 2356, on the ground: the Fomalhaut Republic Mobile Infantry carry "
+        "Procyon after hard fighting — General Eachan's son Donal among the dead — with "
+        "Lenart's 7th in close support before it jumps onward to Protelan. The Protelani "
+        "Space Marines fare badly; the Fomalhaut infantry win it."),
+    "Battle of Eiswelt": (2356, None,
+        "Late February 2356 — the Pale Horse over Eiswelt: a 'small' Terran listening post "
+        "in the capital system proves a fleet trap. Jurgen's 75th Grenadiers raid the post; "
+        "the Navy wins at terrible cost — O'Riordan's flagship Duchess Máire Gleann "
+        "O'Cruadhlaoich rammed by cloaked Terrans. Eisenbach's Wolf 359 speech comes 24 "
+        "hours later: Directorate stars, not client states."),
+    "Battle of Protelan": (2356, None,
+        "Early March 2356: a cloaked Terran First Fleet slips toward Protelan — the "
+        "Earth-like moon of the gas giant Grandpere — while Henry is on-world sealing the "
+        "alliance with Dictator Halvorsen. Rear Admiral Sternfahrer's 33rd (flagship "
+        "Promachos) and Sorensen's Protelani Third hold the line; Lenart's 7th, arriving "
+        "from Procyon, delivers the coup de grâce."),
+    "Battle of Wolf 359": (2356, None,
+        "Mid-March 2356, weeks after Eiswelt: the first blow of the new doctrine. Eisenbach "
+        "and von Stahlgeist gut the Terran orbital industry — the Locking yards and the "
+        "Ramsen Orbital Forge — in a rare all-hands mobilization: the 4th, 5th, 14th, 15th "
+        "and 72nd, elements of the 73rd, even the elite 75th. 'The Assault had gutted "
+        "Wolf 359's heart.'"),
+    "The Mars Campaign": (2356, None,
+        "September–November 2356: PROJECT ARES infiltration → Operation SPEAR OF DESTINY → "
+        "Operation DEAD ARES. Jurgen's 75th Grenadiers, inserted disguised as pirates, blow "
+        "their cover but hold — Ewan Fraser kills Maxim Timon Bauer at his own dinner table "
+        "— as the 7th and 8th Stahlburgh Rifles storm the domes. Titan flips, Luna falls; "
+        "weeks later, the armistice."),
 }
 
 # Retitle after the update pass (title is the idempotency key)
@@ -125,6 +185,8 @@ RETITLES = {
     "Treaty of the Dual Spheres": "Accord of Dual Spheres",
     # auto-titled before the star carried its saga name
     "HD 99492 Colonized": "Argylle Tor Colonized",
+    # Hansaburgh crowns a Kaiser, not an Emperor (2026-07-04 revision)
+    "Henry Crowned Emperor of Hansaburgh": "Henry Crowned Kaiser of Hansaburgh",
 }
 
 # (year, end_year, title, description, event_type, star_id, nation_id)
@@ -261,6 +323,15 @@ NEW_EVENTS = [
     (2355, None, "Battle of Procyon",
      "The Allies carry the fight to the Directorate's client state at Procyon.",
      "battle", 37173, "dorsai_republic"),
+    (2355, None, "Sorai Massacre",
+     "The Terran warbot Sorai massacres the Hansaburgh succession congress — Trajan, Signe "
+     "Bosdottir and Adolfus killed, the traitor von Schlieffen exposed and slain. Lukas "
+     "becomes King of Hesse-on-the-Saltz; Auggie Sternfahrer inherits Saltzenheim.",
+     "political", 46945, "terran_directorate"),
+    (2356, None, "Armistice of 2356",
+     "~November 2356: Maxim Victoria's 0900 parlay aboard the USWC Union of the Felgenland; "
+     "Allied fleets float over Earth as the Directorate fractures within.",
+     "treaty", 500000, None),
     (2355, 2356, "The Mars Campaign",
      "PROJECT ARES infiltration → Operation SPEAR OF DESTINY → Operation DEAD ARES: Jurgen's "
      "75th Grenadiers, inserted disguised as pirates to seize the Maxim of Mars, Timon Bauer, "
@@ -325,6 +396,46 @@ def apply_events(con):
           f"{len(EVENT_UPDATES)} updated, {inserted} new events")
 
 
+def apply_world_corrections(con):
+    """Timeline revision 2026-07-04: Protelan is the Earth-like moon of the
+    gas giant GRANDPERE (not Joi — and not the earlier 'Fortuna' conflation).
+    Author lore 2026-07-04: Grandpere's 154 AU orbit lies ~3x beyond the
+    star's safe sternfomotor jump radius (~50-60 AU for the active G8V per
+    the Safe Jump Point formula) — ships jump directly in and out at
+    Protelan with no in-system torch crawl, which is what made the moon
+    the Rim's mercantile crossroads. protelan.txt dossier still says Joi."""
+    con.execute("UPDATE fictional_exoplanets SET parent_planet='Grandpere' WHERE name='Protelan'")
+    # Bester is ASIMOV'S MOON (Tau Ceti e I), not an inner planet (prose-Claude
+    # catch 2026-07-04). Orbit = distance around its PARENT (moon convention).
+    con.execute(
+        "UPDATE fictional_exoplanets SET parent_planet='Asimov', planet_type='Rocky Moon', "
+        "orbit=0.002, period=2.5, mass=0.01, radius=NULL, description='Cratered, airless moon of Asimov — Tau Ceti "
+        "e I — ringed with orbital defense platforms; 10–15 million live in its warrens. "
+        "Site of the December 2355 battle where General Musa defected. Named for Alfred "
+        "Bester.' WHERE name='Bester' AND host_star_name='Tau Ceti'")
+    con.execute("DELETE FROM exoplanets WHERE name='Bester' AND host_star_name='tau Cet'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET description='Jupiter-like giant whose eclipses are "
+        "celebrated in the Joi Veil Festival.' WHERE name='Joi' AND host_star_name='Protelan'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET description='Far Neptune-like giant whose 154 AU "
+        "orbit lies well beyond the star''s safe sternfomotor jump radius — ships jump in "
+        "and out at Grandpere itself, no in-system crawl. Its capital moon Protelan grew "
+        "rich on that geometry.' WHERE name='Grandpere' AND host_star_name='Protelan'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET description='A ~100 km orbital station in the far "
+        "dark — sternfomotor docks and the Conglomerate''s great trade markets, parked out "
+        "beyond the star''s jump radius where the ships arrive.' "
+        "WHERE name='Stellarion Trade Nexus' AND host_star_name='Pentothia Prime'")
+    con.execute(
+        "UPDATE fictional_exoplanets SET description='Capital moon of the Protelan Republic, "
+        "orbiting the gas giant Grandpere beyond the star''s jump radius — even in the slow "
+        "torch-drive decades, ships could jump straight in and straight out here. That "
+        "geometry made Protelan the Rim''s mercantile crossroads, and the Republic rich. "
+        "Seat of the ultra-capitalist government at Havskrun.' WHERE name='Protelan' "
+        "AND parent_planet='Grandpere'")
+
+
 def apply_legacy_deletions(con):
     """Canon retired by the author (2026-07-04): Lübeck Tor (star 115218) was
     old data — removed from stars, territories and ownership. Kept here so
@@ -373,6 +484,7 @@ def main():
     try:
         apply_events(con)
         apply_territory_and_stars(con)
+        apply_world_corrections(con)
         apply_legacy_deletions(con)
         con.commit()
         n = con.execute("SELECT COUNT(*) FROM historical_events").fetchone()[0]

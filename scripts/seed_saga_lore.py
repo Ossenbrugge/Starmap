@@ -144,7 +144,10 @@ NATION_LORE = {
         "population": "~36 million (2350 est.)",
         "capital_city": "Protelan (61 Ursae Majoris)",
         "currency": None,
-        "economy_summary": "Independent trade hub; alliance commerce with the Union and Fomalhaut",
+        "economy_summary": "The Rim's mercantile crossroads: Grandpere orbits beyond the "
+                           "star's safe jump radius, so even slow-torch-era ships could jump "
+                           "straight in and out at Protelan — wealth built on geometry. "
+                           "Alliance commerce with the Union and Fomalhaut",
         "military_summary": "Republic Navy under Grand Admiral Katje Sorensen; "
                             "Protelani Space Marines",
     },
@@ -162,8 +165,11 @@ NATION_LORE = {
         "capital_city": "Pentothia Prime",
         "currency": None,
         "economy_summary": "Interstellar commerce through the Mercantile Consortium; "
-                           "trade outposts across the neutral frontier. Sat out the "
-                           "Union–Directorate War and profited from watching it",
+                           "trade outposts across the neutral frontier. Unable to match "
+                           "Protelan's jump geometry, they built the Auricore Cycler — a "
+                           "bazaar-lined cycler working the long crawl in from the jump "
+                           "point. Sat out the Union–Directorate War and profited from "
+                           "watching it",
         "military_summary": "None to speak of — the Pentothians are profiteers, not fighters",
     },
 }
@@ -307,7 +313,12 @@ MISSING_WORLDS = [
      "Frozen world mined for fusion-grade isotopes."),
     ("Stellarion Trade Nexus", "Pentothia Prime", "Station", 189.98, 547900, None, None, None,
      "A ~100 km orbital station in the far dark — sternfomotor docks and the Conglomerate's "
-     "great trade markets."),
+     "great trade markets, parked out beyond the star's jump radius where the ships arrive."),
+    # Orbit is a display placement — the Cycler plies the whole Nexus→Auricore run
+    ("Auricore Cycler", "Pentothia Prime", "Cycler", 95.0, None, None, None, None,
+     "The Pentothian answer to Protelan's jump geometry: a great cycler shuttling the long "
+     "crawl between the Stellarion Trade Nexus and Auricore, lined like a medieval bridge "
+     "with shops and mercantile bazaars — spend money while you wait to arrive."),
     # Protelan (61 UMa) — the moon Protelan itself already exists
     ("Chaud", "Protelan", "Hot Rocky", 0.3, 33, 1.5, 1.2, None,
      "Hot, Venus-like mining outpost for metals."),

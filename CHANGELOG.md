@@ -1,147 +1,36 @@
-# Changelog - Starmap - Felgenland Saga
+# Changelog — Starmap · Felgenland Saga
 
-All notable changes to the Starmap - Felgenland Saga project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to this project are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
 ### Added
-- Comprehensive test suite with 300+ test methods organized in tests/ folder
-- Performance benchmarking and stress testing
-- CI/CD pipeline with GitHub Actions
-- Docker containerization support
-- Development environment documentation
-- Contribution guidelines and development setup
-- Integrated Flask-Login authentication with JWT support in main app.py
+- Era/timeline system: slider, playback, guided tours (full history and War Tour),
+  historical event markers with clustered glyphs, era-aware nation colours and labels.
+- Animated system map (orbital view with habitable-zone band and Kepler-relative speeds).
+- Astrogator's details panel: magnitudes, spectral data, mass/luminosity estimates,
+  jump periphery, travel times, companion stars, charted worlds.
+- Nation lore panel, two-nation compare mode, Felgenland province browser (331 provinces).
+- Print-ready map export (PNG/SVG), shareable deep links, saved views for logged-in users.
+- Distance-based View Range with GPU depth fade; canon stars always visible and selectable.
+- Docker appliance (`docker compose up`), configurable `STARMAP_PORT`, `/health` endpoint.
+- In-process pytest suite (77 tests) with fixture database; CI on Linux, macOS, Windows.
 
 ### Changed
-- Improved documentation structure with cross-references
-- Enhanced API error handling and validation
-- Optimized database queries and indexing
-- **BREAKING**: Merged security features from app_secure.py into main app.py
-- **BREAKING**: All API endpoints now require authentication (except public utility endpoints)
-- All test files moved to tests/ directory for better organization
-
-### Fixed
-- Performance improvements in large dataset handling
-- Memory usage optimization
-- Database connection stability
+- Rendering moved from Plotly to Three.js with a ShaderMaterial star field (24k+ stars).
+- Storage moved from MontyDB to a single SQLite file built by `scripts/migrate_to_sqlite.py`
+  plus the saga canon seed scripts.
+- All `GET` API endpoints are public; writes and saved views require JWT or session auth.
+- Legacy `/api/<path>` requests redirect to `/api/v1/<path>`.
+- Consolidated UI styling into `static/css/starmap.css` with a token-based design system.
 
 ### Removed
-- app_secure.py (features merged into app.py)
+- Legacy MontyDB controllers, handlers and one-off CSV conversion scripts.
+- Exoplanet marker spheres on the galaxy map (the system map covers them).
+- Dead "Star Limit" control (replaced by View Range).
 
-## [0.1.0-alpha] - 2024-01-XX
+## [0.1.0-alpha] — 2024
 
-### Added
-- **Core Application**
-  - Interactive 3D stellar cartography with Plotly.js
-  - Flask web application with REST API
-  - MontyDB embedded database system
-  - Complete MVC architecture
-
-- **Data Management**
-  - 24,670+ real stars from Hipparcos catalog
-  - 13 fictional star systems for science fiction
-  - 5 political entities with territories and trade routes
-  - 28 comprehensive trade routes across 8 categories
-  - 6 detailed planetary systems with 29+ planets
-
-- **Features**
-  - Real-time 3D visualization with zoom, pan, and rotation
-  - Political overlays with nation territories
-  - Trade route visualization with economic data
-  - Galactic coordinate system with cardinal directions
-  - Stellar region boundaries and color coding
-  - Interactive planetary system minimaps
-  - Advanced search and filtering capabilities
-
-- **Technical Features**
-  - MontyDB database with SQLite backend
-  - Template-based data entry system
-  - Comprehensive CRUD operations
-  - Data validation and error handling
-  - Performance optimization and caching
-  - Felgenland Saga cleanup tools
-
-- **API Endpoints**
-  - `/api/stars` - Star data with filtering
-  - `/api/nations` - Political entities
-  - `/api/trade-routes` - Trade network data
-  - `/api/systems` - Planetary systems
-  - `/api/galactic-directions` - Navigation overlays
-  - `/api/stellar-regions` - Galactic regions
-  - `/api/search` - Advanced search functionality
-
-- **Documentation**
-  - Complete README with installation guide
-  - API reference documentation
-  - Data management guide with examples
-  - Planetary system guide
-  - Trade routes documentation
-  - Galactic directions guide
-  - Performance analysis reports
-
-- **Development Tools**
-  - Comprehensive test suite (unit, integration, stress)
-  - Test runner with reporting
-  - Database migration scripts
-  - Development environment setup
-  - Code quality tools and linting
-
-### Technical Specifications
-- **Python 3.8+** with Flask 3.0.0
-- **MontyDB 2.5.3** for embedded database
-- **Plotly.js 5.17.0** for 3D visualization
-- **Pandas 2.2.0** for data processing
-- **Performance**: 50-200ms query times, 5-10x faster than CSV version
-- **Memory Usage**: 50-150MB (vs 200-400MB CSV version)
-- **Database Size**: ~100MB for complete dataset
-- **Browser Support**: Modern browsers with WebGL
-
-### Known Issues
-- Large datasets (>5000 stars) may impact browser performance
-- Some older browsers may have WebGL compatibility issues
-- Database migrations require application restart
-
-### Migration from Previous Versions
-- Run `./migrate_to_montydb.sh` to convert CSV/JSON data to MontyDB
-- Update application startup to use `app_montydb.py`
-- Review configuration settings in `database/config.py`
-
-### Breaking Changes
-- Database format changed from CSV/JSON to MontyDB
-- API responses now include metadata and pagination
-- Some endpoint URLs have changed for consistency
-
----
-
-## Release Notes
-
-### Alpha Release Goals
-This alpha release focuses on:
-- **Core Functionality**: Complete 3D visualization and data management
-- **Developer Experience**: Comprehensive documentation and testing
-- **Performance**: Optimized database operations and caching
-- **Extensibility**: Template system and CRUD operations for customization
-
-### Feedback Welcome
-As an alpha release, we welcome feedback on:
-- Performance and stability
-- API design and usability
-- Documentation clarity
-- Feature requests and bug reports
-
-### Future Roadmap
-- Beta release with additional astronomical catalogs
-- Enhanced visualization features
-- Multi-user support and collaboration
-- Advanced analytics and reporting
-- Mobile-responsive interface
-
----
-
-**Installation**: See [README.md](README.md) for complete installation instructions.
-**Documentation**: See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for all guides.
-**Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+Initial Plotly + MontyDB prototype: 3D star catalogue, nations, trade routes,
+planetary systems, REST API and CRUD tooling. Superseded by the Three.js/SQLite stack above.

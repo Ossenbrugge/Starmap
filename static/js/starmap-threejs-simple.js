@@ -532,68 +532,6 @@ class ThreeJSStarmap {
 
     // ── Wiki / Top-down export ────────────────────────────────────────────────
 
-    generateWikiView(titleText = null) {
-        // Fly to top-down view, hide UI, render clean map, download PNG + wiki markup
-        const camOffset = 800;
-        const target    = (this.controls && this.controls.target)
-            ? this.controls.target.clone()
-            : new THREE.Vector3(0, 0, 0);
-
-        // Snap camera directly above target (Y-up = galactic north)
-        this.flyAnimation = {
-            startPos:    this.camera.position.clone(),
-            endPos:      new THREE.Vector3(target.x, target.y + camOffset, target.z),
-            startTarget: this.controls.target.clone(),
-            endTarget:   target.clone(),
-            duration:    1200,
-            startTime:   performance.now(),
-        };
-
-        // After fly animation completes, render & export
-        setTimeout(() => {
-            // Hide axes, turn on trade routes for the map
-            if (this.axesHelper) this.axesHelper.visible = false;
-            if (this.axisLabels) this.axisLabels.forEach(l => l.visible = false);
-
-            this.render();
-
-            const dataURL = this.renderer.domElement.toDataURL('image/png');
-            const inUniverYear = this.eraYear || 2750;
-            const title = titleText || 'Felgenland Starmap';
-            const wikiMarkup = `{{:starmap:${title.toLowerCase().replace(/ /g,'_')}_${inUniverYear}.png|${title} — In-universe date: ${inUniverYear}}}
-
-/* Exported by Starmap tool. Era: ${inUniverYear}. */
-`;
-            // Download PNG
-            const a = document.createElement('a');
-            a.href = dataURL;
-            a.download = `wiki-starmap-${inUniverYear}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            // Copy wiki markup
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(wikiMarkup).then(() => {
-                    console.log('✅ DokuWiki markup copied to clipboard');
-                });
-            }
-
-            // Restore axes visibility
-            const axesCheck = document.getElementById('galacticDirectionsOverlay');
-            const showAxes  = axesCheck ? axesCheck.checked : false;
-            if (this.axesHelper) this.axesHelper.visible = showAxes;
-            if (this.axisLabels) this.axisLabels.forEach(l => l.visible = showAxes);
-
-            // Notify user
-            const banner = document.getElementById('wikiExportBanner');
-            if (banner) {
-                banner.textContent = `✅ Wiki map saved as "wiki-starmap-${inUniverYear}.png". DokuWiki markup copied to clipboard.`;
-                banner.style.display = 'block';
-                setTimeout(() => { banner.style.display = 'none'; }, 5000);
-            }
-        }, 1400);
-    }
 
     onMouseClick(event) {
 
@@ -801,7 +739,7 @@ class ThreeJSStarmap {
             html += `
                 <div class="mb-2 px-2 py-1 rounded d-flex align-items-center gap-2"
                      style="border-left:3px solid ${safeColor}; background:rgba(0,0,0,0.4)">
-                    <span style="width:8px;height:8px;border-radius:50%;background:${safeColor};flex-shrink:0;display:inline-block;"></span>
+                    ${window.nationFlagImg ? window.nationFlagImg(nation._id || nation.id, 'flag flag-lg') : ''}
                     <div>
                         <span class="small fw-bold">${nation.name}</span>
                         <br><small class="text-muted" style="font-size:0.7rem">${nation.government?.type || ''}</small>
@@ -1127,18 +1065,7 @@ class ThreeJSStarmap {
         if (!tooltip) {
             tooltip = document.createElement('div');
             tooltip.id = 'starTooltip';
-            tooltip.style.cssText = `
-                position: fixed;
-                background: rgba(0,0,0,0.85);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                pointer-events: none;
-                z-index: 1000;
-                border: 1px solid #444;
-                max-width: 200px;
-            `;
+            tooltip.className = 'star-tooltip';
             document.body.appendChild(tooltip);
         }
 

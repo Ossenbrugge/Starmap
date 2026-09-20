@@ -170,23 +170,21 @@ def add_star(self, star_data: Dict[str, Any]) -> int:
 
 ```
 starmap/
-├── app_montydb.py          # Main application (MontyDB)
-├── app.py                  # Legacy application (CSV/JSON)
-├── database/               # Database layer
-│   ├── config.py          # Database configuration
-│   ├── schema.py          # Document schemas
-│   └── migrate.py         # Migration scripts
-├── managers/               # Business logic layer
-│   ├── data_manager.py    # Unified data interface
-│   ├── star_manager.py    # Star CRUD operations
-│   └── ...                # Other managers
-├── models/                 # Data models
-├── controllers/            # Request handlers
-├── views/                  # Response formatting
-├── templates/              # Data templates and HTML
-├── static/                 # Frontend assets
-├── tests/                  # Test suite
-└── docs/                   # Documentation
+├── app_refactored.py       # Flask app factory + entry point
+├── auth.py                 # AuthManager, User model, JWT helpers
+├── app/
+│   ├── config/             # Flask + auth configuration
+│   ├── middleware/         # Auth middleware
+│   ├── repositories/       # SQLite data access
+│   ├── routes/             # One blueprint per domain (/api/v1/...)
+│   ├── services/           # Business logic
+│   └── utils/              # Response helpers
+├── models/                 # Database singleton + schema.sql
+├── scripts/                # DB rebuild chain + canon sync tools
+├── static/                 # starmap.css, starmap-threejs-simple.js, data
+├── templates/              # starmap.html (SPA shell), login.html
+├── tests/                  # In-process pytest suite
+└── data/                   # Source JSON/CSV; starmap.sqlite is built, not tracked
 ```
 
 ## 🐛 Bug Reports

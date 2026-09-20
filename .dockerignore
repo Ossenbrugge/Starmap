@@ -38,6 +38,5 @@ test-results.xml
 .env.*
 !.env.example
 
-# Docs and test html not needed at runtime
+# Docs not needed at runtime
 screenshots/
-test_*.html

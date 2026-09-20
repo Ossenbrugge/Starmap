@@ -10,6 +10,11 @@
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/favicon.png') }}?v=1">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='img/favicon.png') }}?v=1">
 
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -63,138 +68,59 @@
         }
     </script>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}">
+    <!-- All UI styling (tokens, sidebar console, panels, modals) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/starmap.css') }}?v=2">
 
-    <style>
-        /* ── Autocomplete ── */
-        #searchAutocomplete {
-            background: #1a1a2e;
-            border: 1px solid #444;
-            border-radius: 0 0 6px 6px;
-            max-height: 220px;
-            overflow-y: auto;
-        }
-        .ac-item {
-            padding: 6px 10px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            border-bottom: 1px solid #2a2a3e;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .ac-item:hover, .ac-item.ac-active { background: #2a2a4e; }
-        .ac-badge { font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; flex-shrink: 0; }
-        /* ── Era slider track ── */
-        .era-track { position: relative; height: 4px; background: #333; border-radius: 2px; margin: 8px 0; }
-        .era-fill  { position: absolute; height: 100%; background: linear-gradient(90deg,#667eea,#764ba2); border-radius: 2px; }
-        /* ── Wiki export banner ── */
-        #wikiExportBanner {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: #198754; color: white; padding: 10px 20px; border-radius: 6px;
-            z-index: 2000; display: none; font-size: 0.85rem; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        /* ── Story moments ── */
-        .story-btn { font-size: 0.72rem; padding: 3px 6px; }
-        /* ── System Map panel ── */
-        #systemMapPanel {
-            position: fixed; bottom: 20px; right: 20px;
-            width: 400px; background: #0a0a1e;
-            border: 1px solid #334; border-radius: 8px;
-            z-index: 1500; display: none;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-        }
-        #systemMapPanel .panel-header {
-            padding: 8px 12px; border-bottom: 1px solid #334;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        #systemMapCanvas { display: block; background: #000811; }
-        /* ── Compare nations badge ── */
-        .compare-badge { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-        /* ── Saved view item ── */
-        .saved-view-item { display: flex; align-items: center; justify-content: space-between;
-            padding: 3px 6px; border-radius: 4px; font-size: 0.78rem; cursor: pointer; }
-        .saved-view-item:hover { background: #1a1a3e; }
-        /* ── Help overlay ── */
-        #helpOverlay {
-            position: fixed; inset: 0; background: rgba(0,0,12,0.88);
-            z-index: 3000; display: none; align-items: center; justify-content: center;
-        }
-        #helpOverlay .help-box {
-            background: #0d0d2a; border: 1px solid #334; border-radius: 10px;
-            padding: 28px 32px; max-width: 540px; width: 90%; color: #ccc;
-        }
-        #helpOverlay .help-box h5 { color: #a0c4ff; margin-bottom: 16px; }
-        .help-row { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.82rem; }
-        .help-key { background: #1a2a3e; border: 1px solid #445; border-radius: 4px;
-            padding: 2px 8px; font-family: monospace; color: #88bbff; flex-shrink: 0; min-width: 70px; text-align:center; }
-        /* ── Help button (fixed) ── */
-        #helpBtn {
-            position: fixed; bottom: 18px; right: 18px;
-            width: 34px; height: 34px; border-radius: 50%;
-            background: #1a2a3e; border: 1px solid #445; color: #88bbff;
-            font-size: 1rem; font-weight: bold; cursor: pointer; z-index: 1200;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #helpBtn:hover { background: #223350; }
-    </style>
 </head>
 <body>
     <div class="container-fluid h-100">
         <div class="row h-100">
             <!-- Control Panel -->
             <div class="col-md-3 col-lg-2 control-panel p-0 d-flex flex-column" id="sidebarCol">
-                <!-- Header + collapse toggle -->
-                <div class="d-flex align-items-center px-2 py-2" style="border-bottom:1px solid #333; flex-shrink:0;">
-                    <span class="text-primary fw-bold flex-grow-1 small">🌌 Starmap</span>
-                    <button id="sidebarToggle" class="btn btn-sm btn-outline-secondary py-0 px-1"
-                            onclick="toggleSidebar()" title="Toggle sidebar">◀</button>
+                <!-- Brand header + collapse toggle -->
+                <div class="brand">
+                    <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2.5 13.9 9.6 21 12l-7.1 2.4L12 21.5l-1.9-7.1L3 12l7.1-2.4z"/>
+                        <circle cx="12" cy="12" r="10" stroke-opacity="0.35"/>
+                    </svg>
+                    <div class="brand-text">
+                        <div class="brand-name">Felgenland Starmap</div>
+                        <div class="brand-sub">Astrographic console · 100 pc</div>
+                    </div>
+                    <button id="sidebarToggle" class="btn-icon" onclick="toggleSidebar()" title="Collapse sidebar">◀</button>
                 </div>
 
                 <div id="sidebarContent" class="flex-grow-1 d-flex flex-column overflow-hidden">
                     {% if user %}
-                    <div class="alert alert-success small mx-2 mt-2 mb-0 py-1">
-                        🛡️ <strong>{{ user.username }}</strong>
-                        <div class="mt-1">
-                            <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm py-0">Logout</a>
-                            <button onclick="generateApiToken()" class="btn btn-outline-info btn-sm py-0">Token</button>
-                        </div>
+                    <div class="user-pill">
+                        <span>Signed in as <strong>{{ user.username }}</strong></span>
+                        <button onclick="generateApiToken()" class="btn btn-outline-info btn-sm py-0" title="Issue an API token">Token</button>
+                        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-sm py-0">Logout</a>
                     </div>
                     {% endif %}
 
-                    <div id="status" class="alert alert-info small mx-2 mt-2 mb-0 py-1">
-                        Initializing...
-                    </div>
+                    <div id="status" class="status-pill" data-state="loading">Initialising starfield…</div>
 
                     <!-- Tab navigation -->
-                    <ul class="nav nav-tabs nav-fill px-2 pt-2 flex-shrink-0" id="controlTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active px-1 py-1" data-bs-toggle="tab"
-                                    data-bs-target="#tabFilters" title="Filters">🔭</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
-                                    data-bs-target="#tabLore" title="Lore">📖</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
-                                    data-bs-target="#tabLayers" title="Layers">🗺️</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link px-1 py-1" data-bs-toggle="tab"
-                                    data-bs-target="#tabTools" title="Tools">🔧</button>
-                        </li>
-                    </ul>
+                    <div class="nav panel-tabs" id="controlTabs" role="tablist">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabFilters" role="tab" title="Filters">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/><circle cx="6" cy="12" r="1.5" fill="currentColor"/><circle cx="10" cy="18" r="1.5" fill="currentColor"/><circle cx="14" cy="6" r="1.5" fill="currentColor"/></svg><span>Filters</span></button>
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabLore" role="tab" title="Lore">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Lore</span></button>
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabLayers" role="tab" title="Layers">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg><span>Layers</span></button>
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabTools" role="tab" title="Tools">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span>Tools</span></button>
+                    </div>
 
-                    <div class="tab-content px-2 pt-2 overflow-auto flex-grow-1" style="min-height:0;">
+                    <div class="tab-content panel-scroll">
 
                         <!-- ── FILTERS TAB ── -->
                         <div class="tab-pane fade show active" id="tabFilters" role="tabpanel">
 
                             <!-- Search with autocomplete -->
-                            <div class="mb-3 position-relative">
-                                <label class="form-label small fw-bold">Search Stars &amp; Nations</label>
+                            <div class="group position-relative">
+                                <div class="section-label">Search</div>
                                 <div class="input-group input-group-sm">
                                     <input type="text" id="searchInput" class="form-control"
                                            placeholder="Star name, nation…"
@@ -205,90 +131,74 @@
                                            onblur="setTimeout(()=>hideAutocomplete(),200)">
                                     <button class="btn btn-outline-primary" onclick="searchStars()">🔍</button>
                                 </div>
-                                <div id="searchAutocomplete" style="display:none; position:absolute; width:100%; z-index:1050;"></div>
-                                <div id="searchResults" class="mt-2"></div>
+                                <div id="searchAutocomplete"></div>
+                                <div id="searchResults"></div>
                             </div>
 
                             <!-- Magnitude slider -->
-                            <div class="mb-2">
-                                <label class="form-label small fw-bold">Magnitude Limit</label>
+                            <div class="group">
+                                <div class="section-label"><span>Magnitude limit</span><span class="val"><span id="magValue">8.0</span> mag</span></div>
                                 <input type="range" id="magLimit" class="form-range" min="1" max="12" value="8" step="0.5"
                                        oninput="onMagChange(this.value)">
-                                <small class="text-muted">Max: <span id="magValue">8.0</span></small>
                             </div>
 
                             <!-- Era / Timeline slider -->
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold d-flex justify-content-between">
-                                    <span>📅 Era / Timeline</span>
-                                    <span id="eraValueLabel" class="text-warning">All Eras</span>
-                                </label>
+                            <div class="group">
+                                <div class="section-label"><span>Era / timeline</span><span id="eraValueLabel" class="val">All eras</span></div>
                                 <div class="form-check form-switch mb-1">
                                     <input class="form-check-input" type="checkbox" id="eraFilterToggle"
                                            onchange="toggleEraFilter(this.checked)">
-                                    <label class="form-check-label small" for="eraFilterToggle">Enable Era Filter</label>
+                                    <label class="form-check-label small" for="eraFilterToggle">Filter by era</label>
                                 </div>
-                                <!-- War range highlight behind the slider -->
-                                <div style="position:relative;">
-                                    <div title="Union–Directorate War (2352–2357)"
-                                         style="position:absolute;top:50%;transform:translateY(-50%);
-                                                left:21.93%;width:0.72%;height:8px;
-                                                background:rgba(200,50,50,0.55);border-radius:2px;
-                                                pointer-events:none;z-index:1;"></div>
-                                    <div title="Second Union–Directorate War (2391–2397)"
-                                         style="position:absolute;top:50%;transform:translateY(-50%);
-                                                left:26.63%;width:0.72%;height:8px;
-                                                background:rgba(200,50,50,0.55);border-radius:2px;
-                                                pointer-events:none;z-index:1;"></div>
+                                <!-- War range highlights behind the slider (left = % of 2170–3000) -->
+                                <div class="era-slider-wrap">
+                                    <div class="era-band" style="left:21.93%" title="Union–Directorate War (2352–2357)"></div>
+                                    <div class="era-band" style="left:26.63%" title="Second Union–Directorate War (2391–2397)"></div>
                                     <input type="range" id="eraSlider" class="form-range" min="2170" max="3000"
                                            value="2350" step="1" disabled
-                                           oninput="onEraChange(this.value)"
-                                           style="position:relative;z-index:2;">
+                                           oninput="onEraChange(this.value)">
                                 </div>
                                 <!-- Historical event markers, rendered from /api/v1/events by renderEventMarkers() -->
-                                <div id="eraEventMarkers" style="position:relative;height:28px;margin-top:1px;pointer-events:none;user-select:none;">
-                                    <span style="position:absolute;top:9px;left:0%;transform:translateX(-50%);font-size:8px;color:#888;">2170</span>
-                                    <span style="position:absolute;top:9px;right:0%;transform:translateX(50%);font-size:8px;color:#555;">3000</span>
+                                <div id="eraEventMarkers" class="era-markers">
+                                    <span class="era-axis start">2170</span>
+                                    <span class="era-axis end">3000</span>
                                 </div>
                                 <!-- Timeline playback -->
-                                <div class="d-flex align-items-center gap-1 mt-1">
+                                <div class="era-controls">
                                     <button id="eraPlayBtn" class="btn btn-outline-warning btn-sm py-0 px-2"
                                             onclick="toggleEraPlayback()" title="Play the timeline (auto-enables era filter)">▶</button>
                                     <button id="eraTourBtn" class="btn btn-outline-info btn-sm py-0 px-2"
                                             onclick="toggleEraTour('full')" title="Guided tour: fly through galactic history event by event">🎬</button>
                                     <button id="eraWarTourBtn" class="btn btn-outline-danger btn-sm py-0 px-2"
                                             onclick="toggleEraTour('war')" title="War Tour: the Union–Directorate War, 2350–2357 — longer dwell at the battles">⚔</button>
-                                    <select id="eraPlaySpeed" class="form-select form-select-sm py-0"
-                                            style="width:auto;font-size:0.7rem;" title="Playback speed">
+                                    <select id="eraPlaySpeed" class="form-select form-select-sm" title="Playback speed">
                                         <option value="5">5 yr/s</option>
                                         <option value="15" selected>15 yr/s</option>
                                         <option value="40">40 yr/s</option>
                                     </select>
-                                    <small id="eraEventTicker" class="text-truncate flex-grow-1"
-                                           style="font-size:0.68rem;color:#cfae60;cursor:pointer;display:none;"
+                                    <small id="eraEventTicker" class="era-ticker text-truncate"
                                            title="Show event details"
                                            onclick="if (tickerYear != null) showEventsAt(tickerYear)"></small>
                                 </div>
                                 <!-- Event details card (opened by clicking a marker or the ticker) -->
-                                <div id="eraEventCard" class="mt-1 p-2 rounded"
-                                     style="display:none;background:#141425;border:1px solid #333;max-height:180px;overflow-y:auto;"></div>
+                                <div id="eraEventCard" class="era-card"></div>
                             </div>
 
-                            <!-- Star limit -->
-                            <div class="mb-2">
-                                <label class="form-label small">View Range</label>
+                            <!-- View range -->
+                            <div class="group">
+                                <div class="section-label">View range</div>
                                 <select id="viewRange" class="form-select form-select-sm" onchange="onViewRangeChange(this.value)">
                                     <option value="25">25 pc — inner</option>
                                     <option value="50">50 pc</option>
                                     <option value="75">75 pc</option>
                                     <option value="100" selected>100 pc — all</option>
                                 </select>
-                                <div class="form-text small">Culls beyond range; distant stars fade for depth.</div>
+                                <div class="field-hint">Culls beyond range; distant stars fade for depth.</div>
                             </div>
 
                             <!-- Spectral type -->
-                            <div class="mb-2">
-                                <label class="form-label small">Spectral Type</label>
+                            <div class="group">
+                                <div class="section-label">Spectral type</div>
                                 <select id="spectralType" class="form-select form-select-sm">
                                     <option value="">All Types</option>
                                     <option value="O">O - Blue Giants</option>
@@ -301,11 +211,11 @@
                                 </select>
                             </div>
 
-                            <button class="btn btn-primary btn-sm w-100 mb-3" onclick="applyFilters()">Apply Filters</button>
+                            <button class="btn btn-primary btn-sm w-100 mb-3" onclick="applyFilters()">Apply filters</button>
 
-                            <div>
-                                <label class="form-label small fw-bold">Statistics</label>
-                                <div id="stats" class="small text-muted">Loading...</div>
+                            <div class="group">
+                                <div class="section-label">Dataset</div>
+                                <div id="stats" class="field-hint">Loading…</div>
                             </div>
                         </div>
 
@@ -313,8 +223,8 @@
                         <div class="tab-pane fade" id="tabLore" role="tabpanel">
 
                             <!-- Quick Views -->
-                            <div class="mb-3">
-                                <h6 class="text-muted small mb-2">⚡ Quick Views</h6>
+                            <div class="group">
+                                <div class="section-label">Quick views</div>
                                 <div class="d-grid gap-1">
                                     <button class="btn btn-outline-danger btn-sm"
                                             onclick="applyQuickView('felgenland_union')">🔴 Felgenland Union</button>
@@ -328,8 +238,8 @@
                             </div>
 
                             <!-- Story Moments -->
-                            <div class="mb-3">
-                                <h6 class="text-muted small mb-2">📚 Story Moments</h6>
+                            <div class="group">
+                                <div class="section-label">Story moments</div>
                                 <div class="d-grid gap-1">
                                     <button class="btn btn-outline-secondary story-btn"
                                             onclick="applyStoryMoment('phoenix_exodus_2170')">
@@ -343,9 +253,8 @@
                                             onclick="applyStoryMoment('union_founded_2267')">
                                         🏛 Union Founded — 2267
                                     </button>
-                                    <button class="btn btn-outline-secondary story-btn"
-                                            onclick="applyStoryMoment('war_height_2355')"
-                                            style="border-color:rgba(180,60,60,0.5);color:#cc8888;">
+                                    <button class="btn btn-outline-secondary story-btn war"
+                                            onclick="applyStoryMoment('war_height_2355')">
                                         ⚔ War at its Height — 2355
                                     </button>
                                     <button class="btn btn-outline-secondary story-btn"
@@ -356,8 +265,8 @@
                             </div>
 
                             <!-- Nation selector -->
-                            <div class="mb-2">
-                                <h6 class="text-muted small mb-1">🌍 Nation / Faction</h6>
+                            <div class="group">
+                                <div class="section-label">Nation / faction</div>
                                 <div class="d-flex gap-1 mb-2">
                                     <select id="nationSelector" class="form-select form-select-sm flex-grow-1"
                                             onchange="onNationSelect(this.value)">
@@ -368,7 +277,7 @@
                                         ★ Capital
                                     </button>
                                 </div>
-                                <div id="nationEraNote" class="small text-warning mb-1" style="display:none;font-size:0.7rem;"></div>
+                                <div id="nationEraNote" class="era-note"></div>
                                 <div class="form-check form-switch mb-1">
                                     <input class="form-check-input" type="checkbox" id="showOnlyNation"
                                            onchange="toggleShowOnlyNation(this.checked)">
@@ -382,18 +291,18 @@
                             </div>
 
                             <!-- Compare Two Nations -->
-                            <div class="mb-2 mt-2">
+                            <div class="group">
                                 <div class="form-check form-switch mb-1">
                                     <input class="form-check-input" type="checkbox" id="compareModeToggle"
                                            onchange="toggleCompareMode(this.checked)">
-                                    <label class="form-check-label small fw-bold" for="compareModeToggle">⚔️ Compare Two Nations</label>
+                                    <label class="form-check-label small" for="compareModeToggle">Compare two nations</label>
                                 </div>
                                 <div id="compareNationsSection" style="display:none">
                                     <select id="nationSelector2" class="form-select form-select-sm mb-1"
                                             onchange="onNation2Select(this.value)">
                                         <option value="">— Nation 2 —</option>
                                     </select>
-                                    <div id="compareNationsBadges" class="d-flex gap-2 align-items-center" style="font-size:0.75rem;min-height:18px;"></div>
+                                    <div id="compareNationsBadges" class="compare-badges"></div>
                                 </div>
                             </div>
 
@@ -405,8 +314,8 @@
 
                         <!-- ── LAYERS TAB ── -->
                         <div class="tab-pane fade" id="tabLayers" role="tabpanel">
-                            <label class="form-label small fw-bold">Overlays</label>
-                            <div class="row g-1 mb-2">
+                            <div class="section-label">Overlays</div>
+                            <div class="row g-1 mb-3">
                                 <div class="col-6">
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="nationsOverlay">
@@ -450,39 +359,38 @@
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn btn-outline-success btn-sm w-100" onclick="showNationsLegend()">
-                                🏛️ Nations Legend
+                            <button class="btn btn-outline-secondary btn-sm w-100" onclick="showNationsLegend()">
+                                Nations legend
                             </button>
                         </div>
 
                         <!-- ── TOOLS TAB ── -->
                         <div class="tab-pane fade" id="tabTools" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold">Starfield View</label>
+                            <div class="group">
+                                <div class="section-label">Renderer</div>
                                 <div class="btn-group w-100" role="group">
                                     <input type="radio" class="btn-check" name="viewToggle" id="threejsView" checked onchange="switchView('threejs')">
-                                    <label class="btn btn-outline-warning btn-sm" for="threejsView">🌟 Three.js</label>
+                                    <label class="btn btn-outline-secondary btn-sm" for="threejsView">Three.js</label>
                                     <input type="radio" class="btn-check" name="viewToggle" id="aframeView" onchange="switchView('aframe')">
-                                    <label class="btn btn-outline-success btn-sm" for="aframeView">🥽 VR</label>
+                                    <label class="btn btn-outline-secondary btn-sm" for="aframeView">VR (A-Frame)</label>
                                 </div>
                             </div>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-outline-info btn-sm" onclick="resetView()">🎯 Reset View</button>
-                                <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()">📷 Screenshot</button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="openPrintExport()" title="Generate print-ready PNG / SVG map">
-                                    🗺️ Print Map
-                                </button>
-                                <button class="btn btn-outline-light btn-sm" onclick="copyShareableLink()" title="Copy link with current filters">
-                                    🔗 Copy Shareable Link
-                                </button>
-                                <button class="btn btn-outline-warning btn-sm" onclick="exportData()">💾 Export CSV</button>
+                            <div class="group">
+                                <div class="section-label">Actions</div>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="resetView()">Reset view</button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="takeStarmapScreenshot()">Screenshot (PNG)</button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="openPrintExport()" title="Generate print-ready PNG / SVG map">Print-ready map…</button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="copyShareableLink()" title="Copy link with current filters">Copy shareable link</button>
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="exportData()">Export CSV</button>
+                                </div>
                             </div>
 
                             {% if user %}
-                            <div class="mt-3">
-                                <label class="form-label small fw-bold">🗂 Saved Views</label>
+                            <div class="group">
+                                <div class="section-label">Saved views</div>
                                 <button class="btn btn-outline-success btn-sm w-100 mb-2" onclick="saveCurrentView()">
-                                    💾 Save Current View
+                                    Save current view
                                 </button>
                                 <div id="savedViewsList"></div>
                             </div>
@@ -494,7 +402,7 @@
             </div>
 
             <!-- Main Starmap -->
-            <div class="col-md-9 col-lg-10 p-0">
+            <div class="col-md-9 col-lg-10 p-0" id="mainCol">
                 <div id="threejs-error-banner" class="alert alert-danger m-3" style="display:none;"></div>
                 <div id="threejs-container" class="starmap-container"></div>
 
@@ -545,7 +453,7 @@
                 <div id="starDetails" class="star-details-panel">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Star Details</h6>
+                            <h6 class="mb-0">Selected object</h6>
                             <button class="btn-close btn-close-white" onclick="hideStarDetails()"></button>
                         </div>
                         <div class="card-body" id="starDetailsContent">
@@ -562,7 +470,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🏛️ Nations of the Felgenland Saga</h5>
+                    <h5 class="modal-title">Nations of the Felgenland Saga</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body" id="nationsContent">Loading nations...</div>
@@ -579,7 +487,7 @@
     <!-- Help overlay -->
     <div id="helpOverlay" onclick="if(event.target===this)closeHelp()">
         <div class="help-box">
-            <h5>🌌 Starmap Keyboard Shortcuts &amp; Tips</h5>
+            <h5>Keyboard shortcuts &amp; tips</h5>
             <div class="help-row"><span class="help-key">?</span><span>Toggle this help overlay</span></div>
             <div class="help-row"><span class="help-key">W A S D</span><span>Pan camera (hold Shift for faster)</span></div>
             <div class="help-row"><span class="help-key">Q / E</span><span>Zoom in / out</span></div>
@@ -590,15 +498,15 @@
             <div class="help-row"><span class="help-key">Space</span><span>Play / pause the timeline</span></div>
             <div class="help-row"><span class="help-key">Esc</span><span>Close details / deselect star</span></div>
             <div class="help-row"><span class="help-key">Ctrl+/</span><span>Focus search bar</span></div>
-            <hr style="border-color:#334;margin:12px 0;">
-            <div style="font-size:0.78rem;color:#888;">
-                <b style="color:#a0c4ff;">Era slider:</b> drag to travel through history, press ▶ to watch it unfold,
+            <hr class="my-3">
+            <div class="help-tips">
+                <b>Era slider:</b> drag to travel through history, press ▶ to watch it unfold,
                 🎬 for a guided tour of every event, or ⚔ for the War Tour (2350–2357,
                 lingering at the battles). Esc stops a tour.
                 Markers below the slider are historical events — click one for details.
-                The <span style="color:#cc6666;">red band</span> marks the Union–Directorate War (2352–2357).<br>
-                <b style="color:#a0c4ff;">★ Capital</b> button flies to a nation's capital star.<br>
-                <b style="color:#a0c4ff;">Share link</b> encodes era, nation, mag limit &amp; camera center in the URL.
+                The <span class="text-danger">red band</span> marks the Union–Directorate War (2352–2357).<br>
+                <b>★ Capital</b> button flies to a nation's capital star.<br>
+                <b>Share link</b> encodes era, nation, mag limit &amp; camera center in the URL.
             </div>
             <button class="btn btn-outline-secondary btn-sm mt-3 w-100" onclick="closeHelp()">Close (Esc or ?)</button>
         </div>
@@ -610,9 +518,9 @@
     <!-- Planet Map Modal -->
     <div class="modal fade" id="planetMapModal" tabindex="-1">
         <div class="modal-dialog modal-xl" style="max-width:90vw">
-            <div class="modal-content" style="background:#0a0a1e;border:1px solid #334;height:85vh">
-                <div class="modal-header py-2" style="border-bottom:1px solid #334">
-                    <h6 class="modal-title text-info" id="planetMapTitle">Planet Map</h6>
+            <div class="modal-content" style="height:85vh">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title" id="planetMapTitle">Planet Map</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0" style="height:calc(85vh - 52px)">
@@ -625,9 +533,9 @@
     <!-- Print Export Modal -->
     <div class="modal fade" id="printExportModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content" style="background:#0d0d2a;border:1px solid #334;color:#ccc;">
-                <div class="modal-header py-2" style="border-bottom:1px solid #334;">
-                    <h6 class="modal-title text-info">🗺️ Generate Print-Ready Map</h6>
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">Generate print-ready map</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -637,13 +545,11 @@
                             <div class="mb-2">
                                 <label class="form-label small">Map Title</label>
                                 <input type="text" id="pex-title" class="form-control form-control-sm"
-                                       style="background:#1a1a3e;border-color:#334;color:#ccc;"
                                        oninput="updatePrintPreview()" value="Felgenland Saga">
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small">View Radius (light-years from center)</label>
                                 <select id="pex-radius" class="form-select form-select-sm"
-                                        style="background:#1a1a3e;border-color:#334;color:#ccc;"
                                         onchange="updatePrintPreview()">
                                     <option value="10">10 ly — close-up</option>
                                     <option value="20" selected>20 ly — regional</option>
@@ -653,8 +559,7 @@
                             </div>
                             <div class="mb-2">
                                 <label class="form-label small">Output Resolution</label>
-                                <select id="pex-res" class="form-select form-select-sm"
-                                        style="background:#1a1a3e;border-color:#334;color:#ccc;">
+                                <select id="pex-res" class="form-select form-select-sm">
                                     <option value="HD">HD — 1920×1080</option>
                                     <option value="2K">2K — 2560×1440</option>
                                     <option value="4K" selected>4K — 3840×2160</option>
@@ -683,20 +588,19 @@
                                     <label class="form-check-label small" for="pex-grid">Grid lines (5 ly)</label>
                                 </div>
                             </div>
-                            <hr style="border-color:#334;">
+                            <hr>
                             <div class="d-grid gap-2">
-                                <button class="btn btn-success" onclick="generatePrintPNG()">⬇ Export PNG</button>
-                                <button class="btn btn-outline-info btn-sm" onclick="generatePrintSVG()">⬇ Export SVG (vector)</button>
+                                <button class="btn btn-primary" onclick="generatePrintPNG()">Export PNG</button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="generatePrintSVG()">Export SVG (vector)</button>
                             </div>
-                            <p class="small text-muted mt-2 mb-0" style="font-size:0.7rem;">
+                            <p class="field-hint mt-2 mb-0">
                                 DokuWiki + Markdown markup copied to clipboard on PNG export.
                             </p>
                         </div>
                         <!-- Preview column -->
                         <div class="col-md-7">
                             <label class="form-label small">Preview <span id="pex-preview-label" class="text-muted"></span></label>
-                            <canvas id="pex-preview" width="640" height="360"
-                                    style="width:100%;border:1px solid #334;border-radius:4px;background:#050510;"></canvas>
+                            <canvas id="pex-preview" class="pex-preview" width="640" height="360"></canvas>
                         </div>
                     </div>
                 </div>
@@ -707,9 +611,9 @@
     <!-- Province Browser Modal -->
     <div class="modal fade" id="provinceBrowserModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content" style="background:#0d0d2a;border:1px solid #334;color:#ccc;">
-                <div class="modal-header py-2" style="border-bottom:1px solid #334">
-                    <h6 class="modal-title text-info">🏙 Provinces of the Felgenland Union</h6>
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h6 class="modal-title">Provinces of the Felgenland Union</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-2">
@@ -718,7 +622,7 @@
                            placeholder="Search province or dynasty…" oninput="renderProvinceTable()">
                     <div style="max-height:52vh;overflow-y:auto;">
                         <table class="table table-dark table-sm table-hover mb-1" style="font-size:0.78rem">
-                            <thead style="position:sticky;top:0;background:#10102a;z-index:1;"><tr>
+                            <thead style="position:sticky;top:0;z-index:1;"><tr>
                                 <th style="width:2.2rem">#</th><th>Province</th><th>Dynasty</th><th>Rank</th>
                                 <th class="text-end">Population</th><th class="text-end">Area km²</th>
                             </tr></thead>
@@ -734,13 +638,12 @@
     <!-- System Map panel -->
     <div id="systemMapPanel">
         <div class="panel-header">
-            <span id="systemMapTitle" class="small fw-bold text-info">System Map</span>
+            <span id="systemMapTitle" class="small fw-bold text-primary">System Map</span>
             <span class="d-flex align-items-center gap-1 ms-auto me-2">
                 <button id="sysMapPauseBtn" onclick="sysMapTogglePause()"
                         class="btn btn-outline-warning btn-sm py-0 px-2"
                         title="Pause / resume orbits (hovering a world also pauses)">⏸</button>
-                <select id="sysMapSpeed" class="form-select form-select-sm py-0"
-                        style="width:auto;font-size:0.7rem;" title="Orbit speed">
+                <select id="sysMapSpeed" class="form-select form-select-sm" title="Orbit speed">
                     <option value="0.25">Slow</option>
                     <option value="1" selected>Normal</option>
                     <option value="3">Fast</option>
@@ -751,7 +654,7 @@
         <canvas id="systemMapCanvas" width="398" height="280"></canvas>
         <!-- Fixed height: the panel is bottom-anchored, so a growing info bar
              would push the whole map upward ("jumping" on hover) -->
-        <div id="systemMapInfo" class="px-3 py-1" style="font-size:0.75rem;color:#888;border-top:1px solid #334;height:96px;overflow-y:auto;"></div>
+        <div id="systemMapInfo" class="sysmap-info"></div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -888,16 +791,17 @@
                 fetch('/api/v1/stats').then(r => r.json()).then(data => {
                     if (data.success && data.data) {
                         const d = data.data;
-                        document.getElementById('stats').innerHTML =
-                            `Stars: ${d.stars}<br>Fictional: ${d.fictional_stars}<br>` +
-                            `Nations: ${d.nations}<br>Trade Routes: ${d.trade_routes}<br>` +
-                            `Worlds: ${d.fictional_exoplanets}`;
+                        const cell = (v, k) => `<div class="stat"><span class="stat-v">${Number(v).toLocaleString()}</span><span class="stat-k">${k}</span></div>`;
+                        document.getElementById('stats').innerHTML = '<div class="stat-grid">' +
+                            cell(d.stars, 'Stars') + cell(d.fictional_stars, 'Canon') + cell(d.nations, 'Nations') +
+                            cell(d.trade_routes, 'Routes') + cell(d.fictional_exoplanets, 'Worlds') + '</div>';
                     }
                 }).catch(() => {});
 
                 threejsInitialized = true;
-                document.getElementById('status').className = 'alert alert-success small mx-2 mt-2 mb-0 py-1';
-                document.getElementById('status').textContent = `✅ ${allStars.length.toLocaleString()} stars loaded`;
+                const statusEl = document.getElementById('status');
+                statusEl.dataset.state = 'ready';
+                statusEl.textContent = `${allStars.length.toLocaleString()} stars loaded`;
             } catch (error) {
                 console.error('❌ Three.js init error:', error);
                 const banner = document.getElementById('threejs-error-banner');
@@ -1521,11 +1425,10 @@
                 const s = r.star;
                 const name = esc(s.fictional_name || s.name || '?');
                 const mag  = s.magnitude ? parseFloat(s.magnitude).toFixed(2) : '—';
-                html += `<div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 rounded"
-                              style="background:#1a1a2e;cursor:pointer" onclick="selectSearchResult(${i})">
-                    <div><strong class="text-light" style="font-size:0.82rem">${name}</strong>
+                html += `<div class="result-item" onclick="selectSearchResult(${i})">
+                    <div><strong>${name}</strong>
                     <br><small class="text-muted">${esc(s.spectral_class||'?')} · Mag ${mag}</small></div>
-                    <small class="text-info ms-2">${esc(s.id)}</small>
+                    <small class="mono ms-2">${esc(s.id)}</small>
                 </div>`;
             });
             div.innerHTML = html;
@@ -2012,19 +1915,6 @@
             if (b) { b.textContent = msg; b.style.display = 'block'; setTimeout(() => { b.style.display = 'none'; }, 5000); }
         }
 
-        // ── Legacy wiki export (kept for backward compat) ─────────────────────
-        function generateWikiMap() {
-            if (!threejsStarmap) { alert('Starmap not ready yet.'); return; }
-            const eraEl = document.getElementById('eraFilterToggle');
-            const eraSlider = document.getElementById('eraSlider');
-            const eraYear = (eraEl && eraEl.checked) ? eraSlider.value : null;
-            const nationEl = document.getElementById('nationSelector');
-            const nationName = nationEl && nationEl.value
-                ? nationEl.options[nationEl.selectedIndex].text
-                : 'Full Starmap';
-            threejsStarmap.generateWikiView(nationName);
-        }
-
         // ── Screenshot ──────────────────────────────────────────────────────
         function takeStarmapScreenshot() {
             if (!threejsStarmap) { alert('Starmap not initialized yet.'); return; }
@@ -2068,8 +1958,8 @@
                     <div class="col-md-6 mb-3">
                         <div class="card h-100" style="border-left:4px solid ${safeColor}">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <h6 class="mb-0">${esc(nation.name)}</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                                    <div class="d-flex align-items-center gap-2">${nationFlagImg(nation._id, 'flag flag-lg')}<h6 class="mb-0">${esc(nation.name)}</h6></div>
                                     <span class="badge" style="background:${safeColor};color:${getContrastColor(safeColor)}">${esc(nation._id)}</span>
                                 </div>
                                 <small class="text-muted">
@@ -2352,6 +2242,7 @@
 
             content.innerHTML = `
                 <div class="border rounded p-2" style="border-color:${safeColor}55 !important">
+                    ${nationFlagImg(nation._id || nation.id, 'flag-hero')}
                     <div class="d-flex align-items-center mb-1">
                         ${colorDot}<strong class="small">${esc(nation.name)}</strong>
                     </div>
@@ -2384,6 +2275,17 @@
             panel.classList.remove('d-none');
         }
 
+        // Nation flag <img>: tries static/img/flags/<id>.png, then .svg, then hides itself.
+        // Drop new flag art into that folder — no code change needed.
+        function nationFlagImg(nationId, cls = 'flag') {
+            const id = String(nationId || '').replace(/[^a-z0-9_]/gi, '');
+            if (!id) return '';
+            const base = `/static/img/flags/${id}`;
+            return `<img class="${cls}" src="${base}.png" alt="" title="Flag"
+                         onerror="if(!this.dataset.svg){this.dataset.svg=1;this.src='${base}.svg';}else{this.remove();}">`;
+        }
+        window.nationFlagImg = nationFlagImg;
+
         function flyToNamedStar(star) {
             if (!threejsStarmap || !star) return;
             // The onclick payload is a slim {id,x,y,z,name} — resolve the
@@ -2402,16 +2304,19 @@
             const col     = document.getElementById('sidebarCol');
             if (content.style.display === 'none') {
                 content.style.display = '';
-                col.classList.remove('col-md-1');
+                col.classList.remove('col-md-1', 'collapsed');
                 col.classList.add('col-md-3', 'col-lg-2');
                 btn.textContent = '◀';
+                btn.title = 'Collapse sidebar';
             } else {
                 content.style.display = 'none';
                 col.classList.remove('col-md-3', 'col-lg-2');
-                col.classList.add('col-md-1');
+                col.classList.add('col-md-1', 'collapsed');
+                btn.title = 'Expand sidebar';
                 btn.textContent = '▶';
             }
-            if (threejsStarmap) threejsStarmap.resize();
+            // Resize now and again once the CSS width transition (0.2s) has settled
+            if (threejsStarmap) { threejsStarmap.resize(); setTimeout(() => threejsStarmap.resize(), 240); }
         }
 
         // ── A-Frame ──────────────────────────────────────────────────────────

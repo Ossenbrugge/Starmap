@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 512" width="768" height="512">
+  <!-- Felgenland Union — vector rendition of the author's flag art.
+       Drop the original raster at static/img/flags/felgenland_union.png to override. -->
+  <defs>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b3221f"/><stop offset="0.5" stop-color="#8f1a18"/><stop offset="1" stop-color="#a51f1c"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#c0271f"/><stop offset="0.45" stop-color="#f05a1a"/><stop offset="0.8" stop-color="#ffb21a"/><stop offset="1" stop-color="#ffe066"/>
+    </linearGradient>
+  </defs>
+  <rect width="768" height="512" fill="url(#red)"/>
+  <rect width="244" height="512" fill="#000"/>
+  <!-- cross -->
+  <rect x="244" y="138" width="524" height="68" fill="#000"/>
+  <rect x="470" y="0" width="70" height="512" fill="#000"/>
+  <!-- hoist: four discs + four-pointed star -->
+  <g fill="#ffe600" stroke="#8a7a00" stroke-width="3">
+    <circle cx="46" cy="66" r="24"/>
+    <circle cx="124" cy="52" r="15"/>
+    <circle cx="60" cy="245" r="24"/>
+    <circle cx="158" cy="392" r="28"/>
+    <path d="M172 150 L184 180 L214 190 L184 200 L172 230 L160 200 L130 190 L160 180 Z"/>
+  </g>
+  <!-- flame at the base of the cross -->
+  <path fill="url(#flame)" stroke="#8a1a12" stroke-width="2"
+        d="M486 300 C500 330 470 350 478 380 C440 360 430 400 420 512 L590 512 C592 470 580 440 566 420 C560 450 540 450 546 420 C560 380 520 360 486 300 Z"/>
+  <path fill="#ffd54a" opacity="0.85"
+        d="M500 360 C512 385 490 395 496 420 C470 405 462 430 456 512 L545 512 C548 480 538 460 526 445 C520 465 506 465 510 445 C520 415 500 400 500 360 Z"/>
+</svg>

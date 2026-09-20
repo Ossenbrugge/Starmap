@@ -1248,6 +1248,7 @@ class ThreeJSStarmap {
                     list.sort((a, b) => a.era_start - b.era_start);
                 }
                 if (this.politicalView) this._refreshNationColors();
+                this._refreshNationsOverlay();
                 return true;
             }
             return false;
@@ -1299,7 +1300,16 @@ class ThreeJSStarmap {
         }
     }
 
-    createNationsOverlay(nations) {
+    /**
+     * Build the territory overlay for the current era. Holdings come from
+     * the ownership intervals (_nationIdAt), so a system that changes hands
+     * moves between nations instead of vanishing when its old owner's era
+     * ends — e.g. Protelan turns Union-red as a province after 2390.
+     *   core      = the nation's charter territories it still holds
+     *   provinces = systems it holds that were not in its charter list
+     */
+    createNationsOverlay(nations = this.nations, year = this.eraYear) {
+        this.nations = nations;
         // Clear existing nation objects
         while (this.nationsGroup.children.length > 0) {
             const child = this.nationsGroup.children[0];
@@ -1307,29 +1317,86 @@ class ThreeJSStarmap {
             if (child.geometry) child.geometry.dispose();
             if (child.material) child.material.dispose();
         }
+        this._nationsOverlayKey = this._nationsOverlaySignature(year);
+
+        const starById = new Map(this.currentStars.map(s => [s.id, s]));
+        const heldBy = (star, nid) => {
+            const holder = this._nationIdAt(star, year);
+            if (holder) return holder === nid;
+            // No ownership record: fall back to the star's static owner,
+            // gated on colonisation when an era is set.
+            if (year != null && star.discovery_year != null && year < star.discovery_year) return false;
+            return !star.nation_id || star.nation_id === nid;
+        };
 
         nations.forEach((nation, index) => {
+            const nid = nation._id || nation.id;
+            if (year != null) {
+                const ns = nation.era_start, ne = nation.era_end;
+                if ((ns != null && year < ns) || (ne != null && year > ne)) return;
+            }
+            const charter = new Set((nation.territories || []).map(t => (typeof t === 'object') ? t.star_id : t));
+            const core = [];
+            for (const id of charter) {
+                const star = starById.get(id);
+                if (star && star.x !== undefined && heldBy(star, nid)) core.push(star);
+            }
+            const provinces = [];
+            if (this.ownershipByStar) {
+                for (const id of this.ownershipByStar.keys()) {
+                    if (charter.has(id)) continue;
+                    const star = starById.get(id);
+                    if (star && star.x !== undefined && this._nationIdAt(star, year) === nid) provinces.push(star);
+                }
+            }
+            if (!core.length && !provinces.length) return;
 
-            if (nation.territories && nation.territories.length > 0) {
-                // Find all stars that belong to this nation
-                const nationStars = [];
-                nation.territories.forEach(territoryId => {
-                    const star = this.currentStars.find(s => s.id === territoryId);
-                    if (star && star.x !== undefined) {
-                        nationStars.push(star);
-                    }
-                });
+            let color = new THREE.Color().setHSL(index / 10, 0.8, 0.6);
+            if (nation.appearance && nation.appearance.color) color = new THREE.Color(nation.appearance.color);
 
-                if (nationStars.length > 0) {
-                    console.log(`🏛️ ${nation.name}: Found ${nationStars.length} stars`);
-                    this.createTerritoryBoundary(nation, nationStars, index);
-                } else {
-                    console.warn(`⚠️ Could not find coordinates for nation stars: ${nation.name}`);
+            if (core.length === 1) this.createSingleStarTerritory(nation, core[0], color);
+            else if (core.length > 1) this.createMultiStarTerritory(nation, core, color);
+
+            for (const star of provinces) {
+                this.createSingleStarTerritory(nation, star, color, 16.0);
+                // Tie the province to its nearest charter system
+                if (core.length) {
+                    const nearest = core.reduce((best, c) => {
+                        const d = Math.hypot(c.x - star.x, c.y - star.y, c.z - star.z);
+                        return d < best.d ? { d, c } : best;
+                    }, { d: Infinity, c: null }).c;
+                    this.createStarConnections([star, nearest], color, nation);
                 }
             }
         });
 
-        console.log(`✅ Created nations overlay with ${this.nationsGroup.children.length} territory boundaries`);
+        console.log(`✅ Nations overlay rebuilt for ${year ?? 'present day'}: ${this.nationsGroup.children.length} objects`);
+    }
+
+    /** Cheap change key: which nation holds which overlay-relevant star at `year`. */
+    _nationsOverlaySignature(year = this.eraYear) {
+        const ids = new Set();
+        for (const n of this.nations) for (const t of (n.territories || [])) ids.add((typeof t === 'object') ? t.star_id : t);
+        if (this.ownershipByStar) for (const id of this.ownershipByStar.keys()) ids.add(id);
+        const starById = new Map(this.currentStars.map(s => [s.id, s]));
+        const parts = [];
+        for (const id of [...ids].sort((a, b) => a - b)) {
+            const star = starById.get(id);
+            if (!star) continue;
+            const colonized = year == null || star.discovery_year == null || year >= star.discovery_year;
+            parts.push(`${id}:${this._nationIdAt(star, year) || (colonized ? star.nation_id || '' : '')}`);
+        }
+        for (const n of this.nations) {
+            const ns = n.era_start, ne = n.era_end;
+            parts.push(`${n._id || n.id}=${year == null || ((ns == null || year >= ns) && (ne == null || year <= ne)) ? 1 : 0}`);
+        }
+        return parts.join('|');
+    }
+
+    /** Rebuild the overlay only when a holding actually changes hands. */
+    _refreshNationsOverlay() {
+        if (!this.nations.length) return;
+        if (this._nationsOverlaySignature() !== this._nationsOverlayKey) this.createNationsOverlay();
     }
 
     createTerritoryBoundary(nation, nationStars, index) {
@@ -1350,16 +1417,17 @@ class ThreeJSStarmap {
         console.log(`🏛️ Added territory boundary: ${nation.name} (${nationStars.length} stars)`);
     }
 
-    createSingleStarTerritory(nation, star, color) {
+    createSingleStarTerritory(nation, star, color, radius = null) {
         // Influence sphere around a single-system nation. Needs to read at
         // galaxy zoom next to the multi-star boundaries, so ~2.4 pc radius
-        // (stars are plotted at 10 units/pc).
+        // (stars are plotted at 10 units/pc). Provinces pass an explicit radius.
         let sphereRadius = 16.0;
 
         // Slightly larger for full interstellar polities vs trade outposts
         if (nation._id === 'protelani_republic' || nation._id === 'dorsai_republic') {
             sphereRadius = 24.0;
         }
+        if (radius != null) sphereRadius = radius;
 
         const geometry = new THREE.SphereGeometry(sphereRadius, 16, 16);
         const material = new THREE.MeshBasicMaterial({
@@ -1786,41 +1854,8 @@ class ThreeJSStarmap {
             });
         }
 
-        // Also dim/show nation overlays by era
-        if (this.nationsGroup) {
-            this.nationsGroup.children.forEach(child => {
-                if (this.eraYear == null) { child.visible = true; return; }
-                const type   = child.userData?.type;
-                const nation = child.userData?.data;
-
-                if (type === 'nation_territory') {
-                    // Check nation founding year first
-                    const ns = nation?.era_start, ne = nation?.era_end;
-                    const nationFounded = (ns == null || this.eraYear >= ns) &&
-                                         (ne == null || this.eraYear <= ne);
-                    if (!nationFounded) { child.visible = false; return; }
-                    // Also require the earliest territory star to be colonized
-                    const stars = child.userData?.stars || [];
-                    const minDisc = stars.reduce((mn, s) =>
-                        (s.discovery_year != null && s.discovery_year < mn) ? s.discovery_year : mn,
-                        Infinity);
-                    child.visible = (minDisc === Infinity || this.eraYear >= minDisc);
-
-                } else if (type === 'nation_connection') {
-                    // Check nation founding year
-                    const ns = nation?.era_start;
-                    if (ns != null && this.eraYear < ns) { child.visible = false; return; }
-                    // Show line only when BOTH endpoint stars are colonized
-                    const dyA = child.userData?.starA?.discovery_year;
-                    const dyB = child.userData?.starB?.discovery_year;
-                    child.visible = (dyA == null || this.eraYear >= dyA) &&
-                                    (dyB == null || this.eraYear >= dyB);
-
-                } else {
-                    child.visible = true;
-                }
-            });
-        }
+        // Territory spheres follow the ownership intervals; rebuild on change
+        this._refreshNationsOverlay();
     }
 
     /** Rebuild aNationColor attribute respecting current eraYear + discovery_year. */
